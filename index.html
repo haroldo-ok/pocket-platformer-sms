@@ -47,6 +47,12 @@
                             <img src="images/icons/export.svg" alt="right" width="12" height="12">
                         </div>
                     </li>
+                    <li class="dropdown-nav-item" onClick="SmsExporter.exportSmsRom()">
+                        <div>
+                            Export SMS ROM
+                            <img src="images/icons/export.svg" alt="right" width="12" height="12">
+                        </div>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -1137,6 +1143,7 @@
             document.getElementById("loadingText").style.display = "none";
             window.requestAnimationFrame(loading);
         </script>
+        <script src="SmsExporter.js"></script>
 </body>
 
 </html>
