@@ -64,6 +64,8 @@
 #define OBJ_COIN        5
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
+/* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
+#define MAX_VY  ((TILE_SIZE - 1) * FP_ONE)
 #define FP_ONE      256L
 #define FP(x)       ((long)((x) * FP_ONE))
 #define FP_MUL(a,b) (((long)(a) * (long)(b)) >> 8)
@@ -271,8 +273,8 @@ static void draw_player(void) {
 static void apply_gravity(void) {
     if (!player.on_ground) {
         player.vy += GRAVITY;
-        if (player.vy > (long)res_physics->max_fall_speed)
-            player.vy = (long)res_physics->max_fall_speed;
+        if (player.vy > MAX_VY)
+            player.vy = MAX_VY;
     }
 }
 
