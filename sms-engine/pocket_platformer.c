@@ -78,7 +78,7 @@
 
 /* ── Player collision box ─── */
 #define PLAYER_W   6
-#define PLAYER_H   14
+#define PLAYER_H   15
 #define MAX_OBJECTS 32
 
 /* ──────────────────────────────────────────────────────────
@@ -405,7 +405,7 @@ static void update_camera(void) {
     if (target > map_max) target = map_max;
     camera_x = (unsigned int)target;
 
-    SMS_setBGScrollX((unsigned char)(256u - (camera_x % TILE_SIZE)));
+    SMS_setBGScrollX((unsigned char)(camera_x & 0xFF));
 
     cam_tile  = camera_x / TILE_SIZE;
     prev_tile = prev_cam_x / TILE_SIZE;
