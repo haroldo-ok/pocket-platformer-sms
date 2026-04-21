@@ -1,16 +1,28 @@
 /*
- * Pocket Platformer - Sega Master System Engine  v1.1
+ * Pocket Platformer - Sega Master System Engine  v1.2
  *
- * FIX LOG v1.1:
- *   - print_str() replaced by SMS_print() / SMS_printatXY() which correctly
- *     applies the ascii_to_tile_offset set by SMS_configureTextRenderer.
- *   - Title screen now runs BEFORE init_resources() so bare ROM shows text.
- *   - has_resource() checks "PPLT" signature before reading blob.
- *   - draw_tilemap_full() streams rows (setNextTileatXY + setTile loop)
- *     instead of one setTileatXY per tile — much faster, no tearing.
- *   - Sprite tiles use VRAM 0-17 (first half, per useFirstHalfTilesforSprites).
- *     BG tiles use VRAM 256+ (second half). Was reversed before.
- *   - camera_x widened to unsigned int (was char, capped at 255px).
+ * FIX LOG v1.2:
+ *   - BUG: player fell through floor.
+ *     CAUSE: player x/y/vx/vy stored as 'int' (16-bit on SDCC Z80).
+ *     A level 18 tiles tall means ground at y=17*8=136px. In 8.8 fixed-point
+ *     that's 136*256=34816, which overflows int16 (max 32767). The coordinate
+ *     wrapped negative, tile lookup returned 0 (not solid), player never landed.
+ *     FIX: changed x, y, vx, vy to 'long' (32-bit) throughout.
+ *
+ *   - BUG: background filled with start-flag sprites.
+ *     CAUSE: SMS_useFirstHalfTilesforSprites(1) means the sprite hardware reads
+ *     tiles 0-255. We also stored blank BG as nametable tile 0, which the BG
+ *     renderer correctly draws as tile 0 -- but that same tile 0 is also the
+ *     start-flag sprite loaded in the sprite sheet. Result: every "empty" BG
+ *     cell showed the start-flag graphic.
+ *     FIX: SMS_useFirstHalfTilesforSprites(0) → sprite hardware uses tiles 256-511.
+ *     BG tiles stay at 0-255. Nametable 0 = genuinely blank. Sprite sheet
+ *     loads at VRAM tile 256. Sprite tile constants updated to 256+.
+ *
+ * v1.1 fixes (previous):
+ *   - print_str() → SMS_printatXY() for correct font rendering.
+ *   - Title screen before init_resources(); has_resource() signature check.
+ *   - draw_tilemap_full() streams rows (setNextTileatXY + loop) not per-tile addr.
  */
 
 #include <stdlib.h>
@@ -33,20 +45,21 @@
 #define map_res_bank()      SMS_mapROMBank(RESOURCE_BANK)
 
 /* ── VRAM layout ────────────────────────────────────────── */
-/* SMS_useFirstHalfTilesforSprites(1) means sprite hardware
-   reads tile indices 0-255. We put our sprite sheet there.
-   BG tiles go in the second half starting at tile 256.       */
-#define VRAM_SPR_START_FLAG   0
-#define VRAM_SPR_FINISH_FLAG  2
-#define VRAM_SPR_SPIKE        4
-#define VRAM_SPR_TRAMPOLINE   6
-#define VRAM_SPR_COIN         8
-#define VRAM_SPR_PLAYER_IDLE  10
-#define VRAM_SPR_PLAYER_WALK0 12
-#define VRAM_SPR_PLAYER_WALK1 14
-#define VRAM_SPR_PLAYER_JUMP  16
-#define VRAM_BG_BASE          256   /* BG tiles start here  */
-#define VRAM_TILE_FONT        352   /* 1bpp font            */
+/* SMS_useFirstHalfTilesforSprites(0): sprite engine uses tiles 256-511.
+   BG tiles occupy 0-255. Nametable entry 0 = blank tile 0. No conflict. */
+#define VRAM_BG_BLANK         0    /* blank BG tile                     */
+#define VRAM_BG_BASE          1    /* first non-blank BG tile            */
+#define VRAM_SPR_BASE       256    /* sprite sheet starts here           */
+#define VRAM_SPR_START_FLAG 256    /* top tile of 8x16 sprite            */
+#define VRAM_SPR_FINISH_FLAG 258
+#define VRAM_SPR_SPIKE       260
+#define VRAM_SPR_TRAMPOLINE  262
+#define VRAM_SPR_COIN        264
+#define VRAM_SPR_PLAYER_IDLE 266
+#define VRAM_SPR_PLAYER_WALK0 268
+#define VRAM_SPR_PLAYER_WALK1 270
+#define VRAM_SPR_PLAYER_JUMP  272
+#define VRAM_TILE_FONT        352  /* 1bpp font                          */
 
 /* ── Object types (must match SmsExporter.js) ───────────── */
 #define OBJ_START_FLAG  1
@@ -55,36 +68,37 @@
 #define OBJ_TRAMPOLINE  4
 #define OBJ_COIN        5
 
-/* ── Fixed-point 8.8 ─────────────────────────────────────── */
-#define FP_ONE      0x100
-#define FP(x)       ((int)((x) * FP_ONE))
-#define FP_MUL(a,b) (((int)(a) * (int)(b)) >> 8)
+/* ── Fixed-point 8.8 using 'long' (32-bit) to avoid overflow ── */
+/* At 8.8 scale: max pixel = 32767/256 = 127 with int16.
+   A level 18 tiles tall = 144px = 36864 in 8.8 → needs 32-bit.  */
+#define FP_ONE      256L
+#define FP(x)       ((long)((x) * FP_ONE))
+#define FP_MUL(a,b) (((long)(a) * (long)(b)) >> 8)
 #define GRAVITY     FP(0.5)
 
-/* ── Player collision box ────────────────────────────────── */
+/* ── Player collision box ─── */
 #define PLAYER_W   6
 #define PLAYER_H   14
-
 #define MAX_OBJECTS 32
 
-/* ────────────────────────────────────────────────────────────
- * Structs  (SDCC Z80: int=2 bytes, no struct padding)
- * ──────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+ * Structs  (physics uses long; map/object stay as chars)
+ * ──────────────────────────────────────────────────────────*/
 typedef struct {
-    unsigned char signature[4];   /* "PPLT" */
+    unsigned char signature[4];
     unsigned char level_count;
     unsigned char num_tiles;
 } resource_header;
 
 typedef struct {
-    int           max_speed;
-    int           ground_accel;
-    int           ground_friction;
-    int           air_accel;
-    int           air_friction;
-    int           jump_speed;
+    int  max_speed;        /* int16 8.8 fixed — fine, max ~3px/frame */
+    int  ground_accel;
+    int  ground_friction;
+    int  air_accel;
+    int  air_friction;
+    int  jump_speed;
     unsigned char max_jump_frames;
-    int           max_fall_speed;
+    int  max_fall_speed;
     unsigned char has_double_jump;
     unsigned char has_wall_jump;
 } physics_config;
@@ -98,7 +112,7 @@ typedef struct {
 } level_object;
 
 typedef struct {
-    int           x, y, vx, vy;
+    long          x, y, vx, vy;   /* 32-bit: avoids int16 overflow    */
     unsigned char on_ground;
     unsigned char jump_frames;
     unsigned char facing_left;
@@ -107,9 +121,9 @@ typedef struct {
     unsigned char anim_timer;
 } player_state;
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Globals
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 static resource_header *res_header;
 static physics_config  *res_physics;
 static unsigned char   *res_palette;
@@ -125,9 +139,9 @@ static level_header    *cur_level;
 static unsigned char   *cur_map;
 static level_object    *cur_objects;
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Resource helpers
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 static unsigned char has_resource(void) {
     volatile unsigned char *p = (unsigned char *)RESOURCE_BASE_ADDR;
     map_res_bank();
@@ -157,22 +171,25 @@ static level_header *get_level(unsigned char n) {
     return lh;
 }
 
-/* ────────────────────────────────────────────────────────────
- * Tile helpers
- * ──────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+ * Tile / collision helpers
+ * ──────────────────────────────────────────────────────────*/
 static unsigned char get_tile(unsigned char tx, unsigned char ty) {
     if (tx >= cur_level->map_w || ty >= cur_level->map_h) return 0;
     return cur_map[(unsigned int)tx * cur_level->map_h + ty];
 }
 
-static unsigned char is_solid_px(int fpx, int fpy) {
-    return get_tile((unsigned char)((fpx >> 8) >> 3),
-                    (unsigned char)((fpy >> 8) >> 3)) != 0;
+/* fp coords are 'long' 8.8; extract tile coords safely */
+static unsigned char is_solid_px(long fpx, long fpy) {
+    unsigned char tx = (unsigned char)((fpx >> 8) / TILE_SIZE);
+    unsigned char ty = (unsigned char)((fpy >> 8) / TILE_SIZE);
+    if ((fpx >> 8) < 0 || (fpy >> 8) < 0) return 1; /* treat OOB as solid */
+    return get_tile(tx, ty) != 0;
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Graphics
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 static void load_graphics(void) {
     unsigned char i;
     map_res_bank();
@@ -180,16 +197,16 @@ static void load_graphics(void) {
     SMS_setSpritePaletteColor(0, 0);
     for (i = 1; i < 16; i++)
         SMS_setSpritePaletteColor(i, res_palette[i]);
-    /* Sprite sheet → first-half tiles 0-17 */
-    SMS_loadTiles(res_sprites, 0, 9u * 2u * 32u);
-    /* BG tiles → second-half starting at tile 256 */
+    /* BG tiles at 1..N (tile 0 stays blank) */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
+    /* Sprite sheet at 256..273 (second half, sprite engine uses 256+) */
+    SMS_loadTiles(res_sprites, VRAM_SPR_BASE, 9u * 2u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
 
-/* Row-streaming tilemap draw — fast, no VDP address overhead per tile */
+/* Row-streaming nametable write */
 static void draw_tilemap_full(void) {
     unsigned char x, y;
     map_res_bank();
@@ -197,7 +214,9 @@ static void draw_tilemap_full(void) {
         SMS_setNextTileatXY(0, y);
         for (x = 0; x < SCREEN_TILES_W; x++) {
             unsigned char t = (y < cur_level->map_h) ? get_tile(x, y) : 0;
-            SMS_setTile(t ? (VRAM_BG_BASE + (unsigned int)t) : 0u);
+            /* t==0 → nametable 0 (blank tile 0 in VRAM)
+               t >0 → nametable VRAM_BG_BASE + t - 1 (tiles packed from 1) */
+            SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
         }
     }
 }
@@ -208,14 +227,14 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
     SMS_setNextTileatXY(scr_col, 0);
     for (y = 0; y < SCREEN_TILES_H; y++) {
         unsigned char t = (y < cur_level->map_h) ? get_tile(map_col, y) : 0;
-        SMS_setTile(t ? (VRAM_BG_BASE + (unsigned int)t) : 0u);
+        SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
     }
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Sprite draw
- * ──────────────────────────────────────────────────────────── */
-static unsigned char obj_base_tile(unsigned char type) {
+ * ──────────────────────────────────────────────────────────*/
+static unsigned int obj_base_tile(unsigned char type) {
     switch (type) {
         case OBJ_FINISH_FLAG: return VRAM_SPR_FINISH_FLAG;
         case OBJ_SPIKE:       return VRAM_SPR_SPIKE;
@@ -238,60 +257,60 @@ static void draw_objects(void) {
         if (sx < -8 || sx > SCREEN_PX_W) continue;
         if (sy < 0  || sy > SCREEN_PX_H) continue;
         SMS_addSprite((unsigned char)sx, (unsigned char)sy,
-                      obj_base_tile(obj->type));
+                      (unsigned char)obj_base_tile(obj->type));
     }
 }
 
 static void draw_player(void) {
-    int sx = (player.x >> 8) - (int)camera_x;
-    int sy =  player.y >> 8;
-    unsigned char tile;
+    int sx = (int)(player.x >> 8) - (int)camera_x;
+    int sy = (int)(player.y >> 8);
+    unsigned int tile;
     if (sx < -8 || sx > SCREEN_PX_W) return;
     if (!player.on_ground)
         tile = VRAM_SPR_PLAYER_JUMP;
     else if (player.vx != 0)
-        tile = (player.anim_frame & 2) ? VRAM_SPR_PLAYER_WALK1
-                                       : VRAM_SPR_PLAYER_WALK0;
+        tile = (player.anim_frame & 2) ? VRAM_SPR_PLAYER_WALK1 : VRAM_SPR_PLAYER_WALK0;
     else
         tile = VRAM_SPR_PLAYER_IDLE;
     SMS_addSprite((unsigned char)sx, (unsigned char)sy, tile);
 }
 
-/* ────────────────────────────────────────────────────────────
- * Physics
- * ──────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+ * Physics  (all positions/velocities in 'long' 8.8 FP)
+ * ──────────────────────────────────────────────────────────*/
 static void apply_gravity(void) {
     if (!player.on_ground) {
         player.vy += GRAVITY;
-        if (player.vy > res_physics->max_fall_speed)
-            player.vy = res_physics->max_fall_speed;
+        if (player.vy > (long)res_physics->max_fall_speed)
+            player.vy = (long)res_physics->max_fall_speed;
     }
 }
 
 static void handle_input(unsigned int joy, unsigned int joy_pressed) {
+    long max_spd = (long)res_physics->max_speed;
+    long accel   = player.on_ground ? (long)res_physics->ground_accel
+                                    : (long)res_physics->air_accel;
     if (joy & PORT_A_KEY_LEFT) {
-        player.vx -= res_physics->ground_accel;
-        if (player.vx < -res_physics->max_speed)
-            player.vx = -res_physics->max_speed;
+        player.vx -= accel;
+        if (player.vx < -max_spd) player.vx = -max_spd;
         player.facing_left = 1;
     } else if (joy & PORT_A_KEY_RIGHT) {
-        player.vx += res_physics->ground_accel;
-        if (player.vx > res_physics->max_speed)
-            player.vx = res_physics->max_speed;
+        player.vx += accel;
+        if (player.vx > max_spd) player.vx = max_spd;
         player.facing_left = 0;
     } else {
-        int fr = player.on_ground ? res_physics->ground_friction
-                                  : res_physics->air_friction;
+        long fr = player.on_ground ? (long)res_physics->ground_friction
+                                   : (long)res_physics->air_friction;
         player.vx = FP_MUL(player.vx, fr);
         if (player.vx > -FP(0.2) && player.vx < FP(0.2)) player.vx = 0;
     }
     if (joy_pressed & PORT_A_KEY_1) {
         if (player.on_ground) {
-            player.vy = -res_physics->jump_speed;
+            player.vy = -(long)res_physics->jump_speed;
             player.jump_frames = res_physics->max_jump_frames;
             player.on_ground = 0;
         } else if (res_physics->has_double_jump && !player.double_jump_used) {
-            player.vy = -res_physics->jump_speed;
+            player.vy = -(long)res_physics->jump_speed;
             player.jump_frames = res_physics->max_jump_frames >> 1;
             player.double_jump_used = 1;
         }
@@ -303,18 +322,21 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 }
 
 static void move_player_x(void) {
-    int new_x = player.x + player.vx;
+    long new_x = player.x + player.vx;
+    long px    = new_x >> 8;
     if (player.vx > 0) {
-        int r = new_x + FP(PLAYER_W);
+        long r = new_x + FP(PLAYER_W);
         if (is_solid_px(r, player.y + FP(1)) ||
             is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
-            new_x = FP(((new_x >> 8) + PLAYER_W) / TILE_SIZE * TILE_SIZE - PLAYER_W - 1);
+            long tile_r = (px + PLAYER_W) / TILE_SIZE;
+            new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
         }
     } else if (player.vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
             is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
-            new_x = FP((new_x >> 8) / TILE_SIZE * TILE_SIZE + TILE_SIZE);
+            long tile_l = px / TILE_SIZE + 1;
+            new_x = tile_l * TILE_SIZE * FP_ONE;
             player.vx = 0;
         }
     }
@@ -322,20 +344,23 @@ static void move_player_x(void) {
 }
 
 static void move_player_y(void) {
-    int new_y = player.y + player.vy;
+    long new_y = player.y + player.vy;
+    long py    = new_y >> 8;
     if (player.vy >= 0) {
-        int b = new_y + FP(PLAYER_H);
-        if (is_solid_px(player.x + FP(1),           b) ||
+        long b = new_y + FP(PLAYER_H);
+        if (is_solid_px(player.x + FP(1),            b) ||
             is_solid_px(player.x + FP(PLAYER_W - 2), b)) {
-            new_y = FP(((new_y >> 8) + PLAYER_H) / TILE_SIZE * TILE_SIZE - PLAYER_H);
+            long tile_b = (py + PLAYER_H) / TILE_SIZE;
+            new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
             player.vy = 0;
             player.on_ground = 1;
             player.double_jump_used = 0;
         }
     } else {
-        if (is_solid_px(player.x + FP(1),           new_y) ||
+        if (is_solid_px(player.x + FP(1),            new_y) ||
             is_solid_px(player.x + FP(PLAYER_W - 2), new_y)) {
-            new_y = FP((new_y >> 8) / TILE_SIZE * TILE_SIZE + TILE_SIZE);
+            long tile_t = py / TILE_SIZE + 1;
+            new_y = tile_t * TILE_SIZE * FP_ONE;
             player.vy = 0;
             player.jump_frames = 0;
         }
@@ -343,23 +368,23 @@ static void move_player_y(void) {
     player.y = new_y;
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Object collision
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 static void check_object_collisions(void) {
-    int px = player.x >> 8, py = player.y >> 8;
+    long px = player.x >> 8, py = player.y >> 8;
     unsigned char i;
     map_res_bank();
     for (i = 0; i < cur_level->obj_count; i++) {
         level_object *obj = &cur_objects[i];
-        int ox = (int)obj->x * TILE_SIZE, oy = (int)obj->y * TILE_SIZE;
+        long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
         if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
         if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
         switch (obj->type) {
             case OBJ_FINISH_FLAG: level_complete = 1; break;
             case OBJ_SPIKE:       player_died = 1; break;
             case OBJ_TRAMPOLINE:
-                player.vy = -(res_physics->jump_speed + FP(1.5));
+                player.vy = -((long)res_physics->jump_speed + FP(1.5));
                 player.jump_frames = 0; player.on_ground = 0; break;
             case OBJ_COIN:
                 if (!coin_collected[i]) coin_collected[i] = 1; break;
@@ -367,24 +392,22 @@ static void check_object_collisions(void) {
     }
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Camera
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 static void update_camera(void) {
-    int px = player.x >> 8;
-    int target = px - SCREEN_PX_W / 2;
-    int map_max = (int)cur_level->map_w * TILE_SIZE - SCREEN_PX_W;
+    long px = player.x >> 8;
+    long target = px - SCREEN_PX_W / 2;
+    long map_max = (long)cur_level->map_w * TILE_SIZE - SCREEN_PX_W;
     unsigned int prev_tile, cam_tile;
 
     if (target < 0) target = 0;
     if (target > map_max) target = map_max;
     camera_x = (unsigned int)target;
 
-    /* Sub-tile hardware scroll for smooth movement */
-    SMS_setBGScrollX((unsigned char)(256u - (camera_x & 7u)));
+    SMS_setBGScrollX((unsigned char)(256u - (camera_x % TILE_SIZE)));
 
-    /* Stream one new column per tile boundary crossed */
-    cam_tile  = camera_x   / TILE_SIZE;
+    cam_tile  = camera_x / TILE_SIZE;
     prev_tile = prev_cam_x / TILE_SIZE;
     if (cam_tile != prev_tile) {
         unsigned char map_col = (unsigned char)(cam_tile + SCREEN_TILES_W - 1);
@@ -393,9 +416,9 @@ static void update_camera(void) {
     prev_cam_x = camera_x;
 }
 
-/* ────────────────────────────────────────────────────────────
- * Animation + level load + death
- * ──────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+ * Animation, level load, death
+ * ──────────────────────────────────────────────────────────*/
 static void update_anim(void) {
     if (player.anim_timer) { player.anim_timer--; }
     else { player.anim_timer = 5; player.anim_frame = (player.anim_frame + 1) & 3; }
@@ -413,22 +436,23 @@ static void load_level(unsigned char n) {
     level_complete = player_died = 0;
     camera_x = prev_cam_x = 0;
 
-    player.x = FP(2 * TILE_SIZE); player.y = FP(10 * TILE_SIZE);
+    player.x  = FP(2 * TILE_SIZE);
+    player.y  = FP(4 * TILE_SIZE);   /* near top, gravity brings to ground */
     player.vx = player.vy = 0;
     player.on_ground = player.jump_frames = player.double_jump_used = 0;
     player.facing_left = player.anim_frame = player.anim_timer = 0;
 
     for (i = 0; i < cur_level->obj_count; i++) {
         if (cur_objects[i].type == OBJ_START_FLAG) {
-            player.x = FP((int)cur_objects[i].x * TILE_SIZE);
-            player.y = FP((int)cur_objects[i].y * TILE_SIZE - TILE_SIZE);
+            player.x = (long)cur_objects[i].x * TILE_SIZE * FP_ONE;
+            player.y = (long)(cur_objects[i].y - 1) * TILE_SIZE * FP_ONE;
             break;
         }
     }
 
     SMS_waitForVBlank();
     SMS_displayOff();
-    SMS_VRAMmemsetW(0x3800, 0, 0x700); /* clear nametable (0x700 words = 32x28) */
+    SMS_VRAMmemsetW(0x3800, 0, 0x700);
     draw_tilemap_full();
     SMS_displayOn();
 }
@@ -443,9 +467,9 @@ static void death_sequence(unsigned char n) {
     load_level(n);
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Game loop
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 static void gameplay_loop(void) {
     unsigned int joy = 0, joy_prev = 0, joy_pressed;
     unsigned char level_n = 0, total;
@@ -486,9 +510,9 @@ static void gameplay_loop(void) {
     }
 }
 
-/* ────────────────────────────────────────────────────────────
- * Title screen — always runs first, works even on bare ROM
- * ──────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+ * Title screen (works on bare ROM — no resource needed)
+ * ──────────────────────────────────────────────────────────*/
 static void title_screen(void) {
     unsigned int joy;
     SMS_waitForVBlank();
@@ -511,17 +535,19 @@ static void title_screen(void) {
     while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ──────────────────────────────────────────────────────────
  * Entry point
- * ──────────────────────────────────────────────────────────── */
+ * ──────────────────────────────────────────────────────────*/
 void main(void) {
-    SMS_useFirstHalfTilesforSprites(1);
+    /* Sprites use second-half tiles (256-511); BG tiles use first half (0-255).
+       Nametable tile 0 = blank. No sprite/BG tile conflict. */
+    SMS_useFirstHalfTilesforSprites(0);
     SMS_setSpriteMode(SPRITEMODE_TALL);
     SMS_setBackdropColor(0);
 
     while (1) {
         title_screen();
-        if (!has_resource()) continue;   /* bare ROM: loop back to title */
+        if (!has_resource()) continue;
         init_resources();
         SMS_waitForVBlank();
         SMS_displayOff();
@@ -533,7 +559,7 @@ void main(void) {
 }
 
 SMS_EMBED_SEGA_ROM_HEADER(9999, 0);
-SMS_EMBED_SDSC_HEADER(1, 1, 2025, 1, 1,
+SMS_EMBED_SDSC_HEADER(1, 2, 2025, 1, 1,
     "pocket-platformer-sms",
     "Pocket Platformer SMS Engine",
     "Generated by pocket-platformer-to-sms web exporter.");
