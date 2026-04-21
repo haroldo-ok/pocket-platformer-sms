@@ -241,9 +241,19 @@ const SmsExporter = (() => {
       }
     }
 
+    // Add TILE_edge as an extra tile (sentinel key -1).
+    // pocket-platformer draws TILE_edge for value 1 or 2 tiles on the
+    // outermost row/column of a level. We do the same in the SMS export.
+    const edgeSpriteObj = sprites['TILE_edge'];
+    const edgePixels = edgeSpriteObj
+      ? edgeSpriteObj.animation[0].sprite
+      : Array(8).fill(null).map(() => Array(8).fill('524f52'));
+    tileCache.set(-1, encodeTile4bpp(edgePixels, palette));
+    tileOrder.push(-1);
+
     const tileCount = tileOrder.length;
     const encoded = new Uint8Array(tileCount * BYTES_PER_TILE);
-    const indexMap = new Map(); // tileData value → 1-based VRAM tile index
+    const indexMap = new Map();
     let vramIdx = 1;
     let offset = 0;
     for (const tileIdx of tileOrder) {
@@ -252,16 +262,22 @@ const SmsExporter = (() => {
       offset += BYTES_PER_TILE;
       vramIdx++;
     }
+    const edgeVramIdx = indexMap.get(-1);
 
-    return { encoded, tileCount, indexMap };
+    return { encoded, tileCount, indexMap, edgeVramIdx };
   }
 
   // ─── Level serialiser ─────────────────────────────────────────────────────────
   // Returns Uint8Array for one level in columnar format
-  function encodeLevel(level, indexMap) {
+  function encodeLevel(level, indexMap, edgeVramIdx) {
     const tileData = level.tileData;
     const mapH = tileData.length;
     const mapW = tileData[0].length;
+
+    // Replicate pocket-platformer's edge-tile logic: tiles with value 1 or 2
+    // on the outermost row/column are drawn as TILE_edge in the editor.
+    const isEdgePos = (x, y) =>
+      x === 0 || y === 0 || x === mapW - 1 || y === mapH - 1;
 
     // Collect valid objects
     const objects = [];
@@ -294,7 +310,13 @@ const SmsExporter = (() => {
     for (let x = 0; x < mapW; x++) {
       for (let y = 0; y < mapH; y++) {
         const tileVal = tileData[y][x];
-        buf[off++] = tileVal === 0 ? 0 : clampByte(indexMap.get(tileVal) || 0);
+        if (tileVal === 0) {
+          buf[off++] = 0;
+        } else if ((tileVal === 1 || tileVal === 2) && isEdgePos(x, y)) {
+          buf[off++] = clampByte(edgeVramIdx || 0);
+        } else {
+          buf[off++] = clampByte(indexMap.get(tileVal) || 0);
+        }
       }
     }
 
@@ -362,13 +384,13 @@ const SmsExporter = (() => {
     const palette = buildPalette(allRows);
 
     // 3. Build BG tileset
-    const { encoded: bgTiles, tileCount, indexMap } = buildBgTileset(levels, sprites, palette);
+    const { encoded: bgTiles, tileCount, indexMap, edgeVramIdx } = buildBgTileset(levels, sprites, palette);
 
     // 4. Build sprite sheet
     const spriteSheet = buildSpriteSheet(sprites, palette);
 
     // 5. Encode each level
-    const encodedLevels = levels.map(l => encodeLevel(l, indexMap));
+    const encodedLevels = levels.map(l => encodeLevel(l, indexMap, edgeVramIdx));
 
     // 6. Encode physics
     const physicsBytes = encodePhysics(playerObject || {});
