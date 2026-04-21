@@ -200,9 +200,19 @@ const SmsExporter = (() => {
   // Returns { encoded: Uint8Array, tileCount: N }
   // Tiles are de-duplicated. Returns mapping: original tile index → VRAM tile index.
   function buildBgTileset(levels, sprites, palette) {
+    // Build a lookup from tile .name value → sprite object.
+    // SpritePixelArrays uses .name (e.g. 17) as the tileData value, but the
+    // JavaScript property key may differ (e.g. TILE_13 has .name = 17).
+    // We must look up by .name, not by property key.
+    const tileNameMap = new Map();
+    for (const key of Object.keys(sprites)) {
+      const s = sprites[key];
+      if (s && s.descriptiveName && typeof s.name === 'number') {
+        tileNameMap.set(s.name, s);
+      }
+    }
+
     // Collect all unique tileData values used across all levels
-    // tileData values: 0=empty, 1..N = tile types
-    // We map them to our palette-quantised tiles
     const tileCache = new Map(); // key: tileData value → encoded Uint8Array
     const tileOrder = [];        // ordered unique tile indices (excl. 0)
 
@@ -218,16 +228,15 @@ const SmsExporter = (() => {
       }
     }
 
-    // Encode each unique tile
+    // Encode each unique tile using .name lookup
     for (const tileIdx of tileOrder) {
-      const spriteKey = `TILE_${tileIdx}`;
-      const spriteObj = sprites[spriteKey];
+      const spriteObj = tileNameMap.get(tileIdx);
       if (spriteObj) {
         const frame = spriteObj.animation[0];
         tileCache.set(tileIdx, encodeTile4bpp(frame.sprite, palette));
       } else {
-        // Solid colour fallback
-        const fallback = Array(8).fill(Array(8).fill('888888'));
+        // Solid colour fallback for unknown tile values
+        const fallback = Array(8).fill(null).map(() => Array(8).fill('888888'));
         tileCache.set(tileIdx, encodeTile4bpp(fallback, palette));
       }
     }
