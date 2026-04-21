@@ -78,7 +78,7 @@
 
 /* ── Player collision box ─── */
 #define PLAYER_W   6
-#define PLAYER_H   15
+#define PLAYER_H   16
 #define MAX_OBJECTS 32
 
 /* ──────────────────────────────────────────────────────────
