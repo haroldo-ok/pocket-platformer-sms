@@ -154,46 +154,23 @@ const SmsExporter = (() => {
   }
 
   // ─── Sprite sheet builder ─────────────────────────────────────────────────────
-  // Returns encoded tiles for all object/player sprites in a fixed order
-  // matching the VRAM layout expected by pocket_platformer.c
-  // Tile order (each 8×8 tile = 32 bytes, 8×16 sprites use 2 tiles):
-  //   0-1   start flag  (top/bottom)
-  //   2-3   finish flag (top/bottom)
-  //   4-5   spike       (top/bottom)
-  //   6-7   trampoline  (top/bottom)
-  //   8-9   coin        (top/bottom)
-  //   10-11 player idle (top/bottom)
-  //   12-13 player walk frame 0 (top/bottom)
-  //   14-15 player walk frame 1 (top/bottom)
-  //   16-17 player jump (top/bottom)
+  // 9 sprites × 1 tile each (8×8, SPRITEMODE_NORMAL). Loaded at VRAM 256.
+  //   Tile 256=start flag, 257=finish flag, 258=spike, 259=trampoline, 260=coin
+  //   Tile 261=player idle, 262=player walk0, 263=player walk1, 264=player jump
   function buildSpriteSheet(sprites, palette) {
     const tiles = [];
 
-    function encodeSprite16(spriteObj, frameIdx) {
-      // An 8×16 sprite is stored as two 8×8 tiles (top half, bottom half)
+    function encodeSprite8(spriteObj, frameIdx) {
       const anim = spriteObj.animation || spriteObj;
       const frame = Array.isArray(anim) ? (anim[frameIdx] || anim[0]) : anim;
-      const rows = frame.sprite || frame;
-
-      // Top 8 rows
-      const top = rows.slice(0, 8);
-      // Bottom 8 rows (pad with transparent if sprite is only 8 tall)
-      const bot = rows.length > 8 ? rows.slice(8, 16) :
-        Array(8).fill(Array(8).fill('transp'));
-
-      tiles.push(encodeTile4bpp(top, palette));
-      tiles.push(encodeTile4bpp(bot, palette));
+      const rows = (frame.sprite || frame).slice(0, 8);
+      tiles.push(encodeTile4bpp(rows, palette));
     }
 
-    // Fallback blank sprite
-    const blank8 = Array(8).fill(Array(8).fill('transp'));
-    function encodeBlank() {
-      tiles.push(encodeTile4bpp(blank8, palette));
-      tiles.push(encodeTile4bpp(blank8, palette));
-    }
+    const blank8 = Array(8).fill(null).map(() => Array(8).fill('transp'));
+    const encodeBlank = () => tiles.push(encodeTile4bpp(blank8, palette));
 
     const get = name => sprites[name] || null;
-
     const startFlag  = get('START_FLAG_SPRITE');
     const finishFlag = get('FINISH_FLAG_SPRITE');
     const spikeS     = get('SPIKE_SPRITE');
@@ -203,25 +180,19 @@ const SmsExporter = (() => {
     const pWalk      = get('PLAYER_WALK_SPRITE');
     const pJump      = get('PLAYER_JUMP_SPRITE');
 
-    startFlag  ? encodeSprite16(startFlag,  0) : encodeBlank();
-    finishFlag ? encodeSprite16(finishFlag, 0) : encodeBlank();
-    spikeS     ? encodeSprite16(spikeS,     0) : encodeBlank();
-    trampS     ? encodeSprite16(trampS,     0) : encodeBlank();
-    coinS      ? encodeSprite16(coinS,      0) : encodeBlank();
-    pIdle      ? encodeSprite16(pIdle,      0) : encodeBlank();
-    // Walk: 2 frames
-    pWalk      ? encodeSprite16(pWalk,      0) : encodeBlank();
-    pWalk      ? encodeSprite16(pWalk,      1) : encodeBlank();
-    pJump      ? encodeSprite16(pJump,      0) : encodeBlank();
+    startFlag  ? encodeSprite8(startFlag,  0) : encodeBlank();
+    finishFlag ? encodeSprite8(finishFlag, 0) : encodeBlank();
+    spikeS     ? encodeSprite8(spikeS,     0) : encodeBlank();
+    trampS     ? encodeSprite8(trampS,     0) : encodeBlank();
+    coinS      ? encodeSprite8(coinS,      0) : encodeBlank();
+    pIdle      ? encodeSprite8(pIdle,      0) : encodeBlank();
+    pWalk      ? encodeSprite8(pWalk,      0) : encodeBlank();
+    pWalk      ? encodeSprite8(pWalk,      1) : encodeBlank();
+    pJump      ? encodeSprite8(pJump,      0) : encodeBlank();
 
-    // Merge into single Uint8Array
-    const total = tiles.length * BYTES_PER_TILE;
-    const out = new Uint8Array(total);
+    const out = new Uint8Array(tiles.length * BYTES_PER_TILE);
     let offset = 0;
-    for (const t of tiles) {
-      out.set(t, offset);
-      offset += BYTES_PER_TILE;
-    }
+    for (const t of tiles) { out.set(t, offset); offset += BYTES_PER_TILE; }
     return out;
   }
 
@@ -229,9 +200,19 @@ const SmsExporter = (() => {
   // Returns { encoded: Uint8Array, tileCount: N }
   // Tiles are de-duplicated. Returns mapping: original tile index → VRAM tile index.
   function buildBgTileset(levels, sprites, palette) {
+    // Build a lookup from tile .name value → sprite object.
+    // SpritePixelArrays uses .name (e.g. 17) as the tileData value, but the
+    // JavaScript property key may differ (e.g. TILE_13 has .name = 17).
+    // We must look up by .name, not by property key.
+    const tileNameMap = new Map();
+    for (const key of Object.keys(sprites)) {
+      const s = sprites[key];
+      if (s && s.descriptiveName && typeof s.name === 'number') {
+        tileNameMap.set(s.name, s);
+      }
+    }
+
     // Collect all unique tileData values used across all levels
-    // tileData values: 0=empty, 1..N = tile types
-    // We map them to our palette-quantised tiles
     const tileCache = new Map(); // key: tileData value → encoded Uint8Array
     const tileOrder = [];        // ordered unique tile indices (excl. 0)
 
@@ -247,16 +228,15 @@ const SmsExporter = (() => {
       }
     }
 
-    // Encode each unique tile
+    // Encode each unique tile using .name lookup
     for (const tileIdx of tileOrder) {
-      const spriteKey = `TILE_${tileIdx}`;
-      const spriteObj = sprites[spriteKey];
+      const spriteObj = tileNameMap.get(tileIdx);
       if (spriteObj) {
         const frame = spriteObj.animation[0];
         tileCache.set(tileIdx, encodeTile4bpp(frame.sprite, palette));
       } else {
-        // Solid colour fallback
-        const fallback = Array(8).fill(Array(8).fill('888888'));
+        // Solid colour fallback for unknown tile values
+        const fallback = Array(8).fill(null).map(() => Array(8).fill('888888'));
         tileCache.set(tileIdx, encodeTile4bpp(fallback, palette));
       }
     }
@@ -350,9 +330,12 @@ const SmsExporter = (() => {
     writeInt16(toFP(playerObj.groundFriction    || 0.65));
     writeInt16(toFP(playerObj.air_acceleration  || 0.8));
     writeInt16(toFP(playerObj.air_friction      || 0.75));
-    writeInt16(toFP(playerObj.jumpSpeed         || 0.44) * 8); // scale up for Z80
+    // Peak jump velocity = jumpSpeed * maxJumpFrames (pocket-platformer's ramp formula)
+    const jumpPeak = (playerObj.jumpSpeed || 0.44) * (playerObj.maxJumpFrames || 18);
+    writeInt16(toFP(jumpPeak));
     writeUint8(playerObj.maxJumpFrames          || 18);
-    writeInt16(toFP(playerObj.maxFallSpeed      || 16));
+    // maxFallSpeed capped to 7px/frame in C engine (tunneling prevention)
+    writeInt16(toFP(Math.min(playerObj.maxFallSpeed || 16, 7)));
     writeUint8(playerObj.doubleJumpChecked      ? 1 : 0);
     writeUint8(playerObj.wallJumpChecked        ? 1 : 0);
 
@@ -474,6 +457,26 @@ const SmsExporter = (() => {
         })(),
       };
 
+      // Filter out pocket-platformer's default empty wrapper levels.
+      // The editor initialises with [empty, userLevel, empty]. A level is considered
+      // "empty" if all its solid tiles use only value 1 (border tile) with no objects.
+      // We keep a level if it has any interior tile (value != 1) OR any level objects.
+      const isEmptyBorderLevel = (lvl) => {
+        if (!lvl || !lvl.tileData) return true;
+        if (lvl.levelObjects && lvl.levelObjects.length > 0) return false;
+        for (const row of lvl.tileData)
+          for (const v of row)
+            if (v !== 0 && v !== 1) return false;
+        return true;
+      };
+
+      const filteredLevels = gameData.levels.filter(lvl => !isEmptyBorderLevel(lvl));
+      if (filteredLevels.length === 0) {
+        throw new Error('No non-empty levels found. Please design at least one level before exporting.');
+      }
+      gameData.levels = filteredLevels;
+
+      console.log(`[SmsExporter] Exporting ${filteredLevels.length} level(s)`);
       const resourceBlob = buildResourceBlob(gameData);
       const baseRomBytes = b64ToBytes(SmsExporter.BASE_ROM_B64);
       const finalRom = assembleRom(baseRomBytes, resourceBlob);
@@ -498,8 +501,8 @@ const SmsExporter = (() => {
 // Built with SDCC + devkitSMS. Contains engine code only; game data is appended at runtime.
 // To rebuild: cd sms-engine && make && make update-js
 SmsExporter.BASE_ROM_B64 =
-  "8+1WMfDfGBkOv/Ptae1h+8kAAAAAAAAAfdO+fCMr077JIQAAIvz/IQECIv7/GAw6/v/JMv7/yQDDkiUh" +
-  "AMB+BgBwEQHAAVUB7bAyisDNPijN6CP7zaMddhj9ZGV2a2l0U01TAAAAw9El7aPto+2j7aPto+2j7aPt" +
+  "8+1WMfDfGBkOv/Ptae1h+8kAAAAAAAAAfdO+fCMr077JIQAAIvz/IQECIv7/GAw6/v/JMv7/yQDDmiQh" +
+  "AMB+BgBwEQHAAVUB7bAyisDNRifN8CL7zascdhj9ZGV2a2l0U01TAAAAw9kk7aPto+2j7aPto+2j7aPt" +
   "o+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPt" +
   "o+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPt" +
   "o+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPto+2j7aPt" +
@@ -521,7 +524,7 @@ SmsExporter.BASE_ROM_B64 =
   "AABmZmY8GAAAAGNra382AAAAZjwYPGYAAABmZmY+BjwAAH4MGDB+AAwYGHAYGAwAGBgYGBgYGAAwGBgO" +
   "GBgwADFrRgAAAAAA///////////d5d0hAADdOfVNRO1TBMDdfggyBsDdfgYyAMB71sB6Fz8f3oA+ABfd" +
   "d/56B+YB3Xf/OgDAtyhy3cv/RiBY3X7+tyhS7UMCwN1+BDIBwDoBwLcoQjoDwMt/ICI6A8DugNaBMBkq" +
-  "AsBVHgDdbggmAHu1X3q0V8UqBMDNpSbBIQLAfsYIdzACIzTdfgjGAt13CCEBwDUYuCEEwH7GEHcwAiM0" +
+  "AsBVHgDdbggmAHu1X3q0V8UqBMDNrSXBIQLAfsYIdzACIzTdfgjGAt13CCEBwDUYuCEEwH7GEHcwAiM0" +
   "/SEAwP01ABiI3fnd4eHx8TPp3eXdIQAA3Tn1IgfANgEqB8AjcyNyKgfAIyMj3X4EdyPdfgV3KgfAAQ8A" +
   "CTYBKgfAARAACd1eBnMqB8ABEQAJ3X4IdyoHwAESAAndfgaHh4d3KgfAARMACd1WCHqHh4eHdyoHwAEU" +
   "AAk2ACoHwAEVAAk2AioHwAEWAAndfgp3KgfAARcACd1+C3cqB8ABGAAJNgDtSwfAIRkACU1EeofFZy4A" +
@@ -544,132 +547,132 @@ SmsExporter.BASE_ROM_B64 =
   "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
-  "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
+  "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
-  "+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
+  "+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" +
+  "JsAYAwwYgs0hJCFAAc1CIyEAB+URAAAmOM1gJc1kDSFAAc0tI9353eHJTwYAxc0hJMHLQCgFIT8AGAMh" +
+  "AADFzW4jwQR41gg45MUuAM1uI8F5w+QZ3eXdIQAA3Tn19SEAAOPdNv4AIf//NgL9KhTA/X4E3Xf/r83k" +
+  "Gc0hJMHFxc0uJMEzM9V5L094L0fdfvyhX91+/aBX4eXNExDN2A8hMMA2AM3FEs0bFc1hF83EGc3PGc2n" +
+  "Jc0NDs3UDs0+Js3YJTpbwLcoCN1+/s0eGxiqOlrAtyikDjzFzSEkwQ0g+N1O/gYAA91e/xYAeZN4muLn" +
+  "G+6A8vIb3X7+PE8HGAIOAN1x/nnN5BnDbRvNISQhQAHNQiMhAEDlEQAAZc1gJc1zJc2HJS4/PgHN2yMh" +
+  "AAHlIQAD5RFgASEAAs3iJCFAAc2bJSFAAc0tIyEIes8hcRzNLSYhhnrPIYMczS0mIYh7zyGaHM0tJs0h" +
+  "JM0uJHvmMCj1zSEkzS4ke+YwIPXJUE9DS0VUIFBMQVRGT1JNRVIAZm9yIFNlZ2EgTWFzdGVyIFN5c3Rl" +
+  "bQBQcmVzcyAxIHRvIHN0YXJ0AC4AzXgjLgDNjiMuAM1uI83+G83aCrco980AC80hJCFAAc1CIyEAQOUR" +
+  "AABlzWAlzf0MIUABzS0jzUgbGNJwb2NrZXQtcGxhdGZvcm1lci1zbXMAUG9ja2V0IFBsYXRmb3JtZXIg" +
+  "U01TIEVuZ2luZQBHZW5lcmF0ZWQgYnkgcG9ja2V0LXBsYXRmb3JtZXItdG8tc21zIHdlYiBleHBvcnRl" +
+  "ci4AOmLAt8g+n9N/Pr/Tfzp3wLcgBD7f0386eMC3IAQ+/9N/IWLANgDJOmLAt8A6cMD2kNN/OnHA9rDT" +
+  "fzp3wLcgFzp0wOYP9sDTfzp1wOY/0386csD20NN/OnjAtyAQOnbA5g/24NN/OnPA9vDTfyFiwDYByc1P" +
+  "HSFqwDYB0cHF1e1DY8DtQ2XA7UNnwCFpwDYAIW3ANgAha8A2nyFiwDYBySFqwDYAycHh5cXlzcId8SFq" +
+  "wDYAyf0hYsD9bgDJPp/Tfz6/038+39N/Pv/Tf8nd5d0hAADdOfX9IWzA/X4A3Xf+r913//1OADpiwLco" +
+  "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" +
@@ -1043,5 +1046,5 @@ SmsExporter.BASE_ROM_B64 =
   "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
   "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABHZW5lcmF0" +
   "ZWQgYnkgcG9ja2V0LXBsYXRmb3JtZXItdG8tc21zIHdlYiBleHBvcnRlci4AUG9ja2V0IFBsYXRmb3Jt" +
-  "ZXIgU01TIEVuZ2luZQBwb2NrZXQtcGxhdGZvcm1lci1zbXMAU0RTQwECAQElIMp/rX95f1RNUiBTRUdB" +
-  "//80+5mZAEw=";
+  "ZXIgU01TIEVuZ2luZQBwb2NrZXQtcGxhdGZvcm1lci1zbXMAU0RTQwEDAQElIMp/rX95f1RNUiBTRUdB" +
+  "//85ZJmZAEw=";

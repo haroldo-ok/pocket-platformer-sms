@@ -1,28 +1,23 @@
 /*
- * Pocket Platformer - Sega Master System Engine  v1.2
+ * Pocket Platformer - Sega Master System Engine  v1.3
  *
- * FIX LOG v1.2:
- *   - BUG: player fell through floor.
- *     CAUSE: player x/y/vx/vy stored as 'int' (16-bit on SDCC Z80).
- *     A level 18 tiles tall means ground at y=17*8=136px. In 8.8 fixed-point
- *     that's 136*256=34816, which overflows int16 (max 32767). The coordinate
- *     wrapped negative, tile lookup returned 0 (not solid), player never landed.
- *     FIX: changed x, y, vx, vy to 'long' (32-bit) throughout.
+ * FIX LOG v1.3:
+ *   - BUG: player looked like it was hovering 8px above floor.
+ *     CAUSE: SPRITEMODE_TALL was set, which doubles the sprite height to 16px
+ *     and reads from a consecutive tile pair. But pocket-platformer's player
+ *     art is 8x8 pixels (one tile). The bottom tile was blank, so the player
+ *     appeared as an 8px sprite with 8px of blank below it, floating above ground.
+ *     FIX: removed SPRITEMODE_TALL. Now using normal 8x8 sprites.
+ *          PLAYER_H = 8 (matches actual sprite size).
+ *          Sprite sheet uses 1 tile per sprite (9 tiles total, not 18).
  *
- *   - BUG: background filled with start-flag sprites.
- *     CAUSE: SMS_useFirstHalfTilesforSprites(1) means the sprite hardware reads
- *     tiles 0-255. We also stored blank BG as nametable tile 0, which the BG
- *     renderer correctly draws as tile 0 -- but that same tile 0 is also the
- *     start-flag sprite loaded in the sprite sheet. Result: every "empty" BG
- *     cell showed the start-flag graphic.
- *     FIX: SMS_useFirstHalfTilesforSprites(0) → sprite hardware uses tiles 256-511.
- *     BG tiles stay at 0-255. Nametable 0 = genuinely blank. Sprite sheet
- *     loads at VRAM tile 256. Sprite tile constants updated to 256+.
+ * v1.2 fixes (previous):
+ *   - int16 overflow on y coords → changed x/y/vx/vy to long (32-bit).
+ *   - Nametable tile 0 = blank (SMS_useFirstHalfTilesforSprites(0),
+ *     sprite tiles at 256+, BG tiles at 1+).
  *
- * v1.1 fixes (previous):
- *   - print_str() → SMS_printatXY() for correct font rendering.
- *   - Title screen before init_resources(); has_resource() signature check.
- *   - draw_tilemap_full() streams rows (setNextTileatXY + loop) not per-tile addr.
+ * v1.1 fixes:
+ *   - SMS_setBGScrollX formula, SMS_print(), title before init_resources().
  */
 
 #include <stdlib.h>
@@ -46,20 +41,20 @@
 
 /* ── VRAM layout ────────────────────────────────────────── */
 /* SMS_useFirstHalfTilesforSprites(0): sprite engine uses tiles 256-511.
-   BG tiles occupy 0-255. Nametable entry 0 = blank tile 0. No conflict. */
-#define VRAM_BG_BLANK         0    /* blank BG tile                     */
-#define VRAM_BG_BASE          1    /* first non-blank BG tile            */
-#define VRAM_SPR_BASE       256    /* sprite sheet starts here           */
-#define VRAM_SPR_START_FLAG 256    /* top tile of 8x16 sprite            */
-#define VRAM_SPR_FINISH_FLAG 258
-#define VRAM_SPR_SPIKE       260
-#define VRAM_SPR_TRAMPOLINE  262
-#define VRAM_SPR_COIN        264
-#define VRAM_SPR_PLAYER_IDLE 266
-#define VRAM_SPR_PLAYER_WALK0 268
-#define VRAM_SPR_PLAYER_WALK1 270
-#define VRAM_SPR_PLAYER_JUMP  272
-#define VRAM_TILE_FONT        352  /* 1bpp font                          */
+   BG tiles at 0-255. Tile 0 = blank (nametable default). No conflict.
+   Sprite sheet: 9 sprites × 1 tile each (8x8, SPRITEMODE_NORMAL). */
+#define VRAM_BG_BLANK         0
+#define VRAM_BG_BASE          1    /* BG tiles start at VRAM tile 1 */
+#define VRAM_SPR_START_FLAG 256
+#define VRAM_SPR_FINISH_FLAG 257
+#define VRAM_SPR_SPIKE       258
+#define VRAM_SPR_TRAMPOLINE  259
+#define VRAM_SPR_COIN        260
+#define VRAM_SPR_PLAYER_IDLE 261
+#define VRAM_SPR_PLAYER_WALK0 262
+#define VRAM_SPR_PLAYER_WALK1 263
+#define VRAM_SPR_PLAYER_JUMP  264
+#define VRAM_TILE_FONT        352
 
 /* ── Object types (must match SmsExporter.js) ───────────── */
 #define OBJ_START_FLAG  1
@@ -68,21 +63,21 @@
 #define OBJ_TRAMPOLINE  4
 #define OBJ_COIN        5
 
-/* ── Fixed-point 8.8 using 'long' (32-bit) to avoid overflow ── */
-/* At 8.8 scale: max pixel = 32767/256 = 127 with int16.
-   A level 18 tiles tall = 144px = 36864 in 8.8 → needs 32-bit.  */
+/* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
+/* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
+#define MAX_VY  ((TILE_SIZE - 1) * FP_ONE)
 #define FP_ONE      256L
 #define FP(x)       ((long)((x) * FP_ONE))
 #define FP_MUL(a,b) (((long)(a) * (long)(b)) >> 8)
 #define GRAVITY     FP(0.5)
 
-/* ── Player collision box ─── */
+/* ── Player collision box (8x8 sprite, slightly narrower) ── */
 #define PLAYER_W   6
-#define PLAYER_H   15
+#define PLAYER_H   8
 #define MAX_OBJECTS 32
 
 /* ──────────────────────────────────────────────────────────
- * Structs  (physics uses long; map/object stay as chars)
+ * Structs
  * ──────────────────────────────────────────────────────────*/
 typedef struct {
     unsigned char signature[4];
@@ -91,7 +86,7 @@ typedef struct {
 } resource_header;
 
 typedef struct {
-    int  max_speed;        /* int16 8.8 fixed — fine, max ~3px/frame */
+    int  max_speed;
     int  ground_accel;
     int  ground_friction;
     int  air_accel;
@@ -112,7 +107,7 @@ typedef struct {
 } level_object;
 
 typedef struct {
-    long          x, y, vx, vy;   /* 32-bit: avoids int16 overflow    */
+    long          x, y, vx, vy;
     unsigned char on_ground;
     unsigned char jump_frames;
     unsigned char facing_left;
@@ -154,8 +149,9 @@ static void init_resources(void) {
     res_physics = (physics_config  *)(RESOURCE_BASE_ADDR + sizeof(resource_header));
     res_palette = (unsigned char   *)res_physics + sizeof(physics_config);
     res_tileset = res_palette + 16;
+    /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 9u * 2u * 32u);
+    res_levels  = (level_header *)(res_sprites + 9u * 32u);
 }
 
 static level_header *get_level(unsigned char n) {
@@ -179,12 +175,11 @@ static unsigned char get_tile(unsigned char tx, unsigned char ty) {
     return cur_map[(unsigned int)tx * cur_level->map_h + ty];
 }
 
-/* fp coords are 'long' 8.8; extract tile coords safely */
 static unsigned char is_solid_px(long fpx, long fpy) {
-    unsigned char tx = (unsigned char)((fpx >> 8) / TILE_SIZE);
-    unsigned char ty = (unsigned char)((fpy >> 8) / TILE_SIZE);
-    if ((fpx >> 8) < 0 || (fpy >> 8) < 0) return 1; /* treat OOB as solid */
-    return get_tile(tx, ty) != 0;
+    long px = fpx >> 8, py = fpy >> 8;
+    if (px < 0 || py < 0) return 1;
+    return get_tile((unsigned char)(px / TILE_SIZE),
+                    (unsigned char)(py / TILE_SIZE)) != 0;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -197,16 +192,15 @@ static void load_graphics(void) {
     SMS_setSpritePaletteColor(0, 0);
     for (i = 1; i < 16; i++)
         SMS_setSpritePaletteColor(i, res_palette[i]);
-    /* BG tiles at 1..N (tile 0 stays blank) */
+    /* BG tiles at VRAM 1..N */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
-    /* Sprite sheet at 256..273 (second half, sprite engine uses 256+) */
-    SMS_loadTiles(res_sprites, VRAM_SPR_BASE, 9u * 2u * 32u);
+    /* Sprite sheet at VRAM 256..264 (9 × 8x8 tiles) */
+    SMS_loadTiles(res_sprites, 256u, 9u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
 
-/* Row-streaming nametable write */
 static void draw_tilemap_full(void) {
     unsigned char x, y;
     map_res_bank();
@@ -214,8 +208,6 @@ static void draw_tilemap_full(void) {
         SMS_setNextTileatXY(0, y);
         for (x = 0; x < SCREEN_TILES_W; x++) {
             unsigned char t = (y < cur_level->map_h) ? get_tile(x, y) : 0;
-            /* t==0 → nametable 0 (blank tile 0 in VRAM)
-               t >0 → nametable VRAM_BG_BASE + t - 1 (tiles packed from 1) */
             SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
         }
     }
@@ -232,9 +224,9 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
 }
 
 /* ──────────────────────────────────────────────────────────
- * Sprite draw
+ * Sprite draw  (8x8 normal sprites)
  * ──────────────────────────────────────────────────────────*/
-static unsigned int obj_base_tile(unsigned char type) {
+static unsigned int obj_sprite_tile(unsigned char type) {
     switch (type) {
         case OBJ_FINISH_FLAG: return VRAM_SPR_FINISH_FLAG;
         case OBJ_SPIKE:       return VRAM_SPR_SPIKE;
@@ -257,7 +249,7 @@ static void draw_objects(void) {
         if (sx < -8 || sx > SCREEN_PX_W) continue;
         if (sy < 0  || sy > SCREEN_PX_H) continue;
         SMS_addSprite((unsigned char)sx, (unsigned char)sy,
-                      (unsigned char)obj_base_tile(obj->type));
+                      (unsigned char)obj_sprite_tile(obj->type));
     }
 }
 
@@ -272,17 +264,17 @@ static void draw_player(void) {
         tile = (player.anim_frame & 2) ? VRAM_SPR_PLAYER_WALK1 : VRAM_SPR_PLAYER_WALK0;
     else
         tile = VRAM_SPR_PLAYER_IDLE;
-    SMS_addSprite((unsigned char)sx, (unsigned char)sy, tile);
+    SMS_addSprite((unsigned char)sx, (unsigned char)sy, (unsigned char)tile);
 }
 
 /* ──────────────────────────────────────────────────────────
- * Physics  (all positions/velocities in 'long' 8.8 FP)
+ * Physics
  * ──────────────────────────────────────────────────────────*/
 static void apply_gravity(void) {
     if (!player.on_ground) {
         player.vy += GRAVITY;
-        if (player.vy > (long)res_physics->max_fall_speed)
-            player.vy = (long)res_physics->max_fall_speed;
+        if (player.vy > MAX_VY)
+            player.vy = MAX_VY;
     }
 }
 
@@ -396,28 +388,13 @@ static void check_object_collisions(void) {
  * Camera
  * ──────────────────────────────────────────────────────────*/
 static void update_camera(void) {
-    long px = player.x >> 8;
-    long target = px - SCREEN_PX_W / 2;
-    long map_max = (long)cur_level->map_w * TILE_SIZE - SCREEN_PX_W;
-    unsigned int prev_tile, cam_tile;
-
-    if (target < 0) target = 0;
-    if (target > map_max) target = map_max;
-    camera_x = (unsigned int)target;
-
-    SMS_setBGScrollX((unsigned char)(camera_x & 0xFF));
-
-    cam_tile  = camera_x / TILE_SIZE;
-    prev_tile = prev_cam_x / TILE_SIZE;
-    if (cam_tile != prev_tile) {
-        unsigned char map_col = (unsigned char)(cam_tile + SCREEN_TILES_W - 1);
-        draw_tile_column(map_col % SCREEN_TILES_W, map_col);
-    }
-    prev_cam_x = camera_x;
+    /* Scrolling temporarily disabled - camera locked at x=0. */
+    camera_x = 0;
+    SMS_setBGScrollX(0);
 }
 
 /* ──────────────────────────────────────────────────────────
- * Animation, level load, death
+ * Animation, level, death
  * ──────────────────────────────────────────────────────────*/
 static void update_anim(void) {
     if (player.anim_timer) { player.anim_timer--; }
@@ -436,8 +413,9 @@ static void load_level(unsigned char n) {
     level_complete = player_died = 0;
     camera_x = prev_cam_x = 0;
 
+    /* Default spawn in case no start flag found */
     player.x  = FP(2 * TILE_SIZE);
-    player.y  = FP(4 * TILE_SIZE);   /* near top, gravity brings to ground */
+    player.y  = FP(4 * TILE_SIZE);
     player.vx = player.vy = 0;
     player.on_ground = player.jump_frames = player.double_jump_used = 0;
     player.facing_left = player.anim_frame = player.anim_timer = 0;
@@ -445,6 +423,7 @@ static void load_level(unsigned char n) {
     for (i = 0; i < cur_level->obj_count; i++) {
         if (cur_objects[i].type == OBJ_START_FLAG) {
             player.x = (long)cur_objects[i].x * TILE_SIZE * FP_ONE;
+            /* Spawn one tile above the flag position */
             player.y = (long)(cur_objects[i].y - 1) * TILE_SIZE * FP_ONE;
             break;
         }
@@ -511,7 +490,7 @@ static void gameplay_loop(void) {
 }
 
 /* ──────────────────────────────────────────────────────────
- * Title screen (works on bare ROM — no resource needed)
+ * Title screen
  * ──────────────────────────────────────────────────────────*/
 static void title_screen(void) {
     unsigned int joy;
@@ -524,11 +503,9 @@ static void title_screen(void) {
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
     SMS_displayOn();
-
     SMS_printatXY(4,  8, "POCKET PLATFORMER");
     SMS_printatXY(3, 10, "for Sega Master System");
     SMS_printatXY(4, 14, "Press 1 to start");
-
     do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
     while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
     do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
@@ -539,10 +516,9 @@ static void title_screen(void) {
  * Entry point
  * ──────────────────────────────────────────────────────────*/
 void main(void) {
-    /* Sprites use second-half tiles (256-511); BG tiles use first half (0-255).
-       Nametable tile 0 = blank. No sprite/BG tile conflict. */
+    /* 8x8 normal sprites; sprite engine uses tiles 256-511 */
     SMS_useFirstHalfTilesforSprites(0);
-    SMS_setSpriteMode(SPRITEMODE_TALL);
+    SMS_setSpriteMode(SPRITEMODE_NORMAL);
     SMS_setBackdropColor(0);
 
     while (1) {
@@ -559,7 +535,7 @@ void main(void) {
 }
 
 SMS_EMBED_SEGA_ROM_HEADER(9999, 0);
-SMS_EMBED_SDSC_HEADER(1, 2, 2025, 1, 1,
+SMS_EMBED_SDSC_HEADER(1, 3, 2025, 1, 1,
     "pocket-platformer-sms",
     "Pocket Platformer SMS Engine",
     "Generated by pocket-platformer-to-sms web exporter.");
