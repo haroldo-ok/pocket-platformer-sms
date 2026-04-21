@@ -457,20 +457,26 @@ const SmsExporter = (() => {
         })(),
       };
 
-      // DEBUG: show what level data we're actually exporting
-      {
-        const lvl = gameData.levels[0];
-        const nonZero = lvl ? lvl.tileData.flat().filter(v => v !== 0).length : 0;
-        const objs = lvl ? lvl.levelObjects.length : 0;
-        const allVals = lvl ? [...new Set(lvl.tileData.flat().filter(v=>v))].sort((a,b)=>a-b) : [];
-        console.log(`[SmsExporter] Exporting ${gameData.levels.length} level(s)`);
-        console.log(`[SmsExporter] Level 0: ${lvl?.tileData[0]?.length}w x ${lvl?.tileData?.length}h, ${nonZero} solid tiles, ${objs} objects, tile values: [${allVals}]`);
-        if (gameData.levels.length > 1) {
-          const lvl1 = gameData.levels[1];
-          const nz1 = lvl1 ? lvl1.tileData.flat().filter(v=>v!==0).length : 0;
-          console.log(`[SmsExporter] Level 1: ${nz1} solid tiles, ${lvl1?.levelObjects?.length} objects`);
-        }
+      // Filter out pocket-platformer's default empty wrapper levels.
+      // The editor initialises with [empty, userLevel, empty]. A level is considered
+      // "empty" if all its solid tiles use only value 1 (border tile) with no objects.
+      // We keep a level if it has any interior tile (value != 1) OR any level objects.
+      const isEmptyBorderLevel = (lvl) => {
+        if (!lvl || !lvl.tileData) return true;
+        if (lvl.levelObjects && lvl.levelObjects.length > 0) return false;
+        for (const row of lvl.tileData)
+          for (const v of row)
+            if (v !== 0 && v !== 1) return false;
+        return true;
+      };
+
+      const filteredLevels = gameData.levels.filter(lvl => !isEmptyBorderLevel(lvl));
+      if (filteredLevels.length === 0) {
+        throw new Error('No non-empty levels found. Please design at least one level before exporting.');
       }
+      gameData.levels = filteredLevels;
+
+      console.log(`[SmsExporter] Exporting ${filteredLevels.length} level(s)`);
       const resourceBlob = buildResourceBlob(gameData);
       const baseRomBytes = b64ToBytes(SmsExporter.BASE_ROM_B64);
       const finalRom = assembleRom(baseRomBytes, resourceBlob);
