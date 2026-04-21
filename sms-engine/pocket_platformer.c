@@ -388,24 +388,9 @@ static void check_object_collisions(void) {
  * Camera
  * ──────────────────────────────────────────────────────────*/
 static void update_camera(void) {
-    long px = player.x >> 8;
-    long target = px - SCREEN_PX_W / 2;
-    long map_max = (long)cur_level->map_w * TILE_SIZE - SCREEN_PX_W;
-    unsigned int prev_tile, cam_tile;
-
-    if (target < 0) target = 0;
-    if (target > map_max) target = map_max;
-    camera_x = (unsigned int)target;
-
-    SMS_setBGScrollX((unsigned char)(camera_x & 0xFF));
-
-    cam_tile  = camera_x / TILE_SIZE;
-    prev_tile = prev_cam_x / TILE_SIZE;
-    if (cam_tile != prev_tile) {
-        unsigned char map_col = (unsigned char)(cam_tile + SCREEN_TILES_W - 1);
-        draw_tile_column(map_col % SCREEN_TILES_W, map_col);
-    }
-    prev_cam_x = camera_x;
+    /* Scrolling temporarily disabled - camera locked at x=0. */
+    camera_x = 0;
+    SMS_setBGScrollX(0);
 }
 
 /* ──────────────────────────────────────────────────────────
