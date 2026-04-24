@@ -49,8 +49,8 @@
 #define VRAM_SPR_FINISH_FLAG 257
 #define VRAM_SPR_SPIKE       258
 #define VRAM_SPR_TRAMPOLINE  259
-#define VRAM_SPR_COIN        260
-#define VRAM_SPR_PLAYER_IDLE 261
+#define VRAM_SPR_COIN         260
+#define VRAM_SPR_PLAYER_IDLE  261
 #define VRAM_SPR_PLAYER_WALK0 262
 #define VRAM_SPR_PLAYER_WALK1 263
 #define VRAM_SPR_PLAYER_JUMP  264
@@ -83,6 +83,8 @@ typedef struct {
     unsigned char signature[4];
     unsigned char level_count;
     unsigned char num_tiles;
+    unsigned char one_way_vram_idx; /* VRAM tile index of the one-way block (0=none) */
+    unsigned char disp_vram_idx;     /* VRAM tile index of the disappearing block (0=none) */
 } resource_header;
 
 typedef struct {
@@ -130,6 +132,17 @@ static player_state     player;
 static unsigned int     camera_x, prev_cam_x;
 static unsigned char    coin_collected[MAX_OBJECTS];
 static unsigned char    level_complete, player_died;
+/* Disappearing block: tileData value 11 tiles tracked by position.
+   Up to MAX_DISP tiles tracked simultaneously. */
+#define DISP_GONE_AT    40    /* frames until passable */
+#define DISP_RESET_AT   200   /* frames until reappear */
+#define MAX_DISP        16
+typedef struct {
+    unsigned char tx, ty;   /* tile coords */
+    unsigned char frame;    /* 1..DISP_RESET_AT; 0=unused slot */
+} disp_entry;
+static disp_entry disp_blocks[MAX_DISP];
+#define DISP_TILE_VALUE  11   /* tileData value for disappearing block */
 static level_header    *cur_level;
 static unsigned char   *cur_map;
 static level_object    *cur_objects;
@@ -175,11 +188,63 @@ static unsigned char get_tile(unsigned char tx, unsigned char ty) {
     return cur_map[(unsigned int)tx * cur_level->map_h + ty];
 }
 
+/* Disappearing block helpers */
+static disp_entry *disp_find(unsigned char tx, unsigned char ty) {
+    unsigned char i;
+    for (i = 0; i < MAX_DISP; i++)
+        if (disp_blocks[i].frame && disp_blocks[i].tx == tx && disp_blocks[i].ty == ty)
+            return &disp_blocks[i];
+    return 0;
+}
+
+static void disp_touch(unsigned char tx, unsigned char ty) {
+    unsigned char i;
+    if (disp_find(tx, ty)) return; /* already active */
+    for (i = 0; i < MAX_DISP; i++) {
+        if (!disp_blocks[i].frame) {
+            disp_blocks[i].tx = tx;
+            disp_blocks[i].ty = ty;
+            disp_blocks[i].frame = 1;
+            return;
+        }
+    }
+}
+
+/* Returns 1 if tile (tx,ty) is a disappearing block currently in the "gone" state */
+static unsigned char disp_is_gone(unsigned char tx, unsigned char ty) {
+    disp_entry *e = disp_find(tx, ty);
+    return (e && e->frame >= DISP_GONE_AT) ? 1 : 0;
+}
+
+/* Fully solid: returns 1 for any non-zero tile.
+   Used for horizontal movement and jumping up. */
 static unsigned char is_solid_px(long fpx, long fpy) {
+    unsigned char t;
     long px = fpx >> 8, py = fpy >> 8;
     if (px < 0 || py < 0) return 1;
-    return get_tile((unsigned char)(px / TILE_SIZE),
-                    (unsigned char)(py / TILE_SIZE)) != 0;
+    t = get_tile((unsigned char)(px / TILE_SIZE),
+                 (unsigned char)(py / TILE_SIZE));
+    if (t == 0) return 0;
+    /* One-way tiles are NOT solid from sides or below */
+    if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
+    /* Disappearing block: treat as empty when gone */
+    if (t == res_header->disp_vram_idx && res_header->disp_vram_idx &&
+        disp_is_gone((unsigned char)((fpx>>8)/TILE_SIZE), (unsigned char)((fpy>>8)/TILE_SIZE))) return 0;
+    return 1;
+}
+
+/* One-way aware: solid for all tiles PLUS one-way top surface when falling.
+   Used only for the downward collision check. */
+static unsigned char is_solid_falling_px(long fpx, long fpy) {
+    unsigned char t;
+    long px = fpx >> 8, py = fpy >> 8;
+    if (px < 0 || py < 0) return 1;
+    t = get_tile((unsigned char)(px / TILE_SIZE),
+                 (unsigned char)(py / TILE_SIZE));
+    if (t == 0) return 0;
+    if (t == res_header->disp_vram_idx && res_header->disp_vram_idx &&
+        disp_is_gone((unsigned char)((fpx>>8)/TILE_SIZE), (unsigned char)((fpy>>8)/TILE_SIZE))) return 0;
+    return 1;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -228,11 +293,11 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
  * ──────────────────────────────────────────────────────────*/
 static unsigned int obj_sprite_tile(unsigned char type) {
     switch (type) {
-        case OBJ_FINISH_FLAG: return VRAM_SPR_FINISH_FLAG;
-        case OBJ_SPIKE:       return VRAM_SPR_SPIKE;
-        case OBJ_TRAMPOLINE:  return VRAM_SPR_TRAMPOLINE;
-        case OBJ_COIN:        return VRAM_SPR_COIN;
-        default:              return VRAM_SPR_FINISH_FLAG;
+        case OBJ_FINISH_FLAG:      return VRAM_SPR_FINISH_FLAG;
+        case OBJ_SPIKE:            return VRAM_SPR_SPIKE;
+        case OBJ_TRAMPOLINE:       return VRAM_SPR_TRAMPOLINE;
+        case OBJ_COIN:             return VRAM_SPR_COIN;
+        default:                   return VRAM_SPR_FINISH_FLAG;
     }
 }
 
@@ -340,13 +405,32 @@ static void move_player_y(void) {
     long py    = new_y >> 8;
     if (player.vy >= 0) {
         long b = new_y + FP(PLAYER_H);
-        if (is_solid_px(player.x + FP(1),            b) ||
-            is_solid_px(player.x + FP(PLAYER_W - 2), b)) {
+        if (is_solid_falling_px(player.x + FP(1),            b) ||
+            is_solid_falling_px(player.x + FP(PLAYER_W - 2), b)) {
             long tile_b = (py + PLAYER_H) / TILE_SIZE;
+            /* For one-way tiles: only land if player's feet were ABOVE the
+               tile top last frame (i.e. player.y >> 8 + PLAYER_H <= tile top). */
+            if (res_header->one_way_vram_idx) {
+                unsigned char t1 = get_tile(
+                    (unsigned char)((player.x >> 8) / TILE_SIZE + 0),
+                    (unsigned char)tile_b);
+                unsigned char t2 = get_tile(
+                    (unsigned char)((player.x >> 8) / TILE_SIZE + 1),
+                    (unsigned char)tile_b);
+                unsigned char is_one_way =
+                    (t1 == res_header->one_way_vram_idx) ||
+                    (t2 == res_header->one_way_vram_idx);
+                if (is_one_way) {
+                    long prev_feet = player.y + FP(PLAYER_H);
+                    long tile_top  = tile_b * TILE_SIZE * FP_ONE;
+                    if (prev_feet > tile_top) goto skip_land;
+                }
+            }
             new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
             player.vy = 0;
             player.on_ground = 1;
             player.double_jump_used = 0;
+            skip_land:;
         }
     } else {
         if (is_solid_px(player.x + FP(1),            new_y) ||
@@ -385,6 +469,77 @@ static void check_object_collisions(void) {
 }
 
 /* ──────────────────────────────────────────────────────────
+ * Disappearing block update — called once per frame
+ * Tile value 11 in tileData = disappearing block.
+ * When player touches it, we start a timer. At DISP_GONE_AT
+ * frames the nametable cell is blanked (passable). At
+ * DISP_RESET_AT frames it is restored.
+ * ──────────────────────────────────────────────────────────*/
+static void check_disp_touch(void) {
+    /* Check the tile the player is standing on (one row below feet),
+       and the tile their body occupies on the left and right sides.
+       The snap places player.y+PLAYER_H exactly at the tile top, so
+       py+PLAYER_H-1 is still in the row above — we must probe py+PLAYER_H. */
+    long px = player.x >> 8, py = player.y >> 8;
+    unsigned char tx_l = (unsigned char)(px / TILE_SIZE);
+    unsigned char tx_r = (unsigned char)((px + PLAYER_W - 1) / TILE_SIZE);
+    unsigned char ty_body  = (unsigned char)(py / TILE_SIZE);
+    unsigned char ty_feet  = (unsigned char)((py + PLAYER_H) / TILE_SIZE); /* tile below feet */
+    unsigned char probes[3][2] = {
+        {tx_l, ty_feet},   /* left foot on block below */
+        {tx_r, ty_feet},   /* right foot on block below */
+        {tx_l, ty_body},   /* body inside a block (e.g. jumping up through) */
+    };
+    unsigned char c;
+    if (!res_header->disp_vram_idx) return;
+    for (c = 0; c < 3; c++) {
+        unsigned char tx = probes[c][0], ty = probes[c][1];
+        if (get_tile(tx, ty) == res_header->disp_vram_idx)
+            disp_touch(tx, ty);
+    }
+}
+
+static void update_disappearing_blocks(void) {
+    unsigned char i;
+    check_disp_touch();
+    for (i = 0; i < MAX_DISP; i++) {
+        unsigned char tx, ty, scr_x, scr_y;
+        unsigned int vt;
+        disp_entry *e = &disp_blocks[i];
+        if (!e->frame) continue;
+
+        e->frame++;
+        tx = e->tx; ty = e->ty;
+        scr_x = tx % SCREEN_TILES_W;
+        scr_y = ty;
+
+        if (e->frame == DISP_GONE_AT) {
+            /* Blank the nametable cell */
+            SMS_setNextTileatXY(scr_x, scr_y);
+            SMS_setTile(0);
+        }
+        else if (e->frame >= DISP_RESET_AT) {
+            /* Reappear if player not standing on tile */
+            long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
+            long ppx = player.x >> 8, ppy = player.y >> 8;
+            unsigned char on_top =
+                (ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
+                 ppy + PLAYER_H >= by && ppy + PLAYER_H <= by + 2);
+            if (!on_top) {
+                vt = res_header->disp_vram_idx
+                     ? (unsigned int)(VRAM_BG_BASE + res_header->disp_vram_idx - 1)
+                     : 0u;
+                SMS_setNextTileatXY(scr_x, scr_y);
+                SMS_setTile(vt);
+                e->frame = 0;
+            }
+        }
+    }
+}
+
+
+
+/* ──────────────────────────────────────────────────────────
  * Camera
  * ──────────────────────────────────────────────────────────*/
 static void update_camera(void) {
@@ -410,6 +565,7 @@ static void load_level(unsigned char n) {
                   (unsigned int)cur_level->map_w * cur_level->map_h);
 
     for (i = 0; i < MAX_OBJECTS; i++) coin_collected[i] = 0;
+    for (i = 0; i < MAX_DISP; i++) disp_blocks[i].frame = 0;
     level_complete = player_died = 0;
     camera_x = prev_cam_x = 0;
 
@@ -469,6 +625,7 @@ static void gameplay_loop(void) {
         move_player_x();
         move_player_y();
         check_object_collisions();
+        update_disappearing_blocks();
         update_camera();
         update_anim();
 
