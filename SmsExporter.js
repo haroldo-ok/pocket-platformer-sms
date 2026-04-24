@@ -226,6 +226,15 @@ const SmsExporter = (() => {
           }
         }
       }
+      // Connected disappearing blocks have tileData overwritten to 11 at runtime.
+      // If the level has any, ensure tileData value 10 gets a VRAM slot anyway.
+      if (level.levelObjects) {
+        const hasConnected = level.levelObjects.some(o => o.type === 'connectedDisappearingBlock');
+        if (hasConnected && !tileCache.has(10)) {
+          tileCache.set(10, null);
+          tileOrder.push(10);
+        }
+      }
     }
 
     // Special tile values that don't follow the TILE_N naming convention
@@ -293,6 +302,18 @@ const SmsExporter = (() => {
     const isEdgePos = (x, y) =>
       x === 0 || y === 0 || x === mapW - 1 || y === mapH - 1;
 
+    // Connected disappearing blocks: resetObject() overwrites their tileData value
+    // from 10 → 11 at runtime, making them indistinguishable from regular
+    // disappearing blocks in tileData. We recover the correct identity from
+    // levelObjects (which store tile coords directly as x, y).
+    const connectedPos = new Set();
+    if (level.levelObjects) {
+      for (const obj of level.levelObjects) {
+        if (obj.type === 'connectedDisappearingBlock')
+          connectedPos.add(`${obj.x},${obj.y}`);
+      }
+    }
+
     // Collect valid objects
     const objects = [];
     if (level.levelObjects) {
@@ -328,6 +349,11 @@ const SmsExporter = (() => {
           buf[off++] = 0;
         } else if ((tileVal === 1 || tileVal === 2) && isEdgePos(x, y)) {
           buf[off++] = clampByte(edgeVramIdx || 0);
+        } else if (tileVal === 11 && connectedPos.has(`${x},${y}`)) {
+          // This position has tileData=11 but belongs to a connected disappearing
+          // block (resetObject() overwrote it from 10 to 11 at runtime).
+          // Use the conn tile VRAM index (indexMap for value 10) if present.
+          buf[off++] = clampByte(indexMap.get(10) || indexMap.get(tileVal) || 0);
         } else {
           buf[off++] = clampByte(indexMap.get(tileVal) || 0);
         }
@@ -519,7 +545,20 @@ const SmsExporter = (() => {
       gameData.levels = filteredLevels;
 
       console.log(`[SmsExporter] Exporting ${filteredLevels.length} level(s)`);
+      // Debug: check connected disappearing block handling
+      {
+        const hasCDB = filteredLevels.some(l => l.levelObjects?.some(o => o.type === 'connectedDisappearingBlock'));
+        const cdbSprite = !!sprites['CONNECTED_DISAPPEARING_BLOCK_SPRITE'];
+        console.log(`[SmsExporter] connectedDisappearingBlock in levels: ${hasCDB}, sprite found: ${cdbSprite}`);
+        if (hasCDB) {
+          filteredLevels.forEach((l,i) => {
+            const cdbObjs = l.levelObjects?.filter(o => o.type === 'connectedDisappearingBlock') || [];
+            if (cdbObjs.length) console.log(`[SmsExporter] Level ${i}: ${cdbObjs.length} connected disappearing blocks, e.g. tile(${cdbObjs[0].x},${cdbObjs[0].y})`);
+          });
+        }
+      }
       const resourceBlob = buildResourceBlob(gameData);
+      console.log(`[SmsExporter] conn_vram_idx=${resourceBlob[8]}, disp_vram_idx=${resourceBlob[7]}, num_tiles=${resourceBlob[5]}`);
       const baseRomBytes = b64ToBytes(SmsExporter.BASE_ROM_B64);
       const finalRom = assembleRom(baseRomBytes, resourceBlob);
 
