@@ -85,6 +85,7 @@ typedef struct {
     unsigned char num_tiles;
     unsigned char one_way_vram_idx; /* VRAM tile index of the one-way block (0=none) */
     unsigned char disp_vram_idx;     /* VRAM tile index of the disappearing block (0=none) */
+    unsigned char conn_vram_idx;     /* VRAM tile index of the connected disappearing block (0=none) */
 } resource_header;
 
 typedef struct {
@@ -138,8 +139,9 @@ static unsigned char    level_complete, player_died;
 #define DISP_RESET_AT   200   /* frames until reappear */
 #define MAX_DISP        16
 typedef struct {
-    unsigned char tx, ty;   /* tile coords */
-    unsigned char frame;    /* 1..DISP_RESET_AT; 0=unused slot */
+    unsigned char tx, ty;      /* tile coords */
+    unsigned char frame;       /* 1..DISP_RESET_AT; 0=unused slot */
+    unsigned char is_connected; /* 1 = connected disappearing block */
 } disp_entry;
 static disp_entry disp_blocks[MAX_DISP];
 #define DISP_TILE_VALUE  11   /* tileData value for disappearing block */
@@ -205,7 +207,32 @@ static void disp_touch(unsigned char tx, unsigned char ty) {
             disp_blocks[i].tx = tx;
             disp_blocks[i].ty = ty;
             disp_blocks[i].frame = 1;
+            disp_blocks[i].is_connected = 0;
             return;
+        }
+    }
+}
+
+/* Recursively touch all orthogonally-adjacent connected disappearing blocks */
+static void disp_touch_connected(unsigned char tx, unsigned char ty) {
+    signed char dx, dy;
+    if (disp_find(tx, ty)) return; /* already triggered */
+    disp_touch(tx, ty);
+    /* Mark as connected */
+    {
+        disp_entry *e = disp_find(tx, ty);
+        if (e) e->is_connected = 1;
+    }
+    /* Check 4 neighbours */
+    for (dx = -1; dx <= 1; dx++) {
+        for (dy = -1; dy <= 1; dy++) {
+            unsigned char nx, ny;
+            if (dx == 0 && dy == 0) continue;
+            if (dx != 0 && dy != 0) continue; /* diagonal - skip */
+            nx = (unsigned char)((int)tx + dx);
+            ny = (unsigned char)((int)ty + dy);
+            if (get_tile(nx, ny) == res_header->conn_vram_idx && res_header->conn_vram_idx)
+                disp_touch_connected(nx, ny);
         }
     }
 }
@@ -227,9 +254,15 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (t == 0) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
-    /* Disappearing block: treat as empty when gone */
-    if (t == res_header->disp_vram_idx && res_header->disp_vram_idx &&
-        disp_is_gone((unsigned char)((fpx>>8)/TILE_SIZE), (unsigned char)((fpy>>8)/TILE_SIZE))) return 0;
+    /* Disappearing blocks (both kinds): treat as empty when gone */
+    {
+        unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
+        unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
+        if ((res_header->disp_vram_idx && t == res_header->disp_vram_idx &&
+             disp_is_gone(dtx, dty)) ||
+            (res_header->conn_vram_idx && t == res_header->conn_vram_idx &&
+             disp_is_gone(dtx, dty))) return 0;
+    }
     return 1;
 }
 
@@ -242,8 +275,14 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
-    if (t == res_header->disp_vram_idx && res_header->disp_vram_idx &&
-        disp_is_gone((unsigned char)((fpx>>8)/TILE_SIZE), (unsigned char)((fpy>>8)/TILE_SIZE))) return 0;
+    {
+        unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
+        unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
+        if ((res_header->disp_vram_idx && t == res_header->disp_vram_idx &&
+             disp_is_gone(dtx, dty)) ||
+            (res_header->conn_vram_idx && t == res_header->conn_vram_idx &&
+             disp_is_gone(dtx, dty))) return 0;
+    }
     return 1;
 }
 
@@ -491,11 +530,13 @@ static void check_disp_touch(void) {
         {tx_l, ty_body},   /* body inside a block (e.g. jumping up through) */
     };
     unsigned char c;
-    if (!res_header->disp_vram_idx) return;
     for (c = 0; c < 3; c++) {
         unsigned char tx = probes[c][0], ty = probes[c][1];
-        if (get_tile(tx, ty) == res_header->disp_vram_idx)
+        unsigned char t = get_tile(tx, ty);
+        if (res_header->disp_vram_idx && t == res_header->disp_vram_idx)
             disp_touch(tx, ty);
+        else if (res_header->conn_vram_idx && t == res_header->conn_vram_idx)
+            disp_touch_connected(tx, ty);
     }
 }
 
@@ -519,16 +560,18 @@ static void update_disappearing_blocks(void) {
             SMS_setTile(0);
         }
         else if (e->frame >= DISP_RESET_AT) {
-            /* Reappear if player not standing on tile */
+            /* Reappear if player not standing on this tile.
+               For connected blocks, also check all neighbours are clear. */
             long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
             long ppx = player.x >> 8, ppy = player.y >> 8;
             unsigned char on_top =
                 (ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
                  ppy + PLAYER_H >= by && ppy + PLAYER_H <= by + 2);
             if (!on_top) {
-                vt = res_header->disp_vram_idx
-                     ? (unsigned int)(VRAM_BG_BASE + res_header->disp_vram_idx - 1)
-                     : 0u;
+                unsigned char orig_vram = e->is_connected
+                    ? res_header->conn_vram_idx
+                    : res_header->disp_vram_idx;
+                vt = orig_vram ? (unsigned int)(VRAM_BG_BASE + orig_vram - 1) : 0u;
                 SMS_setNextTileatXY(scr_x, scr_y);
                 SMS_setTile(vt);
                 e->frame = 0;
