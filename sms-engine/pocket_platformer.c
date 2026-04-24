@@ -476,18 +476,25 @@ static void check_object_collisions(void) {
  * DISP_RESET_AT frames it is restored.
  * ──────────────────────────────────────────────────────────*/
 static void check_disp_touch(void) {
-    /* Check all four corners of player against tile 11 */
+    /* Check the tile the player is standing on (one row below feet),
+       and the tile their body occupies on the left and right sides.
+       The snap places player.y+PLAYER_H exactly at the tile top, so
+       py+PLAYER_H-1 is still in the row above — we must probe py+PLAYER_H. */
     long px = player.x >> 8, py = player.y >> 8;
-    unsigned char corners[4][2] = {
-        {(unsigned char)(px / TILE_SIZE),         (unsigned char)(py / TILE_SIZE)},
-        {(unsigned char)((px+PLAYER_W-1)/TILE_SIZE),(unsigned char)(py / TILE_SIZE)},
-        {(unsigned char)(px / TILE_SIZE),         (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)},
-        {(unsigned char)((px+PLAYER_W-1)/TILE_SIZE),(unsigned char)((py+PLAYER_H-1)/TILE_SIZE)},
+    unsigned char tx_l = (unsigned char)(px / TILE_SIZE);
+    unsigned char tx_r = (unsigned char)((px + PLAYER_W - 1) / TILE_SIZE);
+    unsigned char ty_body  = (unsigned char)(py / TILE_SIZE);
+    unsigned char ty_feet  = (unsigned char)((py + PLAYER_H) / TILE_SIZE); /* tile below feet */
+    unsigned char probes[3][2] = {
+        {tx_l, ty_feet},   /* left foot on block below */
+        {tx_r, ty_feet},   /* right foot on block below */
+        {tx_l, ty_body},   /* body inside a block (e.g. jumping up through) */
     };
     unsigned char c;
-    for (c = 0; c < 4; c++) {
-        unsigned char tx = corners[c][0], ty = corners[c][1];
-        if (get_tile(tx, ty) == res_header->disp_vram_idx && res_header->disp_vram_idx)
+    if (!res_header->disp_vram_idx) return;
+    for (c = 0; c < 3; c++) {
+        unsigned char tx = probes[c][0], ty = probes[c][1];
+        if (get_tile(tx, ty) == res_header->disp_vram_idx)
             disp_touch(tx, ty);
     }
 }
