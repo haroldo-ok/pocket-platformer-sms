@@ -235,18 +235,23 @@ const SmsExporter = (() => {
     if (sprites['CONNECTED_DISAPPEARING_BLOCK_SPRITE'])
       specialTilePixels.set(10, sprites['CONNECTED_DISAPPEARING_BLOCK_SPRITE'].animation[0].sprite);
 
-    // Encode each unique tile using .name lookup
+    // Encode each unique tile.
+    // specialTilePixels takes priority — these are tiles whose tileData value
+    // doesn't match their SpritePixelArrays property key (e.g. value 10 =
+    // connected disappearing block, but TILE_10 is "Right bottom").
     for (const tileIdx of tileOrder) {
-      const spriteObj = tileNameMap.get(tileIdx);
-      if (spriteObj) {
-        const frame = spriteObj.animation[0];
-        tileCache.set(tileIdx, encodeTile4bpp(frame.sprite, palette));
-      } else if (specialTilePixels.has(tileIdx)) {
+      if (specialTilePixels.has(tileIdx)) {
         tileCache.set(tileIdx, encodeTile4bpp(specialTilePixels.get(tileIdx), palette));
       } else {
-        // Solid colour fallback for unknown tile values
-        const fallback = Array(8).fill(null).map(() => Array(8).fill('888888'));
-        tileCache.set(tileIdx, encodeTile4bpp(fallback, palette));
+        const spriteObj = tileNameMap.get(tileIdx);
+        if (spriteObj) {
+          const frame = spriteObj.animation[0];
+          tileCache.set(tileIdx, encodeTile4bpp(frame.sprite, palette));
+        } else {
+          // Solid colour fallback for unknown tile values
+          const fallback = Array(8).fill(null).map(() => Array(8).fill('888888'));
+          tileCache.set(tileIdx, encodeTile4bpp(fallback, palette));
+        }
       }
     }
 
