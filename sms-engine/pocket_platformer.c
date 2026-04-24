@@ -49,11 +49,12 @@
 #define VRAM_SPR_FINISH_FLAG 257
 #define VRAM_SPR_SPIKE       258
 #define VRAM_SPR_TRAMPOLINE  259
-#define VRAM_SPR_COIN        260
-#define VRAM_SPR_PLAYER_IDLE 261
-#define VRAM_SPR_PLAYER_WALK0 262
-#define VRAM_SPR_PLAYER_WALK1 263
-#define VRAM_SPR_PLAYER_JUMP  264
+#define VRAM_SPR_COIN         260
+#define VRAM_SPR_DISP_BLOCK   261
+#define VRAM_SPR_PLAYER_IDLE  262
+#define VRAM_SPR_PLAYER_WALK0 263
+#define VRAM_SPR_PLAYER_WALK1 264
+#define VRAM_SPR_PLAYER_JUMP  265
 #define VRAM_TILE_FONT        352
 
 /* ── Object types (must match SmsExporter.js) ───────────── */
@@ -61,7 +62,8 @@
 #define OBJ_FINISH_FLAG 2
 #define OBJ_SPIKE       3
 #define OBJ_TRAMPOLINE  4
-#define OBJ_COIN        5
+#define OBJ_COIN             5
+#define OBJ_DISAPPEARING_BLOCK 6
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
@@ -131,6 +133,12 @@ static player_state     player;
 static unsigned int     camera_x, prev_cam_x;
 static unsigned char    coin_collected[MAX_OBJECTS];
 static unsigned char    level_complete, player_died;
+/* Disappearing block state: frame counter per object (0=solid, 1..200=counting) */
+#define DISP_SOLID         0
+#define DISP_GONE_AT       40    /* frames until block becomes passable */
+#define DISP_RESET_AT      200   /* frames until block reappears */
+static unsigned char    disp_block_frame[MAX_OBJECTS];  /* per-object frame counter */
+static unsigned char    disp_block_touched[MAX_OBJECTS]; /* 1 = player has touched */
 static level_header    *cur_level;
 static unsigned char   *cur_map;
 static level_object    *cur_objects;
@@ -152,7 +160,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 9u * 32u);
+    res_levels  = (level_header *)(res_sprites + 10u * 32u);
 }
 
 static level_header *get_level(unsigned char n) {
@@ -176,6 +184,28 @@ static unsigned char get_tile(unsigned char tx, unsigned char ty) {
     return cur_map[(unsigned int)tx * cur_level->map_h + ty];
 }
 
+/* Returns 1 if the disappearing block at object index i is currently solid */
+static unsigned char disp_block_is_solid(unsigned char i) {
+    if (!disp_block_touched[i]) return 1;
+    return (disp_block_frame[i] < DISP_GONE_AT);
+}
+
+/* Returns 1 if pixel (fpx,fpy) overlaps a currently-solid disappearing block */
+static unsigned char disp_block_solid_at(long fpx, long fpy) {
+    unsigned char i;
+    long px = fpx >> 8, py = fpy >> 8;
+    for (i = 0; i < cur_level->obj_count; i++) {
+        level_object *obj = &cur_objects[i];
+        if (obj->type != OBJ_DISAPPEARING_BLOCK) continue;
+        if (!disp_block_is_solid(i)) continue;
+        if (px >= (long)obj->x * TILE_SIZE &&
+            px <  (long)obj->x * TILE_SIZE + TILE_SIZE &&
+            py >= (long)obj->y * TILE_SIZE &&
+            py <  (long)obj->y * TILE_SIZE + TILE_SIZE) return 1;
+    }
+    return 0;
+}
+
 /* Fully solid: returns 1 for any non-zero tile.
    Used for horizontal movement and jumping up. */
 static unsigned char is_solid_px(long fpx, long fpy) {
@@ -184,7 +214,7 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (px < 0 || py < 0) return 1;
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
-    if (t == 0) return 0;
+    if (t == 0) return disp_block_solid_at(fpx, fpy);
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
     return 1;
@@ -198,7 +228,8 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     if (px < 0 || py < 0) return 1;
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
-    return t != 0;
+    if (t != 0) return 1;
+    return disp_block_solid_at(fpx, fpy);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -214,8 +245,8 @@ static void load_graphics(void) {
     /* BG tiles at VRAM 1..N */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
-    /* Sprite sheet at VRAM 256..264 (9 × 8x8 tiles) */
-    SMS_loadTiles(res_sprites, 256u, 9u * 32u);
+    /* Sprite sheet at VRAM 256..265 (10 × 8x8 tiles) */
+    SMS_loadTiles(res_sprites, 256u, 10u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
@@ -247,11 +278,12 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
  * ──────────────────────────────────────────────────────────*/
 static unsigned int obj_sprite_tile(unsigned char type) {
     switch (type) {
-        case OBJ_FINISH_FLAG: return VRAM_SPR_FINISH_FLAG;
-        case OBJ_SPIKE:       return VRAM_SPR_SPIKE;
-        case OBJ_TRAMPOLINE:  return VRAM_SPR_TRAMPOLINE;
-        case OBJ_COIN:        return VRAM_SPR_COIN;
-        default:              return VRAM_SPR_FINISH_FLAG;
+        case OBJ_FINISH_FLAG:      return VRAM_SPR_FINISH_FLAG;
+        case OBJ_SPIKE:            return VRAM_SPR_SPIKE;
+        case OBJ_TRAMPOLINE:       return VRAM_SPR_TRAMPOLINE;
+        case OBJ_COIN:             return VRAM_SPR_COIN;
+        case OBJ_DISAPPEARING_BLOCK: return VRAM_SPR_DISP_BLOCK;
+        default:                   return VRAM_SPR_FINISH_FLAG;
     }
 }
 
@@ -263,6 +295,11 @@ static void draw_objects(void) {
         int sx, sy;
         if (obj->type == OBJ_START_FLAG) continue;
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
+        /* Hide disappearing block once fully gone, until it reappears */
+        if (obj->type == OBJ_DISAPPEARING_BLOCK &&
+            disp_block_touched[i] &&
+            disp_block_frame[i] >= DISP_GONE_AT &&
+            disp_block_frame[i] < DISP_RESET_AT) continue;
         sx = (int)obj->x * TILE_SIZE - (int)camera_x;
         sy = (int)obj->y * TILE_SIZE;
         if (sx < -8 || sx > SCREEN_PX_W) continue;
@@ -418,9 +455,47 @@ static void check_object_collisions(void) {
                 player.jump_frames = 0; player.on_ground = 0; break;
             case OBJ_COIN:
                 if (!coin_collected[i]) coin_collected[i] = 1; break;
+            case OBJ_DISAPPEARING_BLOCK:
+                /* Touch triggers disappear sequence */
+                if (!disp_block_touched[i]) {
+                    disp_block_touched[i] = 1;
+                    disp_block_frame[i] = 1;
+                }
+                break;
         }
     }
 }
+
+/* ──────────────────────────────────────────────────────────
+ * Disappearing block update — called once per frame
+ * ──────────────────────────────────────────────────────────*/
+static void update_disappearing_blocks(void) {
+    unsigned char i;
+    map_res_bank();
+    for (i = 0; i < cur_level->obj_count; i++) {
+        level_object *obj = &cur_objects[i];
+        if (obj->type != OBJ_DISAPPEARING_BLOCK) continue;
+        if (!disp_block_touched[i]) continue;
+
+        disp_block_frame[i]++;
+
+        if (disp_block_frame[i] >= DISP_RESET_AT) {
+            /* Check player not standing on it before reappearing */
+            long ox = (long)obj->x * TILE_SIZE;
+            long oy = (long)obj->y * TILE_SIZE;
+            long px = player.x >> 8, py = player.y >> 8;
+            unsigned char player_on_block =
+                (px + PLAYER_W > ox && px < ox + TILE_SIZE &&
+                 py + PLAYER_H >= oy && py + PLAYER_H <= oy + 2);
+            if (!player_on_block) {
+                disp_block_touched[i] = 0;
+                disp_block_frame[i] = 0;
+            }
+        }
+    }
+}
+
+
 
 /* ──────────────────────────────────────────────────────────
  * Camera
@@ -447,7 +522,11 @@ static void load_level(unsigned char n) {
     cur_objects = (level_object *)(cur_map +
                   (unsigned int)cur_level->map_w * cur_level->map_h);
 
-    for (i = 0; i < MAX_OBJECTS; i++) coin_collected[i] = 0;
+    for (i = 0; i < MAX_OBJECTS; i++) {
+        coin_collected[i] = 0;
+        disp_block_frame[i] = 0;
+        disp_block_touched[i] = 0;
+    }
     level_complete = player_died = 0;
     camera_x = prev_cam_x = 0;
 
@@ -507,6 +586,7 @@ static void gameplay_loop(void) {
         move_player_x();
         move_player_y();
         check_object_collisions();
+        update_disappearing_blocks();
         update_camera();
         update_anim();
 
