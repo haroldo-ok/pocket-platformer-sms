@@ -83,6 +83,7 @@ typedef struct {
     unsigned char signature[4];
     unsigned char level_count;
     unsigned char num_tiles;
+    unsigned char one_way_vram_idx; /* VRAM tile index of the one-way block (0=none) */
 } resource_header;
 
 typedef struct {
@@ -175,11 +176,29 @@ static unsigned char get_tile(unsigned char tx, unsigned char ty) {
     return cur_map[(unsigned int)tx * cur_level->map_h + ty];
 }
 
+/* Fully solid: returns 1 for any non-zero tile.
+   Used for horizontal movement and jumping up. */
 static unsigned char is_solid_px(long fpx, long fpy) {
+    unsigned char t;
     long px = fpx >> 8, py = fpy >> 8;
     if (px < 0 || py < 0) return 1;
-    return get_tile((unsigned char)(px / TILE_SIZE),
-                    (unsigned char)(py / TILE_SIZE)) != 0;
+    t = get_tile((unsigned char)(px / TILE_SIZE),
+                 (unsigned char)(py / TILE_SIZE));
+    if (t == 0) return 0;
+    /* One-way tiles are NOT solid from sides or below */
+    if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
+    return 1;
+}
+
+/* One-way aware: solid for all tiles PLUS one-way top surface when falling.
+   Used only for the downward collision check. */
+static unsigned char is_solid_falling_px(long fpx, long fpy) {
+    unsigned char t;
+    long px = fpx >> 8, py = fpy >> 8;
+    if (px < 0 || py < 0) return 1;
+    t = get_tile((unsigned char)(px / TILE_SIZE),
+                 (unsigned char)(py / TILE_SIZE));
+    return t != 0;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -340,13 +359,32 @@ static void move_player_y(void) {
     long py    = new_y >> 8;
     if (player.vy >= 0) {
         long b = new_y + FP(PLAYER_H);
-        if (is_solid_px(player.x + FP(1),            b) ||
-            is_solid_px(player.x + FP(PLAYER_W - 2), b)) {
+        if (is_solid_falling_px(player.x + FP(1),            b) ||
+            is_solid_falling_px(player.x + FP(PLAYER_W - 2), b)) {
             long tile_b = (py + PLAYER_H) / TILE_SIZE;
+            /* For one-way tiles: only land if player's feet were ABOVE the
+               tile top last frame (i.e. player.y >> 8 + PLAYER_H <= tile top). */
+            if (res_header->one_way_vram_idx) {
+                unsigned char t1 = get_tile(
+                    (unsigned char)((player.x >> 8) / TILE_SIZE + 0),
+                    (unsigned char)tile_b);
+                unsigned char t2 = get_tile(
+                    (unsigned char)((player.x >> 8) / TILE_SIZE + 1),
+                    (unsigned char)tile_b);
+                unsigned char is_one_way =
+                    (t1 == res_header->one_way_vram_idx) ||
+                    (t2 == res_header->one_way_vram_idx);
+                if (is_one_way) {
+                    long prev_feet = player.y + FP(PLAYER_H);
+                    long tile_top  = tile_b * TILE_SIZE * FP_ONE;
+                    if (prev_feet > tile_top) goto skip_land;
+                }
+            }
             new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
             player.vy = 0;
             player.on_ground = 1;
             player.double_jump_used = 0;
+            skip_land:;
         }
     } else {
         if (is_solid_px(player.x + FP(1),            new_y) ||
