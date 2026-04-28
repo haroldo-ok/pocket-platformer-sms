@@ -587,7 +587,21 @@ static void rb_redraw_all(void) {
     }
 }
 
-/* Check if player hits a switch from below (player moving up, head at switch bottom) */
+/* Check if player hits a switch from below (player moving up, head at switch bottom).
+ *
+ * Matches pocket-platformer's RedBlueSwitch.collisionEvent():
+ *   bottomLineHitBox = { x: sw.x, y: sw.y + sw.height, width: sw.width, height: 2 }
+ *   trigger when: player.top_left_pos OR player.top_right_pos is strictly inside hitbox
+ *   i.e. point.x in (sw.x, sw.x+width) AND point.y in (sw.y+height, sw.y+height+2)
+ *
+ * On SMS (8px tiles):
+ *   hitbox y range: sw_bot+1 .. sw_bot+1  (strictly inside 2px strip below switch)
+ *   hitbox x range: sw.x+1 .. sw.x+7      (strictly inside switch width)
+ *   player top-left:  (px,      py)
+ *   player top-right: (px+PLAYER_W, py)
+ *
+ * We use a 2px tolerance so a fast-moving player doesn't skip through in one frame.
+ */
 static void check_rb_switch(void) {
     unsigned char i;
     long px = player.x >> 8, py = player.y >> 8;
@@ -599,15 +613,22 @@ static void check_rb_switch(void) {
     for (i = 0; i < rb_switch_count; i++) {
         long sx = (long)rb_switches[i].tx * TILE_SIZE;
         long sy = (long)rb_switches[i].ty * TILE_SIZE;
-        /* Player head (top of sprite) must enter the switch tile from below */
-        long head_y = py;                          /* player top pixel */
-        long sw_bot = sy + TILE_SIZE;              /* switch bottom pixel */
-        long sw_top = sy;                          /* switch top pixel */
+        long sw_bot = sy + TILE_SIZE; /* y of bottom edge of switch tile */
 
-        /* Horizontal overlap */
-        if (px + PLAYER_W <= sx || px >= sx + TILE_SIZE) continue;
-        /* Head just crossed into the bottom of the switch tile */
-        if (head_y <= sw_bot && head_y >= sw_top - 2) {
+        /* Player head (py) must be strictly inside the 2px hitbox strip below switch.
+           hitbox y: sw_bot < py < sw_bot+2  →  py == sw_bot+1
+           With tolerance for fast movement: py in [sw_bot, sw_bot+2] */
+        if (py < sw_bot - 1 || py > sw_bot + 2) continue;
+
+        /* Player top-left or top-right must be strictly inside switch x range:
+           sx < point.x < sx+TILE_SIZE
+           top-left  point = px,            top-right point = px+PLAYER_W */
+        {
+            unsigned char left_in  = (px           > sx && px           < sx + TILE_SIZE);
+            unsigned char right_in = (px + PLAYER_W > sx && px + PLAYER_W < sx + TILE_SIZE);
+            if (!left_in && !right_in) continue;
+        }
+        if (1) {
             rb_red_active = !rb_red_active;
             rb_redraw_all();
             /* Redraw all switch tiles with the new active frame */
