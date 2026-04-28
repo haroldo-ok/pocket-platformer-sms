@@ -90,7 +90,8 @@ typedef struct {
     unsigned char red_ghost_vram_idx;  /* red block ghost   */
     unsigned char blue_solid_vram_idx; /* blue block solid  */
     unsigned char blue_ghost_vram_idx; /* blue block ghost  */
-    unsigned char switch_vram_idx;     /* red/blue switch   */
+    unsigned char switch_vram_idx;     /* red/blue switch (red frame)  */
+    unsigned char switch_blue_vram_idx; /* red/blue switch (blue frame) */
 } resource_header;
 
 typedef struct {
@@ -609,6 +610,20 @@ static void check_rb_switch(void) {
         if (head_y <= sw_bot && head_y >= sw_top - 2) {
             rb_red_active = !rb_red_active;
             rb_redraw_all();
+            /* Redraw all switch tiles with the new active frame */
+            {
+                unsigned char si;
+                unsigned char sw_idx = rb_red_active
+                    ? res_header->switch_vram_idx
+                    : res_header->switch_blue_vram_idx;
+                unsigned int sw_vt = sw_idx
+                    ? (unsigned int)(VRAM_BG_BASE + sw_idx - 1) : 0u;
+                for (si = 0; si < rb_switch_count; si++) {
+                    SMS_setNextTileatXY(rb_switches[si].tx % SCREEN_TILES_W,
+                                       rb_switches[si].ty);
+                    SMS_setTile(sw_vt);
+                }
+            }
             rb_switch_locked = 1;
 
             /* Kill player if now inside a solid block */
