@@ -395,10 +395,8 @@ const SmsExporter = (() => {
           // Red blocks start SOLID → encode red solid tile
           buf[off++] = clampByte(indexMap.get(-2) || 0);
         } else if (blueBlockPos.has(`${x},${y}`)) {
-          // Blue blocks start INACTIVE/PASSABLE → encode as blank (0)
-          // SMS BG layer has no per-pixel transparency, so the ghost
-          // outline frame would render as black. Blank is correct.
-          buf[off++] = 0;
+          // Blue blocks start INACTIVE/PASSABLE → encode blue ghost tile
+          buf[off++] = clampByte(indexMap.get(-5) || 0);
         } else if (switchPos.has(`${x},${y}`)) {
           buf[off++] = clampByte(indexMap.get(-6) || 0);
         } else {
