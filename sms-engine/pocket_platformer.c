@@ -151,6 +151,7 @@ static unsigned char rb_block_count;
 static unsigned char rb_switch_count;
 static unsigned char rb_red_active;   /* 1 = red solid, 0 = blue solid */
 static unsigned char rb_switch_locked; /* prevent re-trigger while held */
+static long          prev_player_y;    /* player y before physics, for switch crossing */
 /* Disappearing block: tileData value 11 tiles tracked by position.
    Up to MAX_DISP tiles tracked simultaneously. */
 #define DISP_GONE_AT    40    /* frames until passable */
@@ -275,6 +276,9 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (t == 0) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
+    /* Switch tiles are always passable - they are triggers, not physical blocks */
+    if (res_header->switch_vram_idx && (t == res_header->switch_vram_idx ||
+        t == res_header->switch_blue_vram_idx)) return 0;
     /* Red/blue blocks: treat as empty when that colour is inactive */
     if (rb_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -302,6 +306,9 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
+    /* Switch tiles are always passable */
+    if (res_header->switch_vram_idx && (t == res_header->switch_vram_idx ||
+        t == res_header->switch_blue_vram_idx)) return 0;
     /* Red/blue blocks passable when inactive */
     if (rb_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -606,25 +613,31 @@ static void check_rb_switch(void) {
     unsigned char i;
     long px = player.x >> 8, py = player.y >> 8;
 
-    /* Switch fires only while moving upward */
-    if (player.vy >= 0) { rb_switch_locked = 0; return; }
-    if (rb_switch_locked) return;
+    /* Unlock once player moves away downward */
+    if (rb_switch_locked) {
+        if (player.vy > 0) rb_switch_locked = 0;
+        return;
+    }
 
     for (i = 0; i < rb_switch_count; i++) {
-        long sx = (long)rb_switches[i].tx * TILE_SIZE;
-        long sy = (long)rb_switches[i].ty * TILE_SIZE;
-        long sw_bot = sy + TILE_SIZE; /* y of bottom edge of switch tile */
+        long sx     = (long)rb_switches[i].tx * TILE_SIZE;
+        long sy     = (long)rb_switches[i].ty * TILE_SIZE;
+        long sw_bot = sy + TILE_SIZE;  /* bottom edge of switch tile = top of hitbox strip */
+        long prev_py = prev_player_y >> 8;
 
-        /* Player head (py) must be strictly inside the 2px hitbox strip below switch.
-           hitbox y: sw_bot < py < sw_bot+2  →  py == sw_bot+1
-           With tolerance for fast movement: py in [sw_bot, sw_bot+2] */
-        if (py < sw_bot - 1 || py > sw_bot + 2) continue;
+        /* Detect upward crossing: player head was above the hitbox last frame
+           and is now at or inside it. The hitbox is a 2px strip at sw_bot.
+           "Was above": prev_py > sw_bot + 2  (head clearly above strip)
+           "Now inside": py <= sw_bot + 2
+           Also accept the snap case: prev_py > sw_bot (above tile bottom)
+           and py <= sw_bot + 1 (now at/just past tile bottom) */
+        if (prev_py <= py) continue;           /* not moving up */
+        if (prev_py <= sw_bot) continue;       /* was already at/inside switch last frame */
+        if (py > sw_bot + 2) continue;         /* still above the hitbox strip */
 
-        /* Player top-left or top-right must be strictly inside switch x range:
-           sx < point.x < sx+TILE_SIZE
-           top-left  point = px,            top-right point = px+PLAYER_W */
+        /* Horizontal: top-left (px) or top-right (px+PLAYER_W) inside switch tile */
         {
-            unsigned char left_in  = (px           > sx && px           < sx + TILE_SIZE);
+            unsigned char left_in  = (px            > sx && px            < sx + TILE_SIZE);
             unsigned char right_in = (px + PLAYER_W > sx && px + PLAYER_W < sx + TILE_SIZE);
             if (!left_in && !right_in) continue;
         }
@@ -835,6 +848,7 @@ static void gameplay_loop(void) {
         joy         = SMS_getKeysStatus();
         joy_pressed = joy & ~joy_prev;
 
+        prev_player_y = player.y;  /* save before physics for switch crossing detection */
         handle_input(joy, joy_pressed);
         apply_gravity();
         player.on_ground = 0;
