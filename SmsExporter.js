@@ -385,20 +385,21 @@ const SmsExporter = (() => {
     for (let x = 0; x < mapW; x++) {
       for (let y = 0; y < mapH; y++) {
         const tileVal = tileData[y][x];
-        if (tileVal === 0) {
+        // Check block/switch positions FIRST — their tileData may be 0
+        // (blue blocks start inactive = tileData 0), which would otherwise
+        // be swallowed by the tileVal===0 branch before we can check them.
+        if (redBlockPos.has(`${x},${y}`)) {
+          buf[off++] = clampByte(indexMap.get(-2) || 0);
+        } else if (blueBlockPos.has(`${x},${y}`)) {
+          buf[off++] = clampByte(indexMap.get(-5) || 0);
+        } else if (switchPos.has(`${x},${y}`)) {
+          buf[off++] = clampByte(indexMap.get(-6) || 0);
+        } else if (tileVal === 0) {
           buf[off++] = 0;
         } else if ((tileVal === 1 || tileVal === 2) && isEdgePos(x, y)) {
           buf[off++] = clampByte(edgeVramIdx || 0);
         } else if (tileVal === 11 && connectedPos.has(`${x},${y}`)) {
           buf[off++] = clampByte(indexMap.get(10) || indexMap.get(tileVal) || 0);
-        } else if (redBlockPos.has(`${x},${y}`)) {
-          // Red blocks start SOLID → encode red solid tile
-          buf[off++] = clampByte(indexMap.get(-2) || 0);
-        } else if (blueBlockPos.has(`${x},${y}`)) {
-          // Blue blocks start INACTIVE/PASSABLE → encode blue ghost tile
-          buf[off++] = clampByte(indexMap.get(-5) || 0);
-        } else if (switchPos.has(`${x},${y}`)) {
-          buf[off++] = clampByte(indexMap.get(-6) || 0);
         } else {
           buf[off++] = clampByte(indexMap.get(tileVal) || 0);
         }
