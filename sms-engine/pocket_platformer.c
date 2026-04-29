@@ -86,6 +86,12 @@ typedef struct {
     unsigned char one_way_vram_idx; /* VRAM tile index of the one-way block (0=none) */
     unsigned char disp_vram_idx;     /* VRAM tile index of the disappearing block (0=none) */
     unsigned char conn_vram_idx;     /* VRAM tile index of the connected disappearing block (0=none) */
+    unsigned char red_solid_vram_idx;  /* red block solid   */
+    unsigned char red_ghost_vram_idx;  /* red block ghost   */
+    unsigned char blue_solid_vram_idx; /* blue block solid  */
+    unsigned char blue_ghost_vram_idx; /* blue block ghost  */
+    unsigned char switch_vram_idx;     /* red/blue switch (red frame)  */
+    unsigned char switch_blue_vram_idx; /* red/blue switch (blue frame) */
 } resource_header;
 
 typedef struct {
@@ -133,6 +139,19 @@ static player_state     player;
 static unsigned int     camera_x, prev_cam_x;
 static unsigned char    coin_collected[MAX_OBJECTS];
 static unsigned char    level_complete, player_died;
+
+/* ── Red/Blue block system ──────────────────────────────── */
+#define MAX_RB_BLOCKS   48
+#define MAX_RB_SWITCHES  8
+typedef struct { unsigned char tx, ty, is_red; } rb_block;
+typedef struct { unsigned char tx, ty; } rb_switch;
+static rb_block  rb_blocks[MAX_RB_BLOCKS];
+static rb_switch rb_switches[MAX_RB_SWITCHES];
+static unsigned char rb_block_count;
+static unsigned char rb_switch_count;
+static unsigned char rb_red_active;   /* 1 = red solid, 0 = blue solid */
+static unsigned char rb_switch_locked; /* prevent re-trigger while held */
+static long          prev_player_y;    /* player y before physics, for switch crossing */
 /* Disappearing block: tileData value 11 tiles tracked by position.
    Up to MAX_DISP tiles tracked simultaneously. */
 #define DISP_GONE_AT    40    /* frames until passable */
@@ -243,6 +262,10 @@ static unsigned char disp_is_gone(unsigned char tx, unsigned char ty) {
     return (e && e->frame >= DISP_GONE_AT) ? 1 : 0;
 }
 
+/* Forward declarations — rb functions defined later */
+static unsigned char rb_is_passable(unsigned char tx, unsigned char ty);
+static void rb_redraw_all(void);
+
 /* Fully solid: returns 1 for any non-zero tile.
    Used for horizontal movement and jumping up. */
 static unsigned char is_solid_px(long fpx, long fpy) {
@@ -254,6 +277,13 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (t == 0) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
+
+    /* Red/blue blocks: treat as empty when that colour is inactive */
+    if (rb_block_count) {
+        unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
+        unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
+        if (rb_is_passable(dtx, dty)) return 0;
+    }
     /* Disappearing blocks (both kinds): treat as empty when gone */
     {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -275,6 +305,12 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
+    /* Red/blue blocks passable when inactive */
+    if (rb_block_count) {
+        unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
+        unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
+        if (rb_is_passable(dtx, dty)) return 0;
+    }
     {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
         unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
@@ -348,6 +384,8 @@ static void draw_objects(void) {
         int sx, sy;
         if (obj->type == OBJ_START_FLAG) continue;
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
+        /* Red/blue blocks and switch are BG tiles, not sprites */
+        if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
         sx = (int)obj->x * TILE_SIZE - (int)camera_x;
         sy = (int)obj->y * TILE_SIZE;
         if (sx < -8 || sx > SCREEN_PX_W) continue;
@@ -475,6 +513,49 @@ static void move_player_y(void) {
         if (is_solid_px(player.x + FP(1),            new_y) ||
             is_solid_px(player.x + FP(PLAYER_W - 2), new_y)) {
             long tile_t = py / TILE_SIZE + 1;
+            /* Check if the ceiling tile is a switch before snapping.
+               The blocking tile is at row (tile_t - 1) = py/TILE_SIZE. */
+            if (!rb_switch_locked && res_header->switch_vram_idx) {
+                unsigned char htx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
+                unsigned char htx_r = (unsigned char)(((player.x >> 8) + PLAYER_W) / TILE_SIZE);
+                unsigned char hty   = (unsigned char)(tile_t - 1);  /* ceiling row */
+                unsigned char tl = get_tile(htx_l, hty);
+                unsigned char tr = get_tile(htx_r, hty);
+                if ((tl == res_header->switch_vram_idx || tl == res_header->switch_blue_vram_idx ||
+                     tr == res_header->switch_vram_idx || tr == res_header->switch_blue_vram_idx)) {
+                    /* Hit a switch from below — fire the trigger */
+                    rb_red_active = !rb_red_active;
+                    rb_redraw_all();
+                    {
+                        unsigned char si;
+                        unsigned char sw_idx = rb_red_active
+                            ? res_header->switch_vram_idx
+                            : res_header->switch_blue_vram_idx;
+                        unsigned int sw_vt = sw_idx
+                            ? (unsigned int)(VRAM_BG_BASE + sw_idx - 1) : 0u;
+                        for (si = 0; si < rb_switch_count; si++) {
+                            SMS_setNextTileatXY(rb_switches[si].tx % SCREEN_TILES_W,
+                                               rb_switches[si].ty);
+                            SMS_setTile(sw_vt);
+                        }
+                    }
+                    /* Kill player if now inside a solid block */
+                    {
+                        unsigned char b;
+                        long ppx = player.x >> 8, ppy = new_y >> 8;
+                        for (b = 0; b < rb_block_count; b++) {
+                            long bx = (long)rb_blocks[b].tx * TILE_SIZE;
+                            long by = (long)rb_blocks[b].ty * TILE_SIZE;
+                            unsigned char solid = rb_blocks[b].is_red ? rb_red_active : !rb_red_active;
+                            if (solid &&
+                                ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
+                                ppy + PLAYER_H > by && ppy < by + TILE_SIZE)
+                                player_died = 1;
+                        }
+                    }
+                    rb_switch_locked = 1;
+                }
+            }
             new_y = tile_t * TILE_SIZE * FP_ONE;
             player.vy = 0;
             player.jump_frames = 0;
@@ -514,6 +595,49 @@ static void check_object_collisions(void) {
  * frames the nametable cell is blanked (passable). At
  * DISP_RESET_AT frames it is restored.
  * ──────────────────────────────────────────────────────────*/
+/* ──────────────────────────────────────────────────────────
+ * Red/Blue block system
+ * ──────────────────────────────────────────────────────────*/
+
+/* Returns 1 if position (tx,ty) is a red or blue block that is currently PASSABLE */
+static unsigned char rb_is_passable(unsigned char tx, unsigned char ty) {
+    unsigned char i;
+    for (i = 0; i < rb_block_count; i++) {
+        if (rb_blocks[i].tx == tx && rb_blocks[i].ty == ty) {
+            /* Solid when its colour matches the active colour */
+            return rb_blocks[i].is_red ? !rb_red_active : rb_red_active;
+        }
+    }
+    return 0;
+}
+
+static unsigned int rb_vram_for_block(unsigned char is_red, unsigned char solid) {
+    unsigned char idx;
+    if (is_red)
+        idx = solid ? res_header->red_solid_vram_idx  : res_header->red_ghost_vram_idx;
+    else
+        idx = solid ? res_header->blue_solid_vram_idx : res_header->blue_ghost_vram_idx;
+    return idx ? (unsigned int)(VRAM_BG_BASE + idx - 1) : 0u;
+}
+
+/* Redraw all red/blue block nametable cells after a switch toggle */
+static void rb_redraw_all(void) {
+    unsigned char i;
+    for (i = 0; i < rb_block_count; i++) {
+        unsigned char tx = rb_blocks[i].tx;
+        unsigned char ty = rb_blocks[i].ty;
+        unsigned char solid = rb_blocks[i].is_red ? rb_red_active : !rb_red_active;
+        unsigned int vt = rb_vram_for_block(rb_blocks[i].is_red, solid);
+        SMS_setNextTileatXY(tx % SCREEN_TILES_W, ty);
+        SMS_setTile(vt);
+    }
+}
+
+static void check_rb_switch(void) {
+    /* Unlock once player falls away from switch (trigger is in move_player_y) */
+    if (rb_switch_locked && player.vy > 0) rb_switch_locked = 0;
+}
+
 static void check_disp_touch(void) {
     /* Check the tile the player is standing on (one row below feet),
        and the tile their body occupies on the left and right sides.
@@ -609,6 +733,27 @@ static void load_level(unsigned char n) {
 
     for (i = 0; i < MAX_OBJECTS; i++) coin_collected[i] = 0;
     for (i = 0; i < MAX_DISP; i++) disp_blocks[i].frame = 0;
+
+    /* Build red/blue block tables from levelObjects */
+    rb_block_count  = 0;
+    rb_switch_count = 0;
+    rb_red_active   = 1;   /* red starts solid per pocket-platformer default */
+    rb_switch_locked = 0;
+    map_res_bank();
+    for (i = 0; i < cur_level->obj_count; i++) {
+        level_object *obj = &cur_objects[i];
+        if ((obj->type == 7 || obj->type == 8) && rb_block_count < MAX_RB_BLOCKS) {
+            rb_blocks[rb_block_count].tx     = obj->x;
+            rb_blocks[rb_block_count].ty     = obj->y;
+            rb_blocks[rb_block_count].is_red = (obj->type == 7);
+            rb_block_count++;
+        }
+        if (obj->type == 9 && rb_switch_count < MAX_RB_SWITCHES) {
+            rb_switches[rb_switch_count].tx = obj->x;
+            rb_switches[rb_switch_count].ty = obj->y;
+            rb_switch_count++;
+        }
+    }
     level_complete = player_died = 0;
     camera_x = prev_cam_x = 0;
 
@@ -662,12 +807,14 @@ static void gameplay_loop(void) {
         joy         = SMS_getKeysStatus();
         joy_pressed = joy & ~joy_prev;
 
+        prev_player_y = player.y;  /* save before physics for switch crossing detection */
         handle_input(joy, joy_pressed);
         apply_gravity();
         player.on_ground = 0;
         move_player_x();
         move_player_y();
         check_object_collisions();
+        check_rb_switch();
         update_disappearing_blocks();
         update_camera();
         update_anim();
