@@ -476,7 +476,7 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
        Also skip rb/vp passable tiles. */
     {
         long px_l = (player.x >> 8) - 1;           /* 1px left of player */
-        long px_r = (player.x >> 8) + PLAYER_W;    /* 1px right of player */
+        long px_r = (player.x >> 8) + PLAYER_W + 1; /* 1px beyond right edge */
         unsigned char px8_l = (unsigned char)(px_l >= 0 ? px_l / TILE_SIZE : 255);
         unsigned char px8_r = (unsigned char)(px_r / TILE_SIZE);
         unsigned char py8   = (unsigned char)((player.y >> 8) / TILE_SIZE);
