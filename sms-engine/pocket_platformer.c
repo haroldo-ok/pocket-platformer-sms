@@ -92,6 +92,10 @@ typedef struct {
     unsigned char blue_ghost_vram_idx; /* blue block ghost  */
     unsigned char switch_vram_idx;     /* red/blue switch (red frame)  */
     unsigned char switch_blue_vram_idx; /* red/blue switch (blue frame) */
+    unsigned char vio_solid_vram_idx;   /* violet block solid  */
+    unsigned char vio_ghost_vram_idx;   /* violet block ghost  */
+    unsigned char pink_solid_vram_idx;  /* pink block solid    */
+    unsigned char pink_ghost_vram_idx;  /* pink block ghost    */
 } resource_header;
 
 typedef struct {
@@ -139,6 +143,13 @@ static player_state     player;
 static unsigned int     camera_x, prev_cam_x;
 static unsigned char    coin_collected[MAX_OBJECTS];
 static unsigned char    level_complete, player_died;
+
+/* ── Violet/Pink block system (jump-toggle) ─────────────── */
+#define MAX_VP_BLOCKS   48
+typedef struct { unsigned char tx, ty, is_violet; } vp_block;
+static vp_block  vp_blocks[MAX_VP_BLOCKS];
+static unsigned char vp_block_count;
+static unsigned char vp_violet_active;  /* 1 = violet solid, pink passable */
 
 /* ── Red/Blue block system ──────────────────────────────── */
 #define MAX_RB_BLOCKS   48
@@ -262,7 +273,9 @@ static unsigned char disp_is_gone(unsigned char tx, unsigned char ty) {
     return (e && e->frame >= DISP_GONE_AT) ? 1 : 0;
 }
 
-/* Forward declarations — rb functions defined later */
+/* Forward declarations — vp and rb functions defined later */
+static unsigned char vp_is_passable(unsigned char tx, unsigned char ty);
+static void          vp_toggle(void);
 static unsigned char rb_is_passable(unsigned char tx, unsigned char ty);
 static void rb_redraw_all(void);
 
@@ -278,6 +291,12 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
 
+    /* Violet/pink blocks: passable when that type is inactive */
+    if (vp_block_count) {
+        unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
+        unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
+        if (vp_is_passable(dtx, dty)) return 0;
+    }
     /* Red/blue blocks: treat as empty when that colour is inactive */
     if (rb_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -305,6 +324,12 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
+    /* Violet/pink blocks passable when inactive */
+    if (vp_block_count) {
+        unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
+        unsigned char dty = (unsigned char)((fpy>>8)/TILE_SIZE);
+        if (vp_is_passable(dtx, dty)) return 0;
+    }
     /* Red/blue blocks passable when inactive */
     if (rb_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -384,8 +409,9 @@ static void draw_objects(void) {
         int sx, sy;
         if (obj->type == OBJ_START_FLAG) continue;
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
-        /* Red/blue blocks and switch are BG tiles, not sprites */
+        /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
+        if (obj->type == 10 || obj->type == 11) continue;
         sx = (int)obj->x * TILE_SIZE - (int)camera_x;
         sy = (int)obj->y * TILE_SIZE;
         if (sx < -8 || sx > SCREEN_PX_W) continue;
@@ -443,10 +469,12 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
             player.vy = -(long)res_physics->jump_speed;
             player.jump_frames = res_physics->max_jump_frames;
             player.on_ground = 0;
+            if (vp_block_count) vp_toggle();   /* jump toggles violet/pink */
         } else if (res_physics->has_double_jump && !player.double_jump_used) {
             player.vy = -(long)res_physics->jump_speed;
             player.jump_frames = res_physics->max_jump_frames >> 1;
             player.double_jump_used = 1;
+            if (vp_block_count) vp_toggle();   /* double jump also toggles */
         }
     }
     if (player.jump_frames) {
@@ -599,6 +627,48 @@ static void check_object_collisions(void) {
  * Red/Blue block system
  * ──────────────────────────────────────────────────────────*/
 
+/* ── Violet/Pink block functions ──────────────────────── */
+/* Returns 1 if (tx,ty) is a violet/pink block that is currently PASSABLE */
+static unsigned char vp_is_passable(unsigned char tx, unsigned char ty) {
+    unsigned char i;
+    for (i = 0; i < vp_block_count; i++) {
+        if (vp_blocks[i].tx == tx && vp_blocks[i].ty == ty) {
+            /* violet_active=0: violet passable, pink solid
+               violet_active=1: violet solid, pink passable */
+            return vp_blocks[i].is_violet ? !vp_violet_active : vp_violet_active;
+        }
+    }
+    return 0;
+}
+
+/* Toggle violet/pink state and redraw all their nametable cells */
+static void vp_toggle(void) {
+    unsigned char i;
+    vp_violet_active = !vp_violet_active;
+    for (i = 0; i < vp_block_count; i++) {
+        unsigned char tx    = vp_blocks[i].tx;
+        unsigned char ty    = vp_blocks[i].ty;
+        unsigned char solid = vp_blocks[i].is_violet ? vp_violet_active : !vp_violet_active;
+        unsigned char idx;
+        unsigned int vt;
+        if (vp_blocks[i].is_violet)
+            idx = solid ? res_header->vio_solid_vram_idx : res_header->vio_ghost_vram_idx;
+        else
+            idx = solid ? res_header->pink_solid_vram_idx : res_header->pink_ghost_vram_idx;
+        vt = idx ? (unsigned int)(VRAM_BG_BASE + idx - 1) : 0u;
+        SMS_setNextTileatXY(tx % SCREEN_TILES_W, ty);
+        SMS_setTile(vt);
+        /* Kill player if now inside a newly-solid block */
+        if (solid) {
+            long px = player.x >> 8, py = player.y >> 8;
+            long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
+            if (px + PLAYER_W > bx && px < bx + TILE_SIZE &&
+                py + PLAYER_H > by && py < by + TILE_SIZE)
+                player_died = 1;
+        }
+    }
+}
+
 /* Returns 1 if position (tx,ty) is a red or blue block that is currently PASSABLE */
 static unsigned char rb_is_passable(unsigned char tx, unsigned char ty) {
     unsigned char i;
@@ -739,6 +809,9 @@ static void load_level(unsigned char n) {
     rb_switch_count = 0;
     rb_red_active   = 1;   /* red starts solid per pocket-platformer default */
     rb_switch_locked = 0;
+    /* Violet/pink: violet starts PASSABLE, pink starts SOLID (violet_active=0) */
+    vp_block_count  = 0;
+    vp_violet_active = 0;  /* state = "violet turn" (violet passable, pink solid) */
     map_res_bank();
     for (i = 0; i < cur_level->obj_count; i++) {
         level_object *obj = &cur_objects[i];
@@ -747,6 +820,12 @@ static void load_level(unsigned char n) {
             rb_blocks[rb_block_count].ty     = obj->y;
             rb_blocks[rb_block_count].is_red = (obj->type == 7);
             rb_block_count++;
+        }
+        if ((obj->type == 10 || obj->type == 11) && vp_block_count < MAX_VP_BLOCKS) {
+            vp_blocks[vp_block_count].tx        = obj->x;
+            vp_blocks[vp_block_count].ty        = obj->y;
+            vp_blocks[vp_block_count].is_violet = (obj->type == 10);
+            vp_block_count++;
         }
         if (obj->type == 9 && rb_switch_count < MAX_RB_SWITCHES) {
             rb_switches[rb_switch_count].tx = obj->x;
