@@ -513,11 +513,12 @@ static void move_player_y(void) {
         if (is_solid_px(player.x + FP(1),            new_y) ||
             is_solid_px(player.x + FP(PLAYER_W - 2), new_y)) {
             long tile_t = py / TILE_SIZE + 1;
-            /* Check if the ceiling tile is a switch before snapping */
+            /* Check if the ceiling tile is a switch before snapping.
+               The blocking tile is at row (tile_t - 1) = py/TILE_SIZE. */
             if (!rb_switch_locked && res_header->switch_vram_idx) {
                 unsigned char htx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
                 unsigned char htx_r = (unsigned char)(((player.x >> 8) + PLAYER_W) / TILE_SIZE);
-                unsigned char hty   = (unsigned char)tile_t;
+                unsigned char hty   = (unsigned char)(tile_t - 1);  /* ceiling row */
                 unsigned char tl = get_tile(htx_l, hty);
                 unsigned char tr = get_tile(htx_r, hty);
                 if ((tl == res_header->switch_vram_idx || tl == res_header->switch_blue_vram_idx ||
