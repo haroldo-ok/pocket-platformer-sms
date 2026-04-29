@@ -73,7 +73,7 @@
 
 /* ── Player collision box (8x8 sprite, slightly narrower) ── */
 #define PLAYER_W   6
-#define PLAYER_H   8
+#define PLAYER_H   5   /* tileSize-3 = 8-3, matches JS player.height */
 #define MAX_OBJECTS 32
 
 /* ──────────────────────────────────────────────────────────
@@ -122,7 +122,9 @@ typedef struct {
 typedef struct {
     long          x, y, vx, vy;
     unsigned char on_ground;
-    unsigned char jump_frames;
+    unsigned char falling;       /* 1 = in air without active jump ramp */
+    unsigned char jumping;       /* 1 = jump ramp active */
+    unsigned char jump_frames;   /* counts up during ramp */
     unsigned char facing_left;
     unsigned char double_jump_used;
     unsigned char anim_frame;
@@ -439,7 +441,8 @@ static void draw_player(void) {
  * Physics
  * ──────────────────────────────────────────────────────────*/
 static void apply_gravity(void) {
-    if (!player.on_ground) {
+    /* Gravity only while falling (not during active jump ramp) */
+    if (player.falling) {
         player.vy += GRAVITY;
         if (player.vy > MAX_VY)
             player.vy = MAX_VY;
@@ -448,8 +451,10 @@ static void apply_gravity(void) {
 
 static void handle_input(unsigned int joy, unsigned int joy_pressed) {
     long max_spd = (long)res_physics->max_speed;
-    long accel   = player.on_ground ? (long)res_physics->ground_accel
-                                    : (long)res_physics->air_accel;
+    long accel = player.on_ground ? (long)res_physics->ground_accel : (long)res_physics->air_accel;
+    long fric  = player.on_ground ? (long)res_physics->ground_friction : (long)res_physics->air_friction;
+
+    /* Horizontal */
     if (joy & PORT_A_KEY_LEFT) {
         player.vx -= accel;
         if (player.vx < -max_spd) player.vx = -max_spd;
@@ -459,27 +464,50 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         if (player.vx > max_spd) player.vx = max_spd;
         player.facing_left = 0;
     } else {
-        long fr = player.on_ground ? (long)res_physics->ground_friction
-                                   : (long)res_physics->air_friction;
-        player.vx = FP_MUL(player.vx, fr);
-        if (player.vx > -FP(0.2) && player.vx < FP(0.2)) player.vx = 0;
+        player.vx = FP_MUL(player.vx, fric);
+        if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
     }
+
+    /* Jump initiation */
     if (joy_pressed & PORT_A_KEY_1) {
         if (player.on_ground) {
-            player.vy = -(long)res_physics->jump_speed;
-            player.jump_frames = res_physics->max_jump_frames;
+            player.jumping = 1;
+            player.jump_frames = 0;
+            player.falling = 0;
             player.on_ground = 0;
-            if (vp_block_count) vp_toggle();   /* jump toggles violet/pink */
+            if (vp_block_count) vp_toggle();
         } else if (res_physics->has_double_jump && !player.double_jump_used) {
-            player.vy = -(long)res_physics->jump_speed;
-            player.jump_frames = res_physics->max_jump_frames >> 1;
+            player.jumping = 1;
+            player.jump_frames = 0;
             player.double_jump_used = 1;
-            if (vp_block_count) vp_toggle();   /* double jump also toggles */
+            if (vp_block_count) vp_toggle();
         }
     }
-    if (player.jump_frames) {
-        if (joy & PORT_A_KEY_1) { player.vy -= FP(0.04); player.jump_frames--; }
-        else                      player.jump_frames = 0;
+
+    /* Jump ramp: vy = -(maxJumpFrames - frame) * jumpSpeed  (SET each frame, not accumulated)
+       Matches JumpHandler.performJump(). Gravity does NOT apply while jumping=1. */
+    if (player.jumping) {
+        if (joy & PORT_A_KEY_1) {
+            long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+            player.vy = -(remaining * (long)res_physics->jump_speed);
+            player.jump_frames++;
+            if (player.jump_frames >= res_physics->max_jump_frames) {
+                player.jumping = 0;
+                player.falling = 1;
+            }
+        } else {
+            /* Button released: end ramp, begin release decel */
+            player.jumping = 0;
+            player.jump_frames = res_physics->max_jump_frames;
+            player.falling = 1;
+        }
+    }
+
+    /* Release decel: vy *= 0.75 per frame while vy < 0 and not jumping
+       Matches JumpHandler: yspeed *= 0.75 until |yspeed| < 0.5 */
+    if (!player.jumping && player.vy < 0) {
+        player.vy = FP_MUL(player.vy, FP(0.75));
+        if (player.vy > -FP(0.5)) player.vy = 0;
     }
 }
 
@@ -534,6 +562,8 @@ static void move_player_y(void) {
             new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
             player.vy = 0;
             player.on_ground = 1;
+            player.falling = 0;
+            player.jumping = 0;
             player.double_jump_used = 0;
             skip_land:;
         }
@@ -586,7 +616,8 @@ static void move_player_y(void) {
             }
             new_y = tile_t * TILE_SIZE * FP_ONE;
             player.vy = 0;
-            player.jump_frames = 0;
+            player.jumping = 0;
+            player.jump_frames = res_physics->max_jump_frames;
         }
     }
     player.y = new_y;
@@ -841,6 +872,7 @@ static void load_level(unsigned char n) {
     player.y  = FP(4 * TILE_SIZE);
     player.vx = player.vy = 0;
     player.on_ground = player.jump_frames = player.double_jump_used = 0;
+    player.falling = 1; player.jumping = 0;
     player.facing_left = player.anim_frame = player.anim_timer = 0;
 
     for (i = 0; i < cur_level->obj_count; i++) {
@@ -886,10 +918,12 @@ static void gameplay_loop(void) {
         joy         = SMS_getKeysStatus();
         joy_pressed = joy & ~joy_prev;
 
-        prev_player_y = player.y;  /* save before physics for switch crossing detection */
+        prev_player_y = player.y;
         handle_input(joy, joy_pressed);
-        apply_gravity();
+        /* Mark falling before move — landing in move_player_y clears it */
+        if (!player.on_ground && !player.jumping) player.falling = 1;
         player.on_ground = 0;
+        apply_gravity();
         move_player_x();
         move_player_y();
         check_object_collisions();
