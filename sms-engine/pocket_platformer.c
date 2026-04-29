@@ -262,8 +262,9 @@ static unsigned char disp_is_gone(unsigned char tx, unsigned char ty) {
     return (e && e->frame >= DISP_GONE_AT) ? 1 : 0;
 }
 
-/* Forward declaration — rb functions defined later */
+/* Forward declarations — rb functions defined later */
 static unsigned char rb_is_passable(unsigned char tx, unsigned char ty);
+static void rb_redraw_all(void);
 
 /* Fully solid: returns 1 for any non-zero tile.
    Used for horizontal movement and jumping up. */
@@ -276,9 +277,7 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (t == 0) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
-    /* Switch tiles are always passable - they are triggers, not physical blocks */
-    if (res_header->switch_vram_idx && (t == res_header->switch_vram_idx ||
-        t == res_header->switch_blue_vram_idx)) return 0;
+
     /* Red/blue blocks: treat as empty when that colour is inactive */
     if (rb_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -306,9 +305,6 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
-    /* Switch tiles are always passable */
-    if (res_header->switch_vram_idx && (t == res_header->switch_vram_idx ||
-        t == res_header->switch_blue_vram_idx)) return 0;
     /* Red/blue blocks passable when inactive */
     if (rb_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -517,6 +513,48 @@ static void move_player_y(void) {
         if (is_solid_px(player.x + FP(1),            new_y) ||
             is_solid_px(player.x + FP(PLAYER_W - 2), new_y)) {
             long tile_t = py / TILE_SIZE + 1;
+            /* Check if the ceiling tile is a switch before snapping */
+            if (!rb_switch_locked && res_header->switch_vram_idx) {
+                unsigned char htx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
+                unsigned char htx_r = (unsigned char)(((player.x >> 8) + PLAYER_W) / TILE_SIZE);
+                unsigned char hty   = (unsigned char)tile_t;
+                unsigned char tl = get_tile(htx_l, hty);
+                unsigned char tr = get_tile(htx_r, hty);
+                if ((tl == res_header->switch_vram_idx || tl == res_header->switch_blue_vram_idx ||
+                     tr == res_header->switch_vram_idx || tr == res_header->switch_blue_vram_idx)) {
+                    /* Hit a switch from below — fire the trigger */
+                    rb_red_active = !rb_red_active;
+                    rb_redraw_all();
+                    {
+                        unsigned char si;
+                        unsigned char sw_idx = rb_red_active
+                            ? res_header->switch_vram_idx
+                            : res_header->switch_blue_vram_idx;
+                        unsigned int sw_vt = sw_idx
+                            ? (unsigned int)(VRAM_BG_BASE + sw_idx - 1) : 0u;
+                        for (si = 0; si < rb_switch_count; si++) {
+                            SMS_setNextTileatXY(rb_switches[si].tx % SCREEN_TILES_W,
+                                               rb_switches[si].ty);
+                            SMS_setTile(sw_vt);
+                        }
+                    }
+                    /* Kill player if now inside a solid block */
+                    {
+                        unsigned char b;
+                        long ppx = player.x >> 8, ppy = new_y >> 8;
+                        for (b = 0; b < rb_block_count; b++) {
+                            long bx = (long)rb_blocks[b].tx * TILE_SIZE;
+                            long by = (long)rb_blocks[b].ty * TILE_SIZE;
+                            unsigned char solid = rb_blocks[b].is_red ? rb_red_active : !rb_red_active;
+                            if (solid &&
+                                ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
+                                ppy + PLAYER_H > by && ppy < by + TILE_SIZE)
+                                player_died = 1;
+                        }
+                    }
+                    rb_switch_locked = 1;
+                }
+            }
             new_y = tile_t * TILE_SIZE * FP_ONE;
             player.vy = 0;
             player.jump_frames = 0;
@@ -594,89 +632,9 @@ static void rb_redraw_all(void) {
     }
 }
 
-/* Check if player hits a switch from below (player moving up, head at switch bottom).
- *
- * Matches pocket-platformer's RedBlueSwitch.collisionEvent():
- *   bottomLineHitBox = { x: sw.x, y: sw.y + sw.height, width: sw.width, height: 2 }
- *   trigger when: player.top_left_pos OR player.top_right_pos is strictly inside hitbox
- *   i.e. point.x in (sw.x, sw.x+width) AND point.y in (sw.y+height, sw.y+height+2)
- *
- * On SMS (8px tiles):
- *   hitbox y range: sw_bot+1 .. sw_bot+1  (strictly inside 2px strip below switch)
- *   hitbox x range: sw.x+1 .. sw.x+7      (strictly inside switch width)
- *   player top-left:  (px,      py)
- *   player top-right: (px+PLAYER_W, py)
- *
- * We use a 2px tolerance so a fast-moving player doesn't skip through in one frame.
- */
 static void check_rb_switch(void) {
-    unsigned char i;
-    long px = player.x >> 8, py = player.y >> 8;
-
-    /* Unlock once player moves away downward */
-    if (rb_switch_locked) {
-        if (player.vy > 0) rb_switch_locked = 0;
-        return;
-    }
-
-    for (i = 0; i < rb_switch_count; i++) {
-        long sx     = (long)rb_switches[i].tx * TILE_SIZE;
-        long sy     = (long)rb_switches[i].ty * TILE_SIZE;
-        long sw_bot = sy + TILE_SIZE;  /* bottom edge of switch tile = top of hitbox strip */
-        long prev_py = prev_player_y >> 8;
-
-        /* Detect upward crossing: player head was above the hitbox last frame
-           and is now at or inside it. The hitbox is a 2px strip at sw_bot.
-           "Was above": prev_py > sw_bot + 2  (head clearly above strip)
-           "Now inside": py <= sw_bot + 2
-           Also accept the snap case: prev_py > sw_bot (above tile bottom)
-           and py <= sw_bot + 1 (now at/just past tile bottom) */
-        if (prev_py <= py) continue;           /* not moving up */
-        if (prev_py <= sw_bot) continue;       /* was already at/inside switch last frame */
-        if (py > sw_bot + 2) continue;         /* still above the hitbox strip */
-
-        /* Horizontal: top-left (px) or top-right (px+PLAYER_W) inside switch tile */
-        {
-            unsigned char left_in  = (px            > sx && px            < sx + TILE_SIZE);
-            unsigned char right_in = (px + PLAYER_W > sx && px + PLAYER_W < sx + TILE_SIZE);
-            if (!left_in && !right_in) continue;
-        }
-        if (1) {
-            rb_red_active = !rb_red_active;
-            rb_redraw_all();
-            /* Redraw all switch tiles with the new active frame */
-            {
-                unsigned char si;
-                unsigned char sw_idx = rb_red_active
-                    ? res_header->switch_vram_idx
-                    : res_header->switch_blue_vram_idx;
-                unsigned int sw_vt = sw_idx
-                    ? (unsigned int)(VRAM_BG_BASE + sw_idx - 1) : 0u;
-                for (si = 0; si < rb_switch_count; si++) {
-                    SMS_setNextTileatXY(rb_switches[si].tx % SCREEN_TILES_W,
-                                       rb_switches[si].ty);
-                    SMS_setTile(sw_vt);
-                }
-            }
-            rb_switch_locked = 1;
-
-            /* Kill player if now inside a solid block */
-            {
-                unsigned char b;
-                for (b = 0; b < rb_block_count; b++) {
-                    long bx = (long)rb_blocks[b].tx * TILE_SIZE;
-                    long by = (long)rb_blocks[b].ty * TILE_SIZE;
-                    unsigned char solid = rb_blocks[b].is_red ? rb_red_active : !rb_red_active;
-                    if (solid &&
-                        px + PLAYER_W > bx && px < bx + TILE_SIZE &&
-                        py + PLAYER_H > by && py < by + TILE_SIZE) {
-                        player_died = 1;
-                    }
-                }
-            }
-            return;
-        }
-    }
+    /* Unlock once player falls away from switch (trigger is in move_player_y) */
+    if (rb_switch_locked && player.vy > 0) rb_switch_locked = 0;
 }
 
 static void check_disp_touch(void) {
