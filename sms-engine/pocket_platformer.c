@@ -409,8 +409,9 @@ static void draw_objects(void) {
         int sx, sy;
         if (obj->type == OBJ_START_FLAG) continue;
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
-        /* Red/blue blocks and switch are BG tiles, not sprites */
+        /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
+        if (obj->type == 10 || obj->type == 11) continue;
         sx = (int)obj->x * TILE_SIZE - (int)camera_x;
         sy = (int)obj->y * TILE_SIZE;
         if (sx < -8 || sx > SCREEN_PX_W) continue;
