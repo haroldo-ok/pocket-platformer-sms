@@ -122,7 +122,12 @@ typedef struct {
 typedef struct {
     long          x, y, vx, vy;
     unsigned char on_ground;
-    unsigned char jump_frames;
+    unsigned char falling;        /* 1 = in air without active jump ramp */
+    unsigned char jumping;        /* 1 = jump ramp active */
+    unsigned char wall_jumping;   /* 1 = wall jump ramp active */
+    unsigned char wall_jump_dir;  /* 1 = jumped off left wall, -1 = right wall (as signed) */
+    unsigned char wall_push_frames; /* counts horizontal push frames */
+    unsigned char jump_frames;    /* counts up during ramp */
     unsigned char facing_left;
     unsigned char double_jump_used;
     unsigned char anim_frame;
@@ -439,7 +444,8 @@ static void draw_player(void) {
  * Physics
  * ──────────────────────────────────────────────────────────*/
 static void apply_gravity(void) {
-    if (!player.on_ground) {
+    /* Gravity only while falling (not during active jump ramp) */
+    if (player.falling) {
         player.vy += GRAVITY;
         if (player.vy > MAX_VY)
             player.vy = MAX_VY;
@@ -448,8 +454,10 @@ static void apply_gravity(void) {
 
 static void handle_input(unsigned int joy, unsigned int joy_pressed) {
     long max_spd = (long)res_physics->max_speed;
-    long accel   = player.on_ground ? (long)res_physics->ground_accel
-                                    : (long)res_physics->air_accel;
+    long accel = player.on_ground ? (long)res_physics->ground_accel : (long)res_physics->air_accel;
+    long fric  = player.on_ground ? (long)res_physics->ground_friction : (long)res_physics->air_friction;
+
+    /* Horizontal */
     if (joy & PORT_A_KEY_LEFT) {
         player.vx -= accel;
         if (player.vx < -max_spd) player.vx = -max_spd;
@@ -459,27 +467,114 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         if (player.vx > max_spd) player.vx = max_spd;
         player.facing_left = 0;
     } else {
-        long fr = player.on_ground ? (long)res_physics->ground_friction
-                                   : (long)res_physics->air_friction;
-        player.vx = FP_MUL(player.vx, fr);
-        if (player.vx > -FP(0.2) && player.vx < FP(0.2)) player.vx = 0;
+        player.vx = FP_MUL(player.vx, fric);
+        if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
     }
-    if (joy_pressed & PORT_A_KEY_1) {
-        if (player.on_ground) {
-            player.vy = -(long)res_physics->jump_speed;
-            player.jump_frames = res_physics->max_jump_frames;
-            player.on_ground = 0;
-            if (vp_block_count) vp_toggle();   /* jump toggles violet/pink */
-        } else if (res_physics->has_double_jump && !player.double_jump_used) {
-            player.vy = -(long)res_physics->jump_speed;
-            player.jump_frames = res_physics->max_jump_frames >> 1;
-            player.double_jump_used = 1;
-            if (vp_block_count) vp_toggle();   /* double jump also toggles */
+
+    /* Wall detection: check 1 pixel beyond each horizontal edge of the player.
+       tilesWithNoWallJump = [0, 5] in JS — empty and one-way don't count.
+       Also skip rb/vp passable tiles. */
+    {
+        long px_l = (player.x >> 8) - 1;           /* 1px left of player */
+        long px_r = (player.x >> 8) + PLAYER_W + 1; /* 1px beyond right edge */
+        unsigned char px8_l = (unsigned char)(px_l >= 0 ? px_l / TILE_SIZE : 255);
+        unsigned char px8_r = (unsigned char)(px_r / TILE_SIZE);
+        unsigned char py8   = (unsigned char)((player.y >> 8) / TILE_SIZE);
+        unsigned char pb8   = (unsigned char)(((player.y >> 8) + PLAYER_H - 1) / TILE_SIZE);
+        /* Helper: returns 1 if tile is a valid wall (not empty, not one-way, not passable rb/vp) */
+        #define IS_WALL_TILE(tx,ty) (             get_tile(tx,ty) != 0 &&             !(res_header->one_way_vram_idx && get_tile(tx,ty)==res_header->one_way_vram_idx) &&             !rb_is_passable(tx,ty) && !vp_is_passable(tx,ty) )
+        unsigned char wall_left  = (px_l >= 0) &&
+            (IS_WALL_TILE(px8_l, py8) || IS_WALL_TILE(px8_l, pb8));
+        unsigned char wall_right =
+            (IS_WALL_TILE(px8_r, py8) || IS_WALL_TILE(px8_r, pb8));
+        #undef IS_WALL_TILE
+
+        /* Jump initiation */
+        if (joy_pressed & PORT_A_KEY_1) {
+            if (player.on_ground) {
+                player.jumping = 1;
+                player.wall_jumping = 0;
+                player.jump_frames = 0;
+                player.falling = 0;
+                player.on_ground = 0;
+                if (vp_block_count) vp_toggle();
+            } else if (res_physics->has_wall_jump && !player.on_ground &&
+                       (wall_left || wall_right)) {
+                /* Wall jump: same ramp, push away from wall */
+                player.jumping = 0;
+                player.wall_jumping = 1;
+                player.jump_frames = 0;
+                player.falling = 0;
+                player.double_jump_used = 0;
+                /* wall_jump_dir stored as 1=pushed right (off left wall),
+                   255=pushed left (off right wall, treated as -1 in signed math) */
+                player.wall_jump_dir = wall_left ? 1 : 255;
+                player.wall_push_frames = 0;
+                if (vp_block_count) vp_toggle();
+            } else if (res_physics->has_double_jump && !player.double_jump_used) {
+                player.jumping = 1;
+                player.wall_jumping = 0;
+                player.jump_frames = 0;
+                player.double_jump_used = 1;
+                if (vp_block_count) vp_toggle();
+            }
         }
     }
-    if (player.jump_frames) {
-        if (joy & PORT_A_KEY_1) { player.vy -= FP(0.04); player.jump_frames--; }
-        else                      player.jump_frames = 0;
+
+    /* Jump ramp (normal + double jump): vy SET each frame, gravity overridden */
+    if (player.jumping) {
+        if (joy & PORT_A_KEY_1) {
+            long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+            player.vy = -(remaining * (long)res_physics->jump_speed);
+            player.jump_frames++;
+            if (player.jump_frames >= res_physics->max_jump_frames) {
+                player.jumping = 0;
+                player.falling = 1;
+            }
+        } else {
+            player.jumping = 0;
+            player.jump_frames = res_physics->max_jump_frames;
+            player.falling = 1;
+        }
+    }
+
+    /* Wall jump ramp: same formula + horizontal push away from wall
+       pushToSideWhileWallJumpingFrames = maxJumpFrames/2 - 4 */
+    if (player.wall_jumping) {
+        if (joy & PORT_A_KEY_1) {
+            long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+            player.vy = -(remaining * (long)res_physics->jump_speed);
+            player.jump_frames++;
+            /* Horizontal push for first (maxJumpFrames/2 - 4) frames */
+            if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
+                /* currentJumpSpeed magnitude = remaining * jumpSpeed */
+                long push = remaining * (long)res_physics->jump_speed;
+                if (player.wall_jump_dir == 1) {   /* off left wall → push right */
+                    player.vx += push >> 4;         /* scale down push */
+                    if (player.vx > (long)res_physics->max_speed)
+                        player.vx = (long)res_physics->max_speed;
+                } else {                            /* off right wall → push left */
+                    player.vx -= push >> 4;
+                    if (player.vx < -(long)res_physics->max_speed)
+                        player.vx = -(long)res_physics->max_speed;
+                }
+                player.wall_push_frames++;
+            }
+            if (player.jump_frames >= res_physics->max_jump_frames) {
+                player.wall_jumping = 0;
+                player.falling = 1;
+            }
+        } else {
+            player.wall_jumping = 0;
+            player.jump_frames = res_physics->max_jump_frames;
+            player.falling = 1;
+        }
+    }
+
+    /* Release decel: vy *= 0.75 per frame while vy < 0 and not in any jump ramp */
+    if (!player.jumping && !player.wall_jumping && player.vy < 0) {
+        player.vy = FP_MUL(player.vy, FP(0.75));
+        if (player.vy > -FP(0.5)) player.vy = 0;
     }
 }
 
@@ -534,6 +629,9 @@ static void move_player_y(void) {
             new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
             player.vy = 0;
             player.on_ground = 1;
+            player.falling = 0;
+            player.jumping = 0;
+            player.wall_jumping = 0;
             player.double_jump_used = 0;
             skip_land:;
         }
@@ -586,7 +684,9 @@ static void move_player_y(void) {
             }
             new_y = tile_t * TILE_SIZE * FP_ONE;
             player.vy = 0;
-            player.jump_frames = 0;
+            player.jumping = 0;
+            player.wall_jumping = 0;
+            player.jump_frames = res_physics->max_jump_frames;
         }
     }
     player.y = new_y;
@@ -841,6 +941,7 @@ static void load_level(unsigned char n) {
     player.y  = FP(4 * TILE_SIZE);
     player.vx = player.vy = 0;
     player.on_ground = player.jump_frames = player.double_jump_used = 0;
+    player.falling = 1; player.jumping = 0; player.wall_jumping = 0; player.wall_push_frames = 0;
     player.facing_left = player.anim_frame = player.anim_timer = 0;
 
     for (i = 0; i < cur_level->obj_count; i++) {
@@ -886,10 +987,12 @@ static void gameplay_loop(void) {
         joy         = SMS_getKeysStatus();
         joy_pressed = joy & ~joy_prev;
 
-        prev_player_y = player.y;  /* save before physics for switch crossing detection */
+        prev_player_y = player.y;
         handle_input(joy, joy_pressed);
-        apply_gravity();
+        /* Mark falling before move — landing in move_player_y clears it */
+        if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
         player.on_ground = 0;
+        apply_gravity();
         move_player_x();
         move_player_y();
         check_object_collisions();
