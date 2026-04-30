@@ -76,7 +76,7 @@
 /* ── Player collision box (8x8 sprite, slightly narrower) ── */
 #define PLAYER_W   6
 #define PLAYER_H   8
-#define MAX_OBJECTS 32
+#define MAX_OBJECTS 128
 
 /* ──────────────────────────────────────────────────────────
  * Structs
@@ -415,7 +415,8 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
  * ──────────────────────────────────────────────────────────*/
 static unsigned char coins_remaining(void) {
     unsigned char i, count = 0;
-    for (i = 0; i < cur_level->obj_count; i++)
+    unsigned char n = cur_level->obj_count < MAX_OBJECTS ? cur_level->obj_count : MAX_OBJECTS;
+    for (i = 0; i < n; i++)
         if (cur_objects[i].type == OBJ_COIN && !coin_collected[i]) count++;
     return count;
 }
@@ -727,8 +728,10 @@ static void move_player_y(void) {
 static void check_object_collisions(void) {
     long px = player.x >> 8, py = player.y >> 8;
     unsigned char i;
+    unsigned char obj_count = cur_level->obj_count < MAX_OBJECTS
+        ? cur_level->obj_count : MAX_OBJECTS;
     map_res_bank();
-    for (i = 0; i < cur_level->obj_count; i++) {
+    for (i = 0; i < obj_count; i++) {
         level_object *obj = &cur_objects[i];
         long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
         if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
