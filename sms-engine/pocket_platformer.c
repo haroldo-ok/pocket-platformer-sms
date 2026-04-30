@@ -54,6 +54,7 @@
 #define VRAM_SPR_PLAYER_WALK0 262
 #define VRAM_SPR_PLAYER_WALK1 263
 #define VRAM_SPR_PLAYER_JUMP  264
+#define VRAM_SPR_FLAG_CLOSED  265
 #define VRAM_TILE_FONT        352
 
 /* ── Object types (must match SmsExporter.js) ───────────── */
@@ -61,7 +62,8 @@
 #define OBJ_FINISH_FLAG 2
 #define OBJ_SPIKE       3
 #define OBJ_TRAMPOLINE  4
-#define OBJ_COIN        5
+#define OBJ_COIN             5
+#define OBJ_FINISH_FLAG_LOCKED 12
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
@@ -74,7 +76,7 @@
 /* ── Player collision box (8x8 sprite, slightly narrower) ── */
 #define PLAYER_W   6
 #define PLAYER_H   8
-#define MAX_OBJECTS 32
+#define MAX_OBJECTS 128
 
 /* ──────────────────────────────────────────────────────────
  * Structs
@@ -133,6 +135,7 @@ typedef struct {
     unsigned char double_jump_used;
     unsigned char anim_frame;
     unsigned char anim_timer;
+    long          forced_jump_speed; /* 0=normal, >0=trampoline boost */
 } player_state;
 
 /* ──────────────────────────────────────────────────────────
@@ -202,7 +205,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 9u * 32u);
+    res_levels  = (level_header *)(res_sprites + 10u * 32u);
 }
 
 static level_header *get_level(unsigned char n) {
@@ -379,8 +382,8 @@ static void load_graphics(void) {
     /* BG tiles at VRAM 1..N */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
-    /* Sprite sheet at VRAM 256..264 (9 × 8x8 tiles) */
-    SMS_loadTiles(res_sprites, 256u, 9u * 32u);
+    /* Sprite sheet at VRAM 256..265 (10 × 8x8 tiles) */
+    SMS_loadTiles(res_sprites, 256u, 10u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
@@ -410,13 +413,22 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
 /* ──────────────────────────────────────────────────────────
  * Sprite draw  (8x8 normal sprites)
  * ──────────────────────────────────────────────────────────*/
+static unsigned char coins_remaining(void) {
+    unsigned char i, count = 0;
+    unsigned char n = cur_level->obj_count < MAX_OBJECTS ? cur_level->obj_count : MAX_OBJECTS;
+    for (i = 0; i < n; i++)
+        if (cur_objects[i].type == OBJ_COIN && !coin_collected[i]) count++;
+    return count;
+}
+
 static unsigned int obj_sprite_tile(unsigned char type) {
     switch (type) {
-        case OBJ_FINISH_FLAG:      return VRAM_SPR_FINISH_FLAG;
-        case OBJ_SPIKE:            return VRAM_SPR_SPIKE;
-        case OBJ_TRAMPOLINE:       return VRAM_SPR_TRAMPOLINE;
-        case OBJ_COIN:             return VRAM_SPR_COIN;
-        default:                   return VRAM_SPR_FINISH_FLAG;
+        case OBJ_FINISH_FLAG:        return VRAM_SPR_FINISH_FLAG;
+        case OBJ_FINISH_FLAG_LOCKED: return coins_remaining() ? VRAM_SPR_FLAG_CLOSED : VRAM_SPR_FINISH_FLAG;
+        case OBJ_SPIKE:              return VRAM_SPR_SPIKE;
+        case OBJ_TRAMPOLINE:         return VRAM_SPR_TRAMPOLINE;
+        case OBJ_COIN:               return VRAM_SPR_COIN;
+        default:                     return VRAM_SPR_FINISH_FLAG;
     }
 }
 
@@ -535,17 +547,21 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         }
     }
 
-    /* Jump ramp (normal + double jump): vy SET each frame, gravity overridden */
+    /* Jump ramp (normal + double jump): vy SET each frame, gravity overridden.
+       forced_jump_speed > 0 means trampoline boost (auto-fires without button). */
     if (player.jumping) {
-        if (joy & PORT_A_KEY_1) {
+        if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
+            long js = player.forced_jump_speed > 0 ? player.forced_jump_speed : (long)res_physics->jump_speed;
             long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
-            player.vy = -(remaining * (long)res_physics->jump_speed);
+            player.vy = -(remaining * js);
             player.jump_frames++;
             if (player.jump_frames >= res_physics->max_jump_frames) {
                 player.jumping = 0;
                 player.falling = 1;
+                player.forced_jump_speed = 0;
             }
-        } else {
+        } else if (player.forced_jump_speed == 0) {
+            /* Only cancel on button release if NOT a forced (trampoline) jump */
             player.jumping = 0;
             player.jump_frames = res_physics->max_jump_frames;
             player.falling = 1;
@@ -712,18 +728,35 @@ static void move_player_y(void) {
 static void check_object_collisions(void) {
     long px = player.x >> 8, py = player.y >> 8;
     unsigned char i;
+    unsigned char obj_count = cur_level->obj_count < MAX_OBJECTS
+        ? cur_level->obj_count : MAX_OBJECTS;
     map_res_bank();
-    for (i = 0; i < cur_level->obj_count; i++) {
+    for (i = 0; i < obj_count; i++) {
         level_object *obj = &cur_objects[i];
         long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
         if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
         if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
         switch (obj->type) {
             case OBJ_FINISH_FLAG: level_complete = 1; break;
-            case OBJ_SPIKE:       player_died = 1; break;
+            case OBJ_FINISH_FLAG_LOCKED:
+                if (!coins_remaining()) level_complete = 1;
+                break;
+            case OBJ_SPIKE: player_died = 1; break;
             case OBJ_TRAMPOLINE:
-                player.vy = -((long)res_physics->jump_speed + FP(1.5));
-                player.jump_frames = 0; player.on_ground = 0; break;
+                if (player.vy >= 0) {
+                    long tramp_mid = (long)obj->y * TILE_SIZE + TILE_SIZE / 2;
+                    if ((player.y >> 8) + PLAYER_H <= tramp_mid + 2) {
+                        long base = (long)res_physics->jump_speed;
+                        player.forced_jump_speed = base + base * 4 / 15;
+                        player.jumping = 1;
+                        player.jump_frames = 0;
+                        player.falling = 0;
+                        player.on_ground = 0;
+                        player.double_jump_used = 0;
+                        if (vp_block_count) vp_toggle();
+                    }
+                }
+                break;
             case OBJ_COIN:
                 if (!coin_collected[i]) coin_collected[i] = 1; break;
         }
