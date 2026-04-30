@@ -296,7 +296,13 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (t == 0) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
-
+    /* Deko tiles are always passable (decorative only) */
+    {
+        unsigned char di;
+        for (di = 0; di < 18; di++) {
+            if (res_header->deko_vram_idx[di] && t == res_header->deko_vram_idx[di]) return 0;
+        }
+    }
     /* Violet/pink blocks: passable when that type is inactive */
     if (vp_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
