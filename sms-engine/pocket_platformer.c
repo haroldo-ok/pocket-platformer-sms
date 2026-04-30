@@ -96,6 +96,7 @@ typedef struct {
     unsigned char vio_ghost_vram_idx;   /* violet block ghost  */
     unsigned char pink_solid_vram_idx;  /* pink block solid    */
     unsigned char pink_ghost_vram_idx;  /* pink block ghost    */
+    unsigned char deko_vram_idx[18];    /* decorative tile VRAM indices (0=unused) */
 } resource_header;
 
 typedef struct {
@@ -329,6 +330,13 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
+    /* Deko tiles are always passable */
+    {
+        unsigned char di;
+        for (di = 0; di < 18; di++) {
+            if (res_header->deko_vram_idx[di] && t == res_header->deko_vram_idx[di]) return 0;
+        }
+    }
     /* Violet/pink blocks passable when inactive */
     if (vp_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
