@@ -297,6 +297,8 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
+    /* Foreground (priority) tiles are always passable */
+    if (t & 0x80) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
     /* Deko tiles are always passable (decorative only) */
@@ -339,6 +341,8 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     t = get_tile((unsigned char)(px / TILE_SIZE),
                  (unsigned char)(py / TILE_SIZE));
     if (t == 0) return 0;
+    /* Foreground (priority) tiles are always passable */
+    if (t & 0x80) return 0;
     /* Deko tiles are always passable */
     {
         unsigned char di;
@@ -395,7 +399,10 @@ static void draw_tilemap_full(void) {
         SMS_setNextTileatXY(0, y);
         for (x = 0; x < SCREEN_TILES_W; x++) {
             unsigned char t = (y < cur_level->map_h) ? get_tile(x, y) : 0;
-            SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
+            if (t & 0x80)
+                SMS_setTile((unsigned int)(VRAM_BG_BASE + (t & 0x7F) - 1) | TILE_PRIORITY);
+            else
+                SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
         }
     }
 }
@@ -406,7 +413,10 @@ static void draw_tile_column(unsigned char scr_col, unsigned char map_col) {
     SMS_setNextTileatXY(scr_col, 0);
     for (y = 0; y < SCREEN_TILES_H; y++) {
         unsigned char t = (y < cur_level->map_h) ? get_tile(map_col, y) : 0;
-        SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
+        if (t & 0x80)
+            SMS_setTile((unsigned int)(VRAM_BG_BASE + (t & 0x7F) - 1) | TILE_PRIORITY);
+        else
+            SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
     }
 }
 
