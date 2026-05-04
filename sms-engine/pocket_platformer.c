@@ -99,6 +99,7 @@ typedef struct {
     unsigned char pink_solid_vram_idx;  /* pink block solid    */
     unsigned char pink_ghost_vram_idx;  /* pink block ghost    */
     unsigned char deko_vram_idx[18];    /* decorative tile VRAM indices (0=unused) */
+    unsigned char fg_disp_vram_idx;     /* VRAM tile index of the disappearing foreground tile (0=none) */
 } resource_header;
 
 typedef struct {
@@ -184,6 +185,16 @@ typedef struct {
 } disp_entry;
 static disp_entry disp_blocks[MAX_DISP];
 #define DISP_TILE_VALUE  11   /* tileData value for disappearing block */
+/* Disappearing foreground tile: same timer logic but priority bit set in nametable;
+   always passable (bit 7 already handled in is_solid_px). */
+#define FG_DISP_GONE_AT   40
+#define FG_DISP_RESET_AT  200
+#define MAX_FG_DISP       16
+typedef struct {
+    unsigned char tx, ty;
+    unsigned char frame; /* 1..FG_DISP_RESET_AT; 0=unused */
+} fg_disp_entry;
+static fg_disp_entry fg_disp_blocks[MAX_FG_DISP];
 static level_header    *cur_level;
 static unsigned char   *cur_map;
 static level_object    *cur_objects;
@@ -280,6 +291,49 @@ static void disp_touch_connected(unsigned char tx, unsigned char ty) {
 static unsigned char disp_is_gone(unsigned char tx, unsigned char ty) {
     disp_entry *e = disp_find(tx, ty);
     return (e && e->frame >= DISP_GONE_AT) ? 1 : 0;
+}
+
+/* ── Disappearing foreground helpers ───────────────────── */
+static fg_disp_entry *fg_disp_find(unsigned char tx, unsigned char ty) {
+    unsigned char i;
+    for (i = 0; i < MAX_FG_DISP; i++)
+        if (fg_disp_blocks[i].frame && fg_disp_blocks[i].tx == tx && fg_disp_blocks[i].ty == ty)
+            return &fg_disp_blocks[i];
+    return 0;
+}
+
+static void fg_disp_touch(unsigned char tx, unsigned char ty);
+
+/* Flood-fill: touch all orthogonally adjacent fg_disp tiles */
+static void fg_disp_touch_connected(unsigned char tx, unsigned char ty) {
+    static const signed char dx[4] = {1,-1,0,0};
+    static const signed char dy[4] = {0,0,1,-1};
+    unsigned char d;
+    if (fg_disp_find(tx, ty)) return;
+    fg_disp_touch(tx, ty);
+    for (d = 0; d < 4; d++) {
+        unsigned char nx = (unsigned char)(tx + dx[d]);
+        unsigned char ny = (unsigned char)(ty + dy[d]);
+        unsigned char t = get_tile(nx, ny);
+        /* neighbour is a fg_disp tile if it has priority bit and same vram index */
+        if (res_header->fg_disp_vram_idx &&
+            t == (res_header->fg_disp_vram_idx | 0x80) &&
+            !fg_disp_find(nx, ny))
+            fg_disp_touch_connected(nx, ny);
+    }
+}
+
+static void fg_disp_touch(unsigned char tx, unsigned char ty) {
+    unsigned char i;
+    if (fg_disp_find(tx, ty)) return;
+    for (i = 0; i < MAX_FG_DISP; i++) {
+        if (!fg_disp_blocks[i].frame) {
+            fg_disp_blocks[i].tx = tx;
+            fg_disp_blocks[i].ty = ty;
+            fg_disp_blocks[i].frame = 1;
+            return;
+        }
+    }
 }
 
 /* Forward declarations — vp and rb functions defined later */
@@ -888,6 +942,26 @@ static void check_disp_touch(void) {
             disp_touch(tx, ty);
         else if (res_header->conn_vram_idx && t == res_header->conn_vram_idx)
             disp_touch_connected(tx, ty);
+        /* Disappearing foreground: tile byte = vram_idx | 0x80 */
+        else if (res_header->fg_disp_vram_idx &&
+                 t == (res_header->fg_disp_vram_idx | 0x80))
+            fg_disp_touch_connected(tx, ty);
+    }
+    /* Also check the tile at the player's BODY position for fg_disp
+       (the player passes through them — not just when standing on them) */
+    if (res_header->fg_disp_vram_idx) {
+        unsigned char tx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
+        unsigned char tx_r = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
+        unsigned char ty_t = (unsigned char)((player.y >> 8) / TILE_SIZE);
+        unsigned char ty_b = (unsigned char)(((player.y >> 8) + PLAYER_H - 1) / TILE_SIZE);
+        unsigned char bx, by;
+        for (bx = tx_l; bx <= tx_r; bx++) {
+            for (by = ty_t; by <= ty_b; by++) {
+                unsigned char bt = get_tile(bx, by);
+                if (bt == (res_header->fg_disp_vram_idx | 0x80))
+                    fg_disp_touch_connected(bx, by);
+            }
+        }
     }
 }
 
@@ -926,6 +1000,37 @@ static void update_disappearing_blocks(void) {
                 SMS_setNextTileatXY(scr_x, scr_y);
                 SMS_setTile(vt);
                 e->frame = 0;
+            }
+        }
+    }
+    /* Disappearing foreground tiles */
+    if (res_header->fg_disp_vram_idx) {
+        unsigned char j;
+        for (j = 0; j < MAX_FG_DISP; j++) {
+            unsigned char tx, ty, scr_x, scr_y;
+            fg_disp_entry *e = &fg_disp_blocks[j];
+            if (!e->frame) continue;
+            e->frame++;
+            tx = e->tx; ty = e->ty;
+            scr_x = tx % SCREEN_TILES_W;
+            scr_y = ty;
+            if (e->frame == FG_DISP_GONE_AT) {
+                /* Blank the nametable cell */
+                SMS_setNextTileatXY(scr_x, scr_y);
+                SMS_setTile(0);
+            } else if (e->frame >= FG_DISP_RESET_AT) {
+                /* Reappear when player no longer overlaps */
+                long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
+                long ppx = player.x >> 8, ppy = player.y >> 8;
+                unsigned char overlap =
+                    (ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
+                     ppy + PLAYER_H > by && ppy < by + TILE_SIZE);
+                if (!overlap) {
+                    unsigned int vt = (unsigned int)(VRAM_BG_BASE + res_header->fg_disp_vram_idx - 1) | TILE_PRIORITY;
+                    SMS_setNextTileatXY(scr_x, scr_y);
+                    SMS_setTile(vt);
+                    e->frame = 0;
+                }
             }
         }
     }

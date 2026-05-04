@@ -1,0 +1,156 @@
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 1.
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+    .__.$$$.                                                    =  002710 L
+    .__.ABS.                                                    =  000000 G
+    .__.CPU.                                                    =  000000 L
+    .__.H$L.                                                    =  000000 L
+    _ROM_bank_to_be_mapped_on_slot0                             =  00FFFD G
+    _ROM_bank_to_be_mapped_on_slot1                             =  00FFFE G
+    _ROM_bank_to_be_mapped_on_slot2                             =  00FFFF G
+    _SMS_SRAM                                                   =  008000 G
+    _SMS_VDPControlPort                                         =  0000BF 
+    _SMS_VDPturnOffFeature                                         ****** GX
+    _SMS_VDPturnOnFeature                                          ****** GX
+    _SMS_VRAMmemcpy                                                ****** GX
+    _SMS_VRAMmemsetW                                               ****** GX
+    _SMS_addSprite_f                                               ****** GX
+    _SMS_configureTextRenderer                                     ****** GX
+    _SMS_copySpritestoSAT                                          ****** GX
+    _SMS_crt0_RST08                                                ****** GX
+    _SMS_crt0_RST18                                                ****** GX
+    _SMS_finalizeSprites                                           ****** GX
+    _SMS_getKeysStatus                                             ****** GX
+    _SMS_initSprites                                               ****** GX
+    _SMS_load1bppTiles                                             ****** GX
+    _SMS_loadBGPalette                                             ****** GX
+    _SMS_print                                                     ****** GX
+    _SMS_setBGPaletteColor                                         ****** GX
+    _SMS_setBGScrollX                                              ****** GX
+    _SMS_setBackdropColor                                          ****** GX
+    _SMS_setSpriteMode                                             ****** GX
+    _SMS_setSpritePaletteColor                                     ****** GX
+    _SMS_useFirstHalfTilesforSprites                               ****** GX
+    _SMS_waitForVBlank                                             ****** GX
+    _SMS_zeroBGPalette                                             ****** GX
+    _SMS_zeroSpritePalette                                         ****** GX
+    _SRAM_bank_to_be_mapped_on_slot2                            =  00FFFC G
+  A ___SMS__SDSC_author                                            007FCA GR
+  C ___SMS__SDSC_descr                                             007F79 GR
+  B ___SMS__SDSC_name                                              007FAD GR
+  D ___SMS__SDSC_signature                                         007FE0 GR
+  9 ___SMS__SEGA_signature                                         007FF0 GR
+  0 ___str_0                                                       003623 R
+  0 ___str_1                                                       003635 R
+  0 ___str_2                                                       00364C R
+    __divslong                                                     ****** GX
+    __mulint                                                       ****** GX
+    __mullong                                                      ****** GX
+  0 __str_3                                                        00369A R
+  0 __str_4                                                        0036B0 R
+  0 __str_5                                                        0036CD R
+  0 _apply_gravity                                                 000D72 R
+  1 _camera_x                                                      00002B R
+  0 _check_disp_touch                                              0027C7 R
+  0 _check_object_collisions                                       0020AC R
+  0 _check_rb_switch                                               0027A6 R
+  1 _coin_collected                                                00002F R
+  0 _coins_remaining                                               000AE8 R
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 2.
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+  1 _cur_level                                                     00025B R
+  1 _cur_map                                                       00025D R
+  1 _cur_objects                                                   00025F R
+  0 _death_sequence                                                00348B R
+  1 _disp_blocks                                                   0001EB R
+  0 _disp_find                                                     000144 R
+  0 _disp_is_gone                                                  000273 R
+  0 _disp_touch                                                    000188 R
+  0 _disp_touch_connected                                          0001D9 R
+  0 _draw_objects                                                  000B80 R
+  0 _draw_player                                                   000C6E R
+  0 _draw_tile_column                                              000A87 R
+  0 _draw_tilemap_full                                             000A2D R
+  1 _fg_disp_blocks                                                00022B R
+  0 _fg_disp_find                                                  000288 R
+  0 _fg_disp_touch                                                 000361 R
+  0 _fg_disp_touch_connected                                       0002D0 R
+  0 _fg_disp_touch_connected_dx_65536_191                          000359 R
+  0 _fg_disp_touch_connected_dy_65536_191                          00035D R
+    _font_1bpp                                                     ****** GX
+    _font_1bpp_size                                                ****** GX
+  0 _gameplay_loop                                                 0034B5 R
+  0 _get_level                                                     00005D R
+  0 _get_tile                                                      00011E R
+  0 _handle_input                                                  000DAD R
+  0 _has_resource                                                  000000 R
+  0 _init_resources                                                000026 R
+  0 _is_solid_falling_px                                           0006C0 R
+  0 _is_solid_px                                                   0003A6 R
+  1 _level_complete                                                0000AF R
+  0 _load_graphics                                                 0009C6 R
+  0 _load_level                                                    003146 R
+  0 _main                                                          00365D GR
+  0 _move_player_x                                                 001716 R
+  0 _move_player_y                                                 00196C R
+  0 _obj_sprite_tile                                               000B46 R
+  1 _player                                                        00000C R
+  1 _player_died                                                   0000B0 R
+  1 _prev_cam_x                                                    00002D R
+  1 _prev_player_y                                                 0001E7 R
+  1 _rb_block_count                                                0001E3 R
+  1 _rb_blocks                                                     000143 R
+  0 _rb_is_passable                                                0026B4 R
+  1 _rb_red_active                                                 0001E5 R
+  0 _rb_redraw_all                                                 00273A R
+  1 _rb_switch_count                                               0001E4 R
+  1 _rb_switch_locked                                              0001E6 R
+  1 _rb_switches                                                   0001D3 R
+  0 _rb_vram_for_block                                             002706 R
+  1 _res_header                                                    000000 R
+  1 _res_levels                                                    00000A R
+  1 _res_palette                                                   000004 R
+  1 _res_physics                                                   000002 R
+  1 _res_sprites                                                   000008 R
+  1 _res_tileset                                                   000006 R
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 3.
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+  0 _title_screen                                                  0035B0 R
+  0 _update_anim                                                   003131 R
+  0 _update_camera                                                 003126 R
+  0 _update_disappearing_blocks                                    002BEA R
+  1 _vp_block_count                                                000141 R
+  1 _vp_blocks                                                     0000B1 R
+  0 _vp_is_passable                                                002417 R
+  0 _vp_toggle                                                     002469 R
+  1 _vp_violet_active                                              000142 R
+
+
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 4.
+Hexadecimal [24-Bits]
+
+Area Table
+
+   0 _CODE                                      size   3701   flags    0
+   1 _DATA                                      size    261   flags    0
+   2 _INITIALIZED                               size      0   flags    0
+   3 _DABS                                      size      0   flags    8
+   4 _HOME                                      size      0   flags    0
+   5 _GSINIT                                    size      0   flags    0
+   6 _GSFINAL                                   size      0   flags    0
+   7 _INITIALIZER                               size      0   flags    0
+   8 _CABS                                      size      0   flags    8
+   9 _CABS0                                     size     10   flags    8
+   A _CABS1                                     size     16   flags    8
+   B _CABS2                                     size     1D   flags    8
+   C _CABS3                                     size     34   flags    8
+   D _CABS4                                     size     10   flags    8
+

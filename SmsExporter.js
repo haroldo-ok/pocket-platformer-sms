@@ -296,6 +296,9 @@ const SmsExporter = (() => {
     // Foreground tile sprite (sentinel -200)
     if (sprites['FOREGROUND_TILE'])
       specialTilePixels.set(-200, sprites['FOREGROUND_TILE'].animation[0].sprite);
+    // Disappearing foreground tile sprite (sentinel -201)
+    if (sprites['DISAPPEARING_FOREGROUND_TILE'])
+      specialTilePixels.set(-201, sprites['DISAPPEARING_FOREGROUND_TILE'].animation[0].sprite);
 
     // Encode each unique tile.
 
@@ -327,6 +330,13 @@ const SmsExporter = (() => {
     if (hasFgTile && !tileCache.has(-200) && specialTilePixels.has(-200)) {
       tileCache.set(-200, null);
       tileOrder.push(-200);
+    }
+    // Add disappearing foreground tile sprite if any level uses it
+    const hasFgDisp = levels.some(l => l.levelObjects &&
+      l.levelObjects.some(o => o.type === 'disappearingForegroundTile'));
+    if (hasFgDisp && !tileCache.has(-201) && specialTilePixels.has(-201)) {
+      tileCache.set(-201, null);
+      tileOrder.push(-201);
     }
 
     // Add TILE_edge as an extra tile (sentinel key -1).
@@ -409,6 +419,7 @@ const SmsExporter = (() => {
     const violetPos     = new Set();
     const pinkPos       = new Set();
     const fgPos         = new Set();  // foreground tiles (priority bit)
+    const fgDispPos     = new Set();  // disappearing foreground tiles (priority bit)
     if (level.levelObjects) {
       for (const obj of level.levelObjects) {
         if (obj.type === 'connectedDisappearingBlock') connectedPos.add(`${obj.x},${obj.y}`);
@@ -418,6 +429,7 @@ const SmsExporter = (() => {
         if (obj.type === 'pinkBlock')      pinkPos.add(`${obj.x},${obj.y}`);
         if (obj.type === 'redBlueSwitch' || obj.type === 'redblueblockswitch')  switchPos.add(`${obj.x},${obj.y}`);
         if (obj.type === 'foregroundTile') fgPos.add(`${obj.x},${obj.y}`);
+        if (obj.type === 'disappearingForegroundTile') fgDispPos.add(`${obj.x},${obj.y}`);
       }
     }
 
@@ -458,6 +470,10 @@ const SmsExporter = (() => {
         if (dekoPos.has(`${x},${y}`)) {
           // Deko tiles are drawn as BG tiles (always passable)
           buf[off++] = clampByte(indexMap.get(dekoPos.get(`${x},${y}`)) || 0);
+        } else if (fgDispPos.has(`${x},${y}`)) {
+          // Disappearing foreground tile: fg_disp sprite with priority flag (bit 7)
+          const fgDispVramIdx = indexMap.has(-201) ? clampByte(indexMap.get(-201)) : 0;
+          buf[off++] = fgDispVramIdx ? (fgDispVramIdx | 0x80) : 0x80;
         } else if (fgPos.has(`${x},${y}`)) {
           // Foreground tile: always show the FOREGROUND_TILE sprite with priority flag (bit 7)
           // The underlying tile is ignored visually; collision skips priority tiles in C.
@@ -563,7 +579,7 @@ const SmsExporter = (() => {
     const physicsBytes = encodePhysics(playerObject || {});
 
     // 7. Build header
-    const header = new Uint8Array(37);
+    const header = new Uint8Array(38);
     header[0] = 0x50; // 'P'
     header[1] = 0x50; // 'P'
     header[2] = 0x4C; // 'L'
@@ -592,6 +608,8 @@ const SmsExporter = (() => {
       const dk = -100 - di;
       header[19 + di] = indexMap.has(dk) ? Math.min(indexMap.get(dk), 255) : 0;
     }
+    // fg_disp_vram_idx: disappearing foreground tile (0=not used)
+    header[37] = indexMap.has(-201) ? Math.min(indexMap.get(-201), 255) : 0;
 
     // 8. Assemble everything
     const parts = [header, physicsBytes, new Uint8Array(palette), bgTiles, spriteSheet, ...encodedLevels];
