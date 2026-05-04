@@ -1,0 +1,1101 @@
+                                      1 ;--------------------------------------------------------
+                                      2 ; File Created by SDCC : free open source ANSI-C Compiler
+                                      3 ; Version 4.2.0 #13081 (Linux)
+                                      4 ;--------------------------------------------------------
+                                      5 	.module actor
+                                      6 	.optsdcc -mz80
+                                      7 	
+                                      8 ;--------------------------------------------------------
+                                      9 ; Public variables in this module
+                                     10 ;--------------------------------------------------------
+                                     11 	.globl _SMS_copySpritestoSAT
+                                     12 	.globl _SMS_finalizeSprites
+                                     13 	.globl _SMS_addSprite_f
+                                     14 	.globl _SMS_initSprites
+                                     15 	.globl _SMS_waitForVBlank
+                                     16 	.globl _SMS_SRAM
+                                     17 	.globl _SRAM_bank_to_be_mapped_on_slot2
+                                     18 	.globl _ROM_bank_to_be_mapped_on_slot0
+                                     19 	.globl _ROM_bank_to_be_mapped_on_slot1
+                                     20 	.globl _ROM_bank_to_be_mapped_on_slot2
+                                     21 	.globl _draw_meta_sprite
+                                     22 	.globl _init_actor
+                                     23 	.globl _move_actor
+                                     24 	.globl _draw_actor
+                                     25 	.globl _wait_frames
+                                     26 	.globl _clear_sprites
+                                     27 ;--------------------------------------------------------
+                                     28 ; special function registers
+                                     29 ;--------------------------------------------------------
+                           0000BF    30 _SMS_VDPControlPort	=	0x00bf
+                                     31 ;--------------------------------------------------------
+                                     32 ; ram data
+                                     33 ;--------------------------------------------------------
+                                     34 	.area _DATA
+                           00FFFF    35 _ROM_bank_to_be_mapped_on_slot2	=	0xffff
+                           00FFFE    36 _ROM_bank_to_be_mapped_on_slot1	=	0xfffe
+                           00FFFD    37 _ROM_bank_to_be_mapped_on_slot0	=	0xfffd
+                           00FFFC    38 _SRAM_bank_to_be_mapped_on_slot2	=	0xfffc
+                           008000    39 _SMS_SRAM	=	0x8000
+      000000                         40 _draw_meta_sprite_i_65536_170:
+      000000                         41 	.ds 1
+      000001                         42 _draw_meta_sprite_j_65536_170:
+      000001                         43 	.ds 1
+      000002                         44 _draw_meta_sprite_sx_65536_170:
+      000002                         45 	.ds 2
+      000004                         46 _draw_meta_sprite_sy_65536_170:
+      000004                         47 	.ds 2
+      000006                         48 _draw_meta_sprite_st_65536_170:
+      000006                         49 	.ds 1
+      000007                         50 _init_actor_sa_65536_178:
+      000007                         51 	.ds 2
+      000009                         52 _move_actor_act_65536_180:
+      000009                         53 	.ds 2
+      00000B                         54 _move_actor_step_65536_180:
+      00000B                         55 	.ds 2
+      00000D                         56 _move_actor_curr_step_65536_180:
+      00000D                         57 	.ds 2
+      00000F                         58 _move_actor_path_flags_65536_180:
+      00000F                         59 	.ds 1
+      000010                         60 _draw_actor__act_65536_188:
+      000010                         61 	.ds 2
+      000012                         62 _draw_actor_frame_tile_65536_188:
+      000012                         63 	.ds 1
+      000013                         64 _draw_actor_frame_65536_188:
+      000013                         65 	.ds 1
+                                     66 ;--------------------------------------------------------
+                                     67 ; ram data
+                                     68 ;--------------------------------------------------------
+                                     69 	.area _INITIALIZED
+                                     70 ;--------------------------------------------------------
+                                     71 ; absolute external ram data
+                                     72 ;--------------------------------------------------------
+                                     73 	.area _DABS (ABS)
+                                     74 ;--------------------------------------------------------
+                                     75 ; global & static initialisations
+                                     76 ;--------------------------------------------------------
+                                     77 	.area _HOME
+                                     78 	.area _GSINIT
+                                     79 	.area _GSFINAL
+                                     80 	.area _GSINIT
+                                     81 ;--------------------------------------------------------
+                                     82 ; Home
+                                     83 ;--------------------------------------------------------
+                                     84 	.area _HOME
+                                     85 	.area _HOME
+                                     86 ;--------------------------------------------------------
+                                     87 ; code
+                                     88 ;--------------------------------------------------------
+                                     89 	.area _CODE
+                                     90 ;actor.c:9: void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
+                                     91 ;	---------------------------------
+                                     92 ; Function draw_meta_sprite
+                                     93 ; ---------------------------------
+      000000                         94 _draw_meta_sprite::
+      000000 DD E5            [15]   95 	push	ix
+      000002 DD 21 00 00      [14]   96 	ld	ix,#0
+      000006 DD 39            [15]   97 	add	ix,sp
+      000008 F5               [11]   98 	push	af
+      000009 4D               [ 4]   99 	ld	c, l
+      00000A 44               [ 4]  100 	ld	b, h
+                                    101 ;actor.c:14: sy = y;
+      00000B ED 53r04r00      [20]  102 	ld	(_draw_meta_sprite_sy_65536_170), de
+                                    103 ;actor.c:15: st = tile;
+      00000F DD 7E 08         [19]  104 	ld	a, 8 (ix)
+      000012 32r06r00         [13]  105 	ld	(_draw_meta_sprite_st_65536_170+0), a
+                                    106 ;actor.c:16: for (i = h; i; i--) {
+      000015 DD 7E 06         [19]  107 	ld	a, 6 (ix)
+      000018 32r00r00         [13]  108 	ld	(_draw_meta_sprite_i_65536_170+0), a
+      00001B 7B               [ 4]  109 	ld	a, e
+      00001C D6 C0            [ 7]  110 	sub	a, #0xc0
+      00001E 7A               [ 4]  111 	ld	a, d
+      00001F 17               [ 4]  112 	rla
+      000020 3F               [ 4]  113 	ccf
+      000021 1F               [ 4]  114 	rra
+      000022 DE 80            [ 7]  115 	sbc	a, #0x80
+      000024 3E 00            [ 7]  116 	ld	a, #0x00
+      000026 17               [ 4]  117 	rla
+      000027 DD 77 FE         [19]  118 	ld	-2 (ix), a
+      00002A 7A               [ 4]  119 	ld	a, d
+      00002B 07               [ 4]  120 	rlca
+      00002C E6 01            [ 7]  121 	and	a,#0x01
+      00002E DD 77 FF         [19]  122 	ld	-1 (ix), a
+      000031                        123 00113$:
+      000031 3Ar00r00         [13]  124 	ld	a, (_draw_meta_sprite_i_65536_170+0)
+      000034 B7               [ 4]  125 	or	a, a
+      000035 28 72            [12]  126 	jr	Z, 00115$
+                                    127 ;actor.c:17: if (y >= 0 && y < SCREEN_H) {
+      000037 DD CB FF 46      [20]  128 	bit	0, -1 (ix)
+      00003B 20 58            [12]  129 	jr	NZ, 00106$
+      00003D DD 7E FE         [19]  130 	ld	a, -2 (ix)
+      000040 B7               [ 4]  131 	or	a, a
+      000041 28 52            [12]  132 	jr	Z, 00106$
+                                    133 ;actor.c:18: sx = x;
+      000043 ED 43r02r00      [20]  134 	ld	(_draw_meta_sprite_sx_65536_170), bc
+                                    135 ;actor.c:19: for (j = w; j; j--) {
+      000047 DD 7E 04         [19]  136 	ld	a, 4 (ix)
+      00004A 32r01r00         [13]  137 	ld	(_draw_meta_sprite_j_65536_170+0), a
+      00004D                        138 00110$:
+      00004D 3Ar01r00         [13]  139 	ld	a, (_draw_meta_sprite_j_65536_170+0)
+      000050 B7               [ 4]  140 	or	a, a
+      000051 28 42            [12]  141 	jr	Z, 00106$
+                                    142 ;actor.c:20: if (sx >= 0 && sx < SCREEN_W) {
+      000053 3Ar03r00         [13]  143 	ld	a, (_draw_meta_sprite_sx_65536_170+1)
+      000056 CB 7F            [ 8]  144 	bit	7, a
+      000058 20 22            [12]  145 	jr	NZ, 00102$
+      00005A 3Ar03r00         [13]  146 	ld	a, (_draw_meta_sprite_sx_65536_170+1)
+      00005D EE 80            [ 7]  147 	xor	a, #0x80
+      00005F D6 81            [ 7]  148 	sub	a, #0x81
+      000061 30 19            [12]  149 	jr	NC, 00102$
+                                    150 ;actor.c:21: SMS_addSprite(sx, sy, tile);
+      000063 2Ar02r00         [16]  151 	ld	hl, (_draw_meta_sprite_sx_65536_170)
+                                    152 ;	spillPairReg hl
+                                    153 ;	spillPairReg hl
+      000066 55               [ 4]  154 	ld	d, l
+      000067 1E 00            [ 7]  155 	ld	e, #0x00
+      000069 DD 6E 08         [19]  156 	ld	l, 8 (ix)
+                                    157 ;	spillPairReg hl
+                                    158 ;	spillPairReg hl
+                                    159 ;	spillPairReg hl
+                                    160 ;	spillPairReg hl
+      00006C 26 00            [ 7]  161 	ld	h, #0x00
+                                    162 ;	spillPairReg hl
+                                    163 ;	spillPairReg hl
+      00006E 7B               [ 4]  164 	ld	a, e
+      00006F B5               [ 4]  165 	or	a, l
+      000070 5F               [ 4]  166 	ld	e, a
+      000071 7A               [ 4]  167 	ld	a, d
+      000072 B4               [ 4]  168 	or	a, h
+      000073 57               [ 4]  169 	ld	d, a
+      000074 C5               [11]  170 	push	bc
+      000075 2Ar04r00         [16]  171 	ld	hl, (_draw_meta_sprite_sy_65536_170)
+      000078 CDr00r00         [17]  172 	call	_SMS_addSprite_f
+      00007B C1               [10]  173 	pop	bc
+      00007C                        174 00102$:
+                                    175 ;actor.c:23: sx += 8;
+      00007C 21r02r00         [10]  176 	ld	hl, #_draw_meta_sprite_sx_65536_170
+      00007F 7E               [ 7]  177 	ld	a, (hl)
+      000080 C6 08            [ 7]  178 	add	a, #0x08
+      000082 77               [ 7]  179 	ld	(hl), a
+      000083 30 02            [12]  180 	jr	NC, 00157$
+      000085 23               [ 6]  181 	inc	hl
+      000086 34               [11]  182 	inc	(hl)
+      000087                        183 00157$:
+                                    184 ;actor.c:24: tile += 2;
+      000087 DD 7E 08         [19]  185 	ld	a, 8 (ix)
+      00008A C6 02            [ 7]  186 	add	a, #0x02
+      00008C DD 77 08         [19]  187 	ld	8 (ix), a
+                                    188 ;actor.c:19: for (j = w; j; j--) {
+      00008F 21r01r00         [10]  189 	ld	hl, #_draw_meta_sprite_j_65536_170
+      000092 35               [11]  190 	dec	(hl)
+      000093 18 B8            [12]  191 	jr	00110$
+      000095                        192 00106$:
+                                    193 ;actor.c:27: sy += 16;
+      000095 21r04r00         [10]  194 	ld	hl, #_draw_meta_sprite_sy_65536_170
+      000098 7E               [ 7]  195 	ld	a, (hl)
+      000099 C6 10            [ 7]  196 	add	a, #0x10
+      00009B 77               [ 7]  197 	ld	(hl), a
+      00009C 30 02            [12]  198 	jr	NC, 00158$
+      00009E 23               [ 6]  199 	inc	hl
+      00009F 34               [11]  200 	inc	(hl)
+      0000A0                        201 00158$:
+                                    202 ;actor.c:16: for (i = h; i; i--) {
+      0000A0 FD 21r00r00      [14]  203 	ld	iy, #_draw_meta_sprite_i_65536_170
+      0000A4 FD 35 00         [23]  204 	dec	0 (iy)
+      0000A7 18 88            [12]  205 	jr	00113$
+      0000A9                        206 00115$:
+                                    207 ;actor.c:29: }
+      0000A9 DD F9            [10]  208 	ld	sp, ix
+      0000AB DD E1            [14]  209 	pop	ix
+      0000AD E1               [10]  210 	pop	hl
+      0000AE F1               [10]  211 	pop	af
+      0000AF F1               [10]  212 	pop	af
+      0000B0 33               [ 6]  213 	inc	sp
+      0000B1 E9               [ 4]  214 	jp	(hl)
+                                    215 ;actor.c:31: void init_actor(actor *act, int x, int y, int char_w, int char_h, unsigned char base_tile, unsigned char frame_count) {
+                                    216 ;	---------------------------------
+                                    217 ; Function init_actor
+                                    218 ; ---------------------------------
+      0000B2                        219 _init_actor::
+      0000B2 DD E5            [15]  220 	push	ix
+      0000B4 DD 21 00 00      [14]  221 	ld	ix,#0
+      0000B8 DD 39            [15]  222 	add	ix,sp
+      0000BA F5               [11]  223 	push	af
+                                    224 ;actor.c:35: sa->active = 1;
+      0000BB 22r07r00         [16]  225 	ld	(_init_actor_sa_65536_178), hl
+      0000BE 36 01            [10]  226 	ld	(hl), #0x01
+                                    227 ;actor.c:37: sa->x = x;
+      0000C0 2Ar07r00         [16]  228 	ld	hl, (_init_actor_sa_65536_178)
+      0000C3 23               [ 6]  229 	inc	hl
+      0000C4 73               [ 7]  230 	ld	(hl), e
+      0000C5 23               [ 6]  231 	inc	hl
+      0000C6 72               [ 7]  232 	ld	(hl), d
+                                    233 ;actor.c:38: sa->y = y;
+      0000C7 2Ar07r00         [16]  234 	ld	hl, (_init_actor_sa_65536_178)
+      0000CA 23               [ 6]  235 	inc	hl
+      0000CB 23               [ 6]  236 	inc	hl
+      0000CC 23               [ 6]  237 	inc	hl
+      0000CD DD 7E 04         [19]  238 	ld	a, 4 (ix)
+      0000D0 77               [ 7]  239 	ld	(hl), a
+      0000D1 23               [ 6]  240 	inc	hl
+      0000D2 DD 7E 05         [19]  241 	ld	a, 5 (ix)
+      0000D5 77               [ 7]  242 	ld	(hl), a
+                                    243 ;actor.c:39: sa->facing_left = 1;
+      0000D6 2Ar07r00         [16]  244 	ld	hl, (_init_actor_sa_65536_178)
+      0000D9 01 0F 00         [10]  245 	ld	bc, #0x000f
+      0000DC 09               [11]  246 	add	hl, bc
+      0000DD 36 01            [10]  247 	ld	(hl), #0x01
+                                    248 ;actor.c:41: sa->char_w = char_w;
+      0000DF 2Ar07r00         [16]  249 	ld	hl, (_init_actor_sa_65536_178)
+      0000E2 01 10 00         [10]  250 	ld	bc, #0x0010
+      0000E5 09               [11]  251 	add	hl, bc
+      0000E6 DD 5E 06         [19]  252 	ld	e, 6 (ix)
+      0000E9 73               [ 7]  253 	ld	(hl), e
+                                    254 ;actor.c:42: sa->char_h = char_h;
+      0000EA 2Ar07r00         [16]  255 	ld	hl, (_init_actor_sa_65536_178)
+      0000ED 01 11 00         [10]  256 	ld	bc, #0x0011
+      0000F0 09               [11]  257 	add	hl, bc
+      0000F1 DD 7E 08         [19]  258 	ld	a, 8 (ix)
+      0000F4 77               [ 7]  259 	ld	(hl), a
+                                    260 ;actor.c:43: sa->pixel_w = char_w << 3;
+      0000F5 2Ar07r00         [16]  261 	ld	hl, (_init_actor_sa_65536_178)
+      0000F8 01 12 00         [10]  262 	ld	bc, #0x0012
+      0000FB 09               [11]  263 	add	hl, bc
+      0000FC DD 7E 06         [19]  264 	ld	a, 6 (ix)
+      0000FF 87               [ 4]  265 	add	a, a
+      000100 87               [ 4]  266 	add	a, a
+      000101 87               [ 4]  267 	add	a, a
+      000102 77               [ 7]  268 	ld	(hl), a
+                                    269 ;actor.c:44: sa->pixel_h = char_h << 4;
+      000103 2Ar07r00         [16]  270 	ld	hl, (_init_actor_sa_65536_178)
+      000106 01 13 00         [10]  271 	ld	bc, #0x0013
+      000109 09               [11]  272 	add	hl, bc
+      00010A DD 56 08         [19]  273 	ld	d, 8 (ix)
+      00010D 7A               [ 4]  274 	ld	a, d
+      00010E 87               [ 4]  275 	add	a, a
+      00010F 87               [ 4]  276 	add	a, a
+      000110 87               [ 4]  277 	add	a, a
+      000111 87               [ 4]  278 	add	a, a
+      000112 77               [ 7]  279 	ld	(hl), a
+                                    280 ;actor.c:46: sa->animation_delay = 0;
+      000113 2Ar07r00         [16]  281 	ld	hl, (_init_actor_sa_65536_178)
+      000116 01 14 00         [10]  282 	ld	bc, #0x0014
+      000119 09               [11]  283 	add	hl, bc
+      00011A 36 00            [10]  284 	ld	(hl), #0x00
+                                    285 ;actor.c:47: sa->animation_delay_max = 2;
+      00011C 2Ar07r00         [16]  286 	ld	hl, (_init_actor_sa_65536_178)
+      00011F 01 15 00         [10]  287 	ld	bc, #0x0015
+      000122 09               [11]  288 	add	hl, bc
+      000123 36 02            [10]  289 	ld	(hl), #0x02
+                                    290 ;actor.c:49: sa->base_tile = base_tile;
+      000125 2Ar07r00         [16]  291 	ld	hl, (_init_actor_sa_65536_178)
+      000128 01 16 00         [10]  292 	ld	bc, #0x0016
+      00012B 09               [11]  293 	add	hl, bc
+      00012C DD 7E 0A         [19]  294 	ld	a, 10 (ix)
+      00012F 77               [ 7]  295 	ld	(hl), a
+                                    296 ;actor.c:50: sa->frame_count = frame_count;
+      000130 2Ar07r00         [16]  297 	ld	hl, (_init_actor_sa_65536_178)
+      000133 01 17 00         [10]  298 	ld	bc, #0x0017
+      000136 09               [11]  299 	add	hl, bc
+      000137 DD 7E 0B         [19]  300 	ld	a, 11 (ix)
+      00013A 77               [ 7]  301 	ld	(hl), a
+                                    302 ;actor.c:51: sa->frame = 0;
+      00013B 2Ar07r00         [16]  303 	ld	hl, (_init_actor_sa_65536_178)
+      00013E 01 18 00         [10]  304 	ld	bc, #0x0018
+      000141 09               [11]  305 	add	hl, bc
+      000142 36 00            [10]  306 	ld	(hl), #0x00
+                                    307 ;actor.c:52: sa->frame_increment = char_w * (char_h << 1);
+      000144 ED 4Br07r00      [20]  308 	ld	bc, (_init_actor_sa_65536_178)
+      000148 21 19 00         [10]  309 	ld	hl, #0x0019
+      00014B 09               [11]  310 	add	hl, bc
+      00014C 4D               [ 4]  311 	ld	c, l
+      00014D 44               [ 4]  312 	ld	b, h
+      00014E 7A               [ 4]  313 	ld	a, d
+      00014F 87               [ 4]  314 	add	a, a
+      000150 C5               [11]  315 	push	bc
+      000151 67               [ 4]  316 	ld	h, a
+                                    317 ;	spillPairReg hl
+                                    318 ;	spillPairReg hl
+      000152 2E 00            [ 7]  319 	ld	l, #0x00
+      000154 55               [ 4]  320 	ld	d, l
+      000155 06 08            [ 7]  321 	ld	b, #0x08
+      000157                        322 00103$:
+      000157 29               [11]  323 	add	hl, hl
+      000158 30 01            [12]  324 	jr	NC, 00104$
+      00015A 19               [11]  325 	add	hl, de
+      00015B                        326 00104$:
+      00015B 10 FA            [13]  327 	djnz	00103$
+      00015D C1               [10]  328 	pop	bc
+      00015E 5D               [ 4]  329 	ld	e, l
+      00015F 7B               [ 4]  330 	ld	a, e
+      000160 02               [ 7]  331 	ld	(bc), a
+                                    332 ;actor.c:35: sa->active = 1;
+      000161 ED 4Br07r00      [20]  333 	ld	bc, (_init_actor_sa_65536_178)
+                                    334 ;actor.c:53: sa->frame_max = sa->frame_increment * frame_count;
+      000165 21 1A 00         [10]  335 	ld	hl, #0x001a
+      000168 09               [11]  336 	add	hl, bc
+      000169 EB               [ 4]  337 	ex	de, hl
+      00016A 21 19 00         [10]  338 	ld	hl, #25
+      00016D 09               [11]  339 	add	hl, bc
+      00016E 66               [ 7]  340 	ld	h, (hl)
+                                    341 ;	spillPairReg hl
+      00016F D5               [11]  342 	push	de
+      000170 DD 5E 0B         [19]  343 	ld	e, 11 (ix)
+      000173 2E 00            [ 7]  344 	ld	l, #0x00
+      000175 55               [ 4]  345 	ld	d, l
+      000176 06 08            [ 7]  346 	ld	b, #0x08
+      000178                        347 00105$:
+      000178 29               [11]  348 	add	hl, hl
+      000179 30 01            [12]  349 	jr	NC, 00106$
+      00017B 19               [11]  350 	add	hl, de
+      00017C                        351 00106$:
+      00017C 10 FA            [13]  352 	djnz	00105$
+      00017E D1               [10]  353 	pop	de
+      00017F 7D               [ 4]  354 	ld	a, l
+      000180 12               [ 7]  355 	ld	(de), a
+                                    356 ;actor.c:55: sa->path_flags = 0;
+      000181 2Ar07r00         [16]  357 	ld	hl, (_init_actor_sa_65536_178)
+      000184 01 1B 00         [10]  358 	ld	bc, #0x001b
+      000187 09               [11]  359 	add	hl, bc
+      000188 36 00            [10]  360 	ld	(hl), #0x00
+                                    361 ;actor.c:56: sa->path = 0;
+      00018A 2Ar07r00         [16]  362 	ld	hl, (_init_actor_sa_65536_178)
+      00018D 01 1C 00         [10]  363 	ld	bc, #0x001c
+      000190 09               [11]  364 	add	hl, bc
+      000191 AF               [ 4]  365 	xor	a, a
+      000192 77               [ 7]  366 	ld	(hl), a
+      000193 23               [ 6]  367 	inc	hl
+      000194 77               [ 7]  368 	ld	(hl), a
+                                    369 ;actor.c:57: sa->curr_step = 0;
+      000195 2Ar07r00         [16]  370 	ld	hl, (_init_actor_sa_65536_178)
+      000198 01 1E 00         [10]  371 	ld	bc, #0x001e
+      00019B 09               [11]  372 	add	hl, bc
+      00019C AF               [ 4]  373 	xor	a, a
+      00019D 77               [ 7]  374 	ld	(hl), a
+      00019E 23               [ 6]  375 	inc	hl
+      00019F 77               [ 7]  376 	ld	(hl), a
+                                    377 ;actor.c:35: sa->active = 1;
+      0001A0 ED 4Br07r00      [20]  378 	ld	bc, (_init_actor_sa_65536_178)
+                                    379 ;actor.c:59: sa->col_w = sa->pixel_w - 4;
+      0001A4 21 26 00         [10]  380 	ld	hl, #0x0026
+      0001A7 09               [11]  381 	add	hl, bc
+      0001A8 EB               [ 4]  382 	ex	de, hl
+      0001A9 21 12 00         [10]  383 	ld	hl, #18
+      0001AC 09               [11]  384 	add	hl, bc
+      0001AD 7E               [ 7]  385 	ld	a, (hl)
+      0001AE C6 FC            [ 7]  386 	add	a, #0xfc
+      0001B0 12               [ 7]  387 	ld	(de), a
+                                    388 ;actor.c:35: sa->active = 1;
+      0001B1 ED 4Br07r00      [20]  389 	ld	bc, (_init_actor_sa_65536_178)
+                                    390 ;actor.c:60: sa->col_h = sa->pixel_h - 4;
+      0001B5 21 27 00         [10]  391 	ld	hl, #0x0027
+      0001B8 09               [11]  392 	add	hl, bc
+      0001B9 EB               [ 4]  393 	ex	de, hl
+      0001BA 21 13 00         [10]  394 	ld	hl, #19
+      0001BD 09               [11]  395 	add	hl, bc
+      0001BE 7E               [ 7]  396 	ld	a, (hl)
+      0001BF C6 FC            [ 7]  397 	add	a, #0xfc
+      0001C1 12               [ 7]  398 	ld	(de), a
+                                    399 ;actor.c:35: sa->active = 1;
+      0001C2 ED 4Br07r00      [20]  400 	ld	bc, (_init_actor_sa_65536_178)
+                                    401 ;actor.c:61: sa->col_x = (sa->pixel_w - sa->col_w) >> 1;
+      0001C6 21 24 00         [10]  402 	ld	hl, #0x0024
+      0001C9 09               [11]  403 	add	hl, bc
+      0001CA C5               [11]  404 	push	bc
+      0001CB EB               [ 4]  405 	ex	de, hl
+      0001CC FD E1            [14]  406 	pop	iy
+      0001CE FD 7E 12         [19]  407 	ld	a, 18 (iy)
+      0001D1 DD 77 FE         [19]  408 	ld	-2 (ix), a
+      0001D4 DD 36 FF 00      [19]  409 	ld	-1 (ix), #0x00
+      0001D8 21 26 00         [10]  410 	ld	hl, #38
+      0001DB 09               [11]  411 	add	hl, bc
+      0001DC 4E               [ 7]  412 	ld	c, (hl)
+      0001DD 06 00            [ 7]  413 	ld	b, #0x00
+      0001DF DD 7E FE         [19]  414 	ld	a, -2 (ix)
+      0001E2 91               [ 4]  415 	sub	a, c
+      0001E3 4F               [ 4]  416 	ld	c, a
+      0001E4 DD 7E FF         [19]  417 	ld	a, -1 (ix)
+      0001E7 98               [ 4]  418 	sbc	a, b
+      0001E8 47               [ 4]  419 	ld	b, a
+      0001E9 CB 28            [ 8]  420 	sra	b
+      0001EB CB 19            [ 8]  421 	rr	c
+      0001ED 79               [ 4]  422 	ld	a, c
+      0001EE 12               [ 7]  423 	ld	(de), a
+                                    424 ;actor.c:35: sa->active = 1;
+      0001EF ED 4Br07r00      [20]  425 	ld	bc, (_init_actor_sa_65536_178)
+                                    426 ;actor.c:62: sa->col_y = (sa->pixel_h - sa->col_h) >> 1;
+      0001F3 21 25 00         [10]  427 	ld	hl, #0x0025
+      0001F6 09               [11]  428 	add	hl, bc
+      0001F7 C5               [11]  429 	push	bc
+      0001F8 EB               [ 4]  430 	ex	de, hl
+      0001F9 FD E1            [14]  431 	pop	iy
+      0001FB FD 7E 13         [19]  432 	ld	a, 19 (iy)
+      0001FE DD 77 FE         [19]  433 	ld	-2 (ix), a
+      000201 DD 36 FF 00      [19]  434 	ld	-1 (ix), #0x00
+      000205 21 27 00         [10]  435 	ld	hl, #39
+      000208 09               [11]  436 	add	hl, bc
+      000209 4E               [ 7]  437 	ld	c, (hl)
+      00020A 06 00            [ 7]  438 	ld	b, #0x00
+      00020C DD 7E FE         [19]  439 	ld	a, -2 (ix)
+      00020F 91               [ 4]  440 	sub	a, c
+      000210 4F               [ 4]  441 	ld	c, a
+      000211 DD 7E FF         [19]  442 	ld	a, -1 (ix)
+      000214 98               [ 4]  443 	sbc	a, b
+      000215 47               [ 4]  444 	ld	b, a
+      000216 CB 28            [ 8]  445 	sra	b
+      000218 CB 19            [ 8]  446 	rr	c
+      00021A 79               [ 4]  447 	ld	a, c
+      00021B 12               [ 7]  448 	ld	(de), a
+                                    449 ;actor.c:64: sa->state = 0;
+      00021C 2Ar07r00         [16]  450 	ld	hl, (_init_actor_sa_65536_178)
+      00021F 01 20 00         [10]  451 	ld	bc, #0x0020
+      000222 09               [11]  452 	add	hl, bc
+      000223 36 00            [10]  453 	ld	(hl), #0x00
+                                    454 ;actor.c:65: sa->state_timer = 256;
+      000225 2Ar07r00         [16]  455 	ld	hl, (_init_actor_sa_65536_178)
+      000228 01 21 00         [10]  456 	ld	bc, #0x0021
+      00022B 09               [11]  457 	add	hl, bc
+      00022C 36 00            [10]  458 	ld	(hl), #0x00
+      00022E 23               [ 6]  459 	inc	hl
+      00022F 36 01            [10]  460 	ld	(hl), #0x01
+                                    461 ;actor.c:66: }
+      000231 DD F9            [10]  462 	ld	sp, ix
+      000233 DD E1            [14]  463 	pop	ix
+      000235 E1               [10]  464 	pop	hl
+      000236 F1               [10]  465 	pop	af
+      000237 F1               [10]  466 	pop	af
+      000238 F1               [10]  467 	pop	af
+      000239 F1               [10]  468 	pop	af
+      00023A E9               [ 4]  469 	jp	(hl)
+                                    470 ;actor.c:68: void move_actor(actor *_act) {
+                                    471 ;	---------------------------------
+                                    472 ; Function move_actor
+                                    473 ; ---------------------------------
+      00023B                        474 _move_actor::
+      00023B DD E5            [15]  475 	push	ix
+      00023D DD 21 00 00      [14]  476 	ld	ix,#0
+      000241 DD 39            [15]  477 	add	ix,sp
+      000243 FD 21 F6 FF      [14]  478 	ld	iy, #-10
+      000247 FD 39            [15]  479 	add	iy, sp
+      000249 FD F9            [10]  480 	ld	sp, iy
+                                    481 ;actor.c:73: if (!_act->active) {
+      00024B DD 75 FE         [19]  482 	ld	-2 (ix), l
+      00024E DD 74 FF         [19]  483 	ld	-1 (ix), h
+      000251 4E               [ 7]  484 	ld	c, (hl)
+      000252 79               [ 4]  485 	ld	a, c
+      000253 B7               [ 4]  486 	or	a, a
+                                    487 ;actor.c:74: return;
+      000254 CArE7r04         [10]  488 	jp	Z,00124$
+                                    489 ;actor.c:77: act = _act;
+      000257 DD 6E FE         [19]  490 	ld	l, -2 (ix)
+      00025A DD 66 FF         [19]  491 	ld	h, -1 (ix)
+                                    492 ;actor.c:79: if (act->path) {
+      00025D 22r09r00         [16]  493 	ld	(_move_actor_act_65536_180), hl
+      000260 DD 75 FA         [19]  494 	ld	-6 (ix), l
+      000263 DD 74 FB         [19]  495 	ld	-5 (ix), h
+      000266 DD 7E FA         [19]  496 	ld	a, -6 (ix)
+      000269 C6 1C            [ 7]  497 	add	a, #0x1c
+      00026B DD 77 FC         [19]  498 	ld	-4 (ix), a
+      00026E DD 7E FB         [19]  499 	ld	a, -5 (ix)
+      000271 CE 00            [ 7]  500 	adc	a, #0x00
+      000273 DD 77 FD         [19]  501 	ld	-3 (ix), a
+      000276 DD 6E FC         [19]  502 	ld	l, -4 (ix)
+      000279 DD 66 FD         [19]  503 	ld	h, -3 (ix)
+      00027C 5E               [ 7]  504 	ld	e, (hl)
+      00027D 23               [ 6]  505 	inc	hl
+      00027E 7E               [ 7]  506 	ld	a, (hl)
+      00027F B3               [ 4]  507 	or	a, e
+      000280 CAr5Er04         [10]  508 	jp	Z, 00112$
+                                    509 ;actor.c:80: curr_step = act->curr_step;
+      000283 DD 4E FA         [19]  510 	ld	c, -6 (ix)
+      000286 DD 46 FB         [19]  511 	ld	b, -5 (ix)
+      000289 21 1E 00         [10]  512 	ld	hl, #30
+      00028C 09               [11]  513 	add	hl, bc
+      00028D 7E               [ 7]  514 	ld	a, (hl)
+      00028E 23               [ 6]  515 	inc	hl
+      00028F 32r0Dr00         [13]  516 	ld	(_move_actor_curr_step_65536_180+0), a
+      000292 7E               [ 7]  517 	ld	a, (hl)
+                                    518 ;actor.c:82: if (!curr_step) curr_step = act->path;
+      000293 32r0Er00         [13]  519 	ld	(_move_actor_curr_step_65536_180+1), a
+      000296 21r0Dr00         [10]  520 	ld	hl, #_move_actor_curr_step_65536_180
+      000299 B6               [ 7]  521 	or	a, (hl)
+      00029A 20 0F            [12]  522 	jr	NZ, 00104$
+      00029C DD 6E FC         [19]  523 	ld	l, -4 (ix)
+      00029F DD 66 FD         [19]  524 	ld	h, -3 (ix)
+      0002A2 7E               [ 7]  525 	ld	a, (hl)
+      0002A3 23               [ 6]  526 	inc	hl
+      0002A4 32r0Dr00         [13]  527 	ld	(_move_actor_curr_step_65536_180+0), a
+      0002A7 7E               [ 7]  528 	ld	a, (hl)
+      0002A8 32r0Er00         [13]  529 	ld	(_move_actor_curr_step_65536_180+1), a
+      0002AB                        530 00104$:
+                                    531 ;actor.c:83: step = curr_step++;
+      0002AB 2Ar0Dr00         [16]  532 	ld	hl, (_move_actor_curr_step_65536_180)
+      0002AE 22r0Br00         [16]  533 	ld	(_move_actor_step_65536_180), hl
+      0002B1 2Ar0Dr00         [16]  534 	ld	hl, (_move_actor_curr_step_65536_180)
+      0002B4 23               [ 6]  535 	inc	hl
+      0002B5 23               [ 6]  536 	inc	hl
+      0002B6 22r0Dr00         [16]  537 	ld	(_move_actor_curr_step_65536_180), hl
+                                    538 ;actor.c:84: if (step->x == -128) step = curr_step = act->path;
+      0002B9 2Ar0Br00         [16]  539 	ld	hl, (_move_actor_step_65536_180)
+      0002BC 7E               [ 7]  540 	ld	a, (hl)
+      0002BD D6 80            [ 7]  541 	sub	a, #0x80
+      0002BF 20 10            [12]  542 	jr	NZ, 00106$
+      0002C1 DD 6E FC         [19]  543 	ld	l, -4 (ix)
+      0002C4 DD 66 FD         [19]  544 	ld	h, -3 (ix)
+      0002C7 7E               [ 7]  545 	ld	a, (hl)
+      0002C8 23               [ 6]  546 	inc	hl
+      0002C9 66               [ 7]  547 	ld	h, (hl)
+                                    548 ;	spillPairReg hl
+      0002CA 6F               [ 4]  549 	ld	l, a
+                                    550 ;	spillPairReg hl
+                                    551 ;	spillPairReg hl
+      0002CB 22r0Dr00         [16]  552 	ld	(_move_actor_curr_step_65536_180), hl
+      0002CE 22r0Br00         [16]  553 	ld	(_move_actor_step_65536_180), hl
+      0002D1                        554 00106$:
+                                    555 ;actor.c:86: path_flags = act->path_flags;
+      0002D1 DD 4E FA         [19]  556 	ld	c, -6 (ix)
+      0002D4 DD 46 FB         [19]  557 	ld	b, -5 (ix)
+      0002D7 21 1B 00         [10]  558 	ld	hl, #27
+      0002DA 09               [11]  559 	add	hl, bc
+      0002DB 7E               [ 7]  560 	ld	a, (hl)
+      0002DC 32r0Fr00         [13]  561 	ld	(_move_actor_path_flags_65536_180+0), a
+                                    562 ;actor.c:87: act->x += (path_flags & PATH_FLIP_X) ? -step->x : step->x;
+      0002DF DD 4E FA         [19]  563 	ld	c, -6 (ix)
+      0002E2 DD 46 FB         [19]  564 	ld	b, -5 (ix)
+      0002E5 03               [ 6]  565 	inc	bc
+      0002E6 0A               [ 7]  566 	ld	a, (bc)
+      0002E7 DD 77 FC         [19]  567 	ld	-4 (ix), a
+      0002EA 03               [ 6]  568 	inc	bc
+      0002EB 0A               [ 7]  569 	ld	a, (bc)
+      0002EC DD 77 FD         [19]  570 	ld	-3 (ix), a
+      0002EF 0B               [ 6]  571 	dec	bc
+      0002F0 3Ar0Fr00         [13]  572 	ld	a, (_move_actor_path_flags_65536_180+0)
+                                    573 ;actor.c:84: if (step->x == -128) step = curr_step = act->path;
+      0002F3 2Ar0Br00         [16]  574 	ld	hl, (_move_actor_step_65536_180)
+                                    575 ;actor.c:87: act->x += (path_flags & PATH_FLIP_X) ? -step->x : step->x;
+      0002F6 5E               [ 7]  576 	ld	e, (hl)
+      0002F7 F5               [11]  577 	push	af
+      0002F8 7B               [ 4]  578 	ld	a, e
+      0002F9 07               [ 4]  579 	rlca
+      0002FA 9F               [ 4]  580 	sbc	a, a
+      0002FB 57               [ 4]  581 	ld	d, a
+      0002FC F1               [10]  582 	pop	af
+      0002FD 0F               [ 4]  583 	rrca
+      0002FE 30 07            [12]  584 	jr	NC, 00126$
+      000300 21 00 00         [10]  585 	ld	hl, #0x0000
+      000303 BF               [ 4]  586 	cp	a, a
+      000304 ED 52            [15]  587 	sbc	hl, de
+      000306 EB               [ 4]  588 	ex	de, hl
+      000307                        589 00126$:
+      000307 DD 7E FC         [19]  590 	ld	a, -4 (ix)
+      00030A 83               [ 4]  591 	add	a, e
+      00030B 5F               [ 4]  592 	ld	e, a
+      00030C DD 7E FD         [19]  593 	ld	a, -3 (ix)
+      00030F 8A               [ 4]  594 	adc	a, d
+      000310 57               [ 4]  595 	ld	d, a
+      000311 7B               [ 4]  596 	ld	a, e
+      000312 02               [ 7]  597 	ld	(bc), a
+      000313 03               [ 6]  598 	inc	bc
+      000314 7A               [ 4]  599 	ld	a, d
+      000315 02               [ 7]  600 	ld	(bc), a
+                                    601 ;actor.c:79: if (act->path) {
+      000316 ED 4Br09r00      [20]  602 	ld	bc, (_move_actor_act_65536_180)
+                                    603 ;actor.c:88: act->y += (path_flags & PATH_FLIP_Y) ? -step->y : step->y;
+      00031A 03               [ 6]  604 	inc	bc
+      00031B 03               [ 6]  605 	inc	bc
+      00031C 03               [ 6]  606 	inc	bc
+      00031D 0A               [ 7]  607 	ld	a, (bc)
+      00031E DD 77 F8         [19]  608 	ld	-8 (ix), a
+      000321 03               [ 6]  609 	inc	bc
+      000322 0A               [ 7]  610 	ld	a, (bc)
+      000323 DD 77 F9         [19]  611 	ld	-7 (ix), a
+      000326 0B               [ 6]  612 	dec	bc
+      000327 3Ar0Fr00         [13]  613 	ld	a, (_move_actor_path_flags_65536_180+0)
+      00032A 5F               [ 4]  614 	ld	e, a
+                                    615 ;actor.c:84: if (step->x == -128) step = curr_step = act->path;
+      00032B 2Ar0Br00         [16]  616 	ld	hl, (_move_actor_step_65536_180)
+                                    617 ;actor.c:88: act->y += (path_flags & PATH_FLIP_Y) ? -step->y : step->y;
+      00032E 23               [ 6]  618 	inc	hl
+      00032F 7E               [ 7]  619 	ld	a, (hl)
+      000330 DD 77 FA         [19]  620 	ld	-6 (ix), a
+      000333 07               [ 4]  621 	rlca
+      000334 9F               [ 4]  622 	sbc	a, a
+      000335 DD 77 FB         [19]  623 	ld	-5 (ix), a
+      000338 CB 4B            [ 8]  624 	bit	1, e
+      00033A 28 10            [12]  625 	jr	Z, 00128$
+      00033C AF               [ 4]  626 	xor	a, a
+      00033D DD 96 FA         [19]  627 	sub	a, -6 (ix)
+      000340 DD 77 FC         [19]  628 	ld	-4 (ix), a
+      000343 9F               [ 4]  629 	sbc	a, a
+      000344 DD 96 FB         [19]  630 	sub	a, -5 (ix)
+      000347 DD 77 FD         [19]  631 	ld	-3 (ix), a
+      00034A 18 0C            [12]  632 	jr	00129$
+      00034C                        633 00128$:
+      00034C DD 7E FA         [19]  634 	ld	a, -6 (ix)
+      00034F DD 77 FC         [19]  635 	ld	-4 (ix), a
+      000352 DD 7E FB         [19]  636 	ld	a, -5 (ix)
+      000355 DD 77 FD         [19]  637 	ld	-3 (ix), a
+      000358                        638 00129$:
+      000358 DD 7E FC         [19]  639 	ld	a, -4 (ix)
+      00035B DD 86 F8         [19]  640 	add	a, -8 (ix)
+      00035E 5F               [ 4]  641 	ld	e, a
+      00035F DD 7E FD         [19]  642 	ld	a, -3 (ix)
+      000362 DD 8E F9         [19]  643 	adc	a, -7 (ix)
+      000365 57               [ 4]  644 	ld	d, a
+      000366 7B               [ 4]  645 	ld	a, e
+      000367 02               [ 7]  646 	ld	(bc), a
+      000368 03               [ 6]  647 	inc	bc
+      000369 7A               [ 4]  648 	ld	a, d
+      00036A 02               [ 7]  649 	ld	(bc), a
+                                    650 ;actor.c:90: if (path_flags & PATH_2X_SPEED) {
+      00036B 3Ar0Fr00         [13]  651 	ld	a, (_move_actor_path_flags_65536_180+0)
+      00036E CB 57            [ 8]  652 	bit	2, a
+      000370 CAr4Er04         [10]  653 	jp	Z,00110$
+                                    654 ;actor.c:91: step = curr_step++;
+      000373 2Ar0Dr00         [16]  655 	ld	hl, (_move_actor_curr_step_65536_180)
+      000376 22r0Br00         [16]  656 	ld	(_move_actor_step_65536_180), hl
+      000379 2Ar0Dr00         [16]  657 	ld	hl, (_move_actor_curr_step_65536_180)
+      00037C 23               [ 6]  658 	inc	hl
+      00037D 23               [ 6]  659 	inc	hl
+      00037E 22r0Dr00         [16]  660 	ld	(_move_actor_curr_step_65536_180), hl
+                                    661 ;actor.c:92: if (step->x == -128) step = curr_step = act->path;
+      000381 2Ar0Br00         [16]  662 	ld	hl, (_move_actor_step_65536_180)
+      000384 7E               [ 7]  663 	ld	a, (hl)
+                                    664 ;actor.c:79: if (act->path) {
+      000385 ED 4Br09r00      [20]  665 	ld	bc, (_move_actor_act_65536_180)
+                                    666 ;actor.c:92: if (step->x == -128) step = curr_step = act->path;
+      000389 D6 80            [ 7]  667 	sub	a, #0x80
+      00038B 20 10            [12]  668 	jr	NZ, 00108$
+      00038D 59               [ 4]  669 	ld	e, c
+      00038E 50               [ 4]  670 	ld	d, b
+      00038F 21 1C 00         [10]  671 	ld	hl, #28
+      000392 19               [11]  672 	add	hl, de
+      000393 7E               [ 7]  673 	ld	a, (hl)
+      000394 23               [ 6]  674 	inc	hl
+      000395 66               [ 7]  675 	ld	h, (hl)
+                                    676 ;	spillPairReg hl
+      000396 6F               [ 4]  677 	ld	l, a
+                                    678 ;	spillPairReg hl
+                                    679 ;	spillPairReg hl
+      000397 22r0Dr00         [16]  680 	ld	(_move_actor_curr_step_65536_180), hl
+      00039A 22r0Br00         [16]  681 	ld	(_move_actor_step_65536_180), hl
+      00039D                        682 00108$:
+                                    683 ;actor.c:94: path_flags = act->path_flags;
+      00039D 59               [ 4]  684 	ld	e, c
+      00039E 50               [ 4]  685 	ld	d, b
+      00039F 21 1B 00         [10]  686 	ld	hl, #27
+      0003A2 19               [11]  687 	add	hl, de
+      0003A3 7E               [ 7]  688 	ld	a, (hl)
+      0003A4 32r0Fr00         [13]  689 	ld	(_move_actor_path_flags_65536_180+0), a
+                                    690 ;actor.c:87: act->x += (path_flags & PATH_FLIP_X) ? -step->x : step->x;
+      0003A7 03               [ 6]  691 	inc	bc
+      0003A8 33               [ 6]  692 	inc	sp
+      0003A9 33               [ 6]  693 	inc	sp
+                                    694 ;actor.c:95: act->x += (path_flags & PATH_FLIP_X) ? -step->x : step->x;
+      0003AA 69               [ 4]  695 	ld	l, c
+      0003AB 60               [ 4]  696 	ld	h, b
+      0003AC E5               [11]  697 	push	hl
+      0003AD 7E               [ 7]  698 	ld	a, (hl)
+      0003AE DD 77 F8         [19]  699 	ld	-8 (ix), a
+      0003B1 23               [ 6]  700 	inc	hl
+      0003B2 7E               [ 7]  701 	ld	a, (hl)
+      0003B3 DD 77 F9         [19]  702 	ld	-7 (ix), a
+      0003B6 3Ar0Fr00         [13]  703 	ld	a, (_move_actor_path_flags_65536_180+0)
+      0003B9 4F               [ 4]  704 	ld	c, a
+                                    705 ;actor.c:84: if (step->x == -128) step = curr_step = act->path;
+      0003BA 2Ar0Br00         [16]  706 	ld	hl, (_move_actor_step_65536_180)
+                                    707 ;actor.c:87: act->x += (path_flags & PATH_FLIP_X) ? -step->x : step->x;
+      0003BD 7E               [ 7]  708 	ld	a, (hl)
+      0003BE DD 77 FA         [19]  709 	ld	-6 (ix), a
+      0003C1 07               [ 4]  710 	rlca
+      0003C2 9F               [ 4]  711 	sbc	a, a
+      0003C3 DD 77 FB         [19]  712 	ld	-5 (ix), a
+                                    713 ;actor.c:95: act->x += (path_flags & PATH_FLIP_X) ? -step->x : step->x;
+      0003C6 CB 41            [ 8]  714 	bit	0, c
+      0003C8 28 10            [12]  715 	jr	Z, 00130$
+      0003CA AF               [ 4]  716 	xor	a, a
+      0003CB DD 96 FA         [19]  717 	sub	a, -6 (ix)
+      0003CE DD 77 FC         [19]  718 	ld	-4 (ix), a
+      0003D1 9F               [ 4]  719 	sbc	a, a
+      0003D2 DD 96 FB         [19]  720 	sub	a, -5 (ix)
+      0003D5 DD 77 FD         [19]  721 	ld	-3 (ix), a
+      0003D8 18 0C            [12]  722 	jr	00131$
+      0003DA                        723 00130$:
+      0003DA DD 7E FA         [19]  724 	ld	a, -6 (ix)
+      0003DD DD 77 FC         [19]  725 	ld	-4 (ix), a
+      0003E0 DD 7E FB         [19]  726 	ld	a, -5 (ix)
+      0003E3 DD 77 FD         [19]  727 	ld	-3 (ix), a
+      0003E6                        728 00131$:
+      0003E6 DD 7E F8         [19]  729 	ld	a, -8 (ix)
+      0003E9 DD 86 FC         [19]  730 	add	a, -4 (ix)
+      0003EC 4F               [ 4]  731 	ld	c, a
+      0003ED DD 7E F9         [19]  732 	ld	a, -7 (ix)
+      0003F0 DD 8E FD         [19]  733 	adc	a, -3 (ix)
+      0003F3 47               [ 4]  734 	ld	b, a
+      0003F4 E1               [10]  735 	pop	hl
+      0003F5 E5               [11]  736 	push	hl
+      0003F6 71               [ 7]  737 	ld	(hl), c
+      0003F7 23               [ 6]  738 	inc	hl
+      0003F8 70               [ 7]  739 	ld	(hl), b
+                                    740 ;actor.c:79: if (act->path) {
+      0003F9 ED 4Br09r00      [20]  741 	ld	bc, (_move_actor_act_65536_180)
+                                    742 ;actor.c:88: act->y += (path_flags & PATH_FLIP_Y) ? -step->y : step->y;
+      0003FD 03               [ 6]  743 	inc	bc
+      0003FE 03               [ 6]  744 	inc	bc
+      0003FF 03               [ 6]  745 	inc	bc
+                                    746 ;actor.c:96: act->y += (path_flags & PATH_FLIP_Y) ? -step->y : step->y;
+      000400 0A               [ 7]  747 	ld	a, (bc)
+      000401 DD 77 F8         [19]  748 	ld	-8 (ix), a
+      000404 03               [ 6]  749 	inc	bc
+      000405 0A               [ 7]  750 	ld	a, (bc)
+      000406 DD 77 F9         [19]  751 	ld	-7 (ix), a
+      000409 0B               [ 6]  752 	dec	bc
+      00040A 3Ar0Fr00         [13]  753 	ld	a, (_move_actor_path_flags_65536_180+0)
+      00040D 5F               [ 4]  754 	ld	e, a
+                                    755 ;actor.c:84: if (step->x == -128) step = curr_step = act->path;
+      00040E 2Ar0Br00         [16]  756 	ld	hl, (_move_actor_step_65536_180)
+                                    757 ;actor.c:88: act->y += (path_flags & PATH_FLIP_Y) ? -step->y : step->y;
+      000411 23               [ 6]  758 	inc	hl
+      000412 7E               [ 7]  759 	ld	a, (hl)
+      000413 DD 77 FA         [19]  760 	ld	-6 (ix), a
+      000416 07               [ 4]  761 	rlca
+      000417 9F               [ 4]  762 	sbc	a, a
+      000418 DD 77 FB         [19]  763 	ld	-5 (ix), a
+                                    764 ;actor.c:96: act->y += (path_flags & PATH_FLIP_Y) ? -step->y : step->y;
+      00041B CB 4B            [ 8]  765 	bit	1, e
+      00041D 28 10            [12]  766 	jr	Z, 00132$
+      00041F AF               [ 4]  767 	xor	a, a
+      000420 DD 96 FA         [19]  768 	sub	a, -6 (ix)
+      000423 DD 77 FC         [19]  769 	ld	-4 (ix), a
+      000426 9F               [ 4]  770 	sbc	a, a
+      000427 DD 96 FB         [19]  771 	sub	a, -5 (ix)
+      00042A DD 77 FD         [19]  772 	ld	-3 (ix), a
+      00042D 18 0C            [12]  773 	jr	00133$
+      00042F                        774 00132$:
+      00042F DD 7E FA         [19]  775 	ld	a, -6 (ix)
+      000432 DD 77 FC         [19]  776 	ld	-4 (ix), a
+      000435 DD 7E FB         [19]  777 	ld	a, -5 (ix)
+      000438 DD 77 FD         [19]  778 	ld	-3 (ix), a
+      00043B                        779 00133$:
+      00043B DD 7E FC         [19]  780 	ld	a, -4 (ix)
+      00043E DD 86 F8         [19]  781 	add	a, -8 (ix)
+      000441 5F               [ 4]  782 	ld	e, a
+      000442 DD 7E FD         [19]  783 	ld	a, -3 (ix)
+      000445 DD 8E F9         [19]  784 	adc	a, -7 (ix)
+      000448 57               [ 4]  785 	ld	d, a
+      000449 7B               [ 4]  786 	ld	a, e
+      00044A 02               [ 7]  787 	ld	(bc), a
+      00044B 03               [ 6]  788 	inc	bc
+      00044C 7A               [ 4]  789 	ld	a, d
+      00044D 02               [ 7]  790 	ld	(bc), a
+      00044E                        791 00110$:
+                                    792 ;actor.c:99: act->curr_step = curr_step;
+      00044E 2Ar09r00         [16]  793 	ld	hl, (_move_actor_act_65536_180)
+      000451 01 1E 00         [10]  794 	ld	bc, #0x001e
+      000454 09               [11]  795 	add	hl, bc
+      000455 3Ar0Dr00         [13]  796 	ld	a, (_move_actor_curr_step_65536_180+0)
+      000458 77               [ 7]  797 	ld	(hl), a
+      000459 23               [ 6]  798 	inc	hl
+      00045A 3Ar0Er00         [13]  799 	ld	a, (_move_actor_curr_step_65536_180+1)
+      00045D 77               [ 7]  800 	ld	(hl), a
+      00045E                        801 00112$:
+                                    802 ;actor.c:102: if (_act->spd_x) {
+      00045E DD 7E FE         [19]  803 	ld	a, -2 (ix)
+      000461 C6 0D            [ 7]  804 	add	a, #0x0d
+      000463 4F               [ 4]  805 	ld	c, a
+      000464 DD 7E FF         [19]  806 	ld	a, -1 (ix)
+      000467 CE 00            [ 7]  807 	adc	a, #0x00
+      000469 47               [ 4]  808 	ld	b, a
+      00046A 69               [ 4]  809 	ld	l, c
+      00046B 60               [ 4]  810 	ld	h, b
+      00046C 5E               [ 7]  811 	ld	e, (hl)
+      00046D 23               [ 6]  812 	inc	hl
+      00046E 56               [ 7]  813 	ld	d, (hl)
+      00046F 7A               [ 4]  814 	ld	a, d
+      000470 B3               [ 4]  815 	or	a, e
+      000471 28 61            [12]  816 	jr	Z, 00121$
+                                    817 ;actor.c:103: _act->x += _act->spd_x;
+      000473 DD 7E FE         [19]  818 	ld	a, -2 (ix)
+      000476 C6 01            [ 7]  819 	add	a, #0x01
+      000478 DD 77 FC         [19]  820 	ld	-4 (ix), a
+      00047B DD 7E FF         [19]  821 	ld	a, -1 (ix)
+      00047E CE 00            [ 7]  822 	adc	a, #0x00
+      000480 DD 77 FD         [19]  823 	ld	-3 (ix), a
+      000483 DD 6E FC         [19]  824 	ld	l, -4 (ix)
+      000486 DD 66 FD         [19]  825 	ld	h, -3 (ix)
+      000489 7E               [ 7]  826 	ld	a, (hl)
+      00048A 23               [ 6]  827 	inc	hl
+      00048B 66               [ 7]  828 	ld	h, (hl)
+                                    829 ;	spillPairReg hl
+      00048C 6F               [ 4]  830 	ld	l, a
+                                    831 ;	spillPairReg hl
+                                    832 ;	spillPairReg hl
+      00048D 19               [11]  833 	add	hl, de
+      00048E EB               [ 4]  834 	ex	de, hl
+      00048F DD 6E FC         [19]  835 	ld	l, -4 (ix)
+      000492 DD 66 FD         [19]  836 	ld	h, -3 (ix)
+      000495 73               [ 7]  837 	ld	(hl), e
+      000496 23               [ 6]  838 	inc	hl
+      000497 72               [ 7]  839 	ld	(hl), d
+                                    840 ;actor.c:105: if (_act->spd_x < 0) {
+      000498 69               [ 4]  841 	ld	l, c
+      000499 60               [ 4]  842 	ld	h, b
+      00049A 23               [ 6]  843 	inc	hl
+      00049B 46               [ 7]  844 	ld	b, (hl)
+                                    845 ;actor.c:103: _act->x += _act->spd_x;
+      00049C DD 6E FC         [19]  846 	ld	l, -4 (ix)
+      00049F DD 66 FD         [19]  847 	ld	h, -3 (ix)
+      0004A2 5E               [ 7]  848 	ld	e, (hl)
+      0004A3 23               [ 6]  849 	inc	hl
+      0004A4 56               [ 7]  850 	ld	d, (hl)
+                                    851 ;actor.c:105: if (_act->spd_x < 0) {
+      0004A5 CB 78            [ 8]  852 	bit	7, b
+      0004A7 28 1C            [12]  853 	jr	Z, 00118$
+                                    854 ;actor.c:106: if (_act->x + _act->pixel_w < 0) _act->active = 0;
+      0004A9 DD 4E FE         [19]  855 	ld	c, -2 (ix)
+      0004AC DD 46 FF         [19]  856 	ld	b, -1 (ix)
+      0004AF 21 12 00         [10]  857 	ld	hl, #18
+      0004B2 09               [11]  858 	add	hl, bc
+      0004B3 6E               [ 7]  859 	ld	l, (hl)
+                                    860 ;	spillPairReg hl
+      0004B4 26 00            [ 7]  861 	ld	h, #0x00
+                                    862 ;	spillPairReg hl
+                                    863 ;	spillPairReg hl
+      0004B6 19               [11]  864 	add	hl, de
+      0004B7 CB 7C            [ 8]  865 	bit	7, h
+      0004B9 28 19            [12]  866 	jr	Z, 00121$
+      0004BB DD 6E FE         [19]  867 	ld	l, -2 (ix)
+      0004BE DD 66 FF         [19]  868 	ld	h, -1 (ix)
+      0004C1 36 00            [10]  869 	ld	(hl), #0x00
+      0004C3 18 0F            [12]  870 	jr	00121$
+      0004C5                        871 00118$:
+                                    872 ;actor.c:108: if (_act->x >= SCREEN_W) _act->active = 0;
+      0004C5 7A               [ 4]  873 	ld	a, d
+      0004C6 EE 80            [ 7]  874 	xor	a, #0x80
+      0004C8 D6 81            [ 7]  875 	sub	a, #0x81
+      0004CA 38 08            [12]  876 	jr	C, 00121$
+      0004CC DD 6E FE         [19]  877 	ld	l, -2 (ix)
+      0004CF DD 66 FF         [19]  878 	ld	h, -1 (ix)
+      0004D2 36 00            [10]  879 	ld	(hl), #0x00
+      0004D4                        880 00121$:
+                                    881 ;actor.c:79: if (act->path) {
+      0004D4 2Ar09r00         [16]  882 	ld	hl, (_move_actor_act_65536_180)
+                                    883 ;actor.c:112: if (act->state_timer) act->state_timer--;
+      0004D7 01 21 00         [10]  884 	ld	bc, #0x0021
+      0004DA 09               [11]  885 	add	hl, bc
+      0004DB 4E               [ 7]  886 	ld	c, (hl)
+      0004DC 23               [ 6]  887 	inc	hl
+      0004DD 46               [ 7]  888 	ld	b, (hl)
+      0004DE 2B               [ 6]  889 	dec	hl
+      0004DF 78               [ 4]  890 	ld	a, b
+      0004E0 B1               [ 4]  891 	or	a, c
+      0004E1 28 04            [12]  892 	jr	Z, 00124$
+      0004E3 0B               [ 6]  893 	dec	bc
+      0004E4 71               [ 7]  894 	ld	(hl), c
+      0004E5 23               [ 6]  895 	inc	hl
+      0004E6 70               [ 7]  896 	ld	(hl), b
+      0004E7                        897 00124$:
+                                    898 ;actor.c:113: }
+      0004E7 DD F9            [10]  899 	ld	sp, ix
+      0004E9 DD E1            [14]  900 	pop	ix
+      0004EB C9               [10]  901 	ret
+                                    902 ;actor.c:115: void draw_actor(actor *act) {
+                                    903 ;	---------------------------------
+                                    904 ; Function draw_actor
+                                    905 ; ---------------------------------
+      0004EC                        906 _draw_actor::
+      0004EC DD E5            [15]  907 	push	ix
+      0004EE DD 21 00 00      [14]  908 	ld	ix,#0
+      0004F2 DD 39            [15]  909 	add	ix,sp
+      0004F4 F5               [11]  910 	push	af
+      0004F5 F5               [11]  911 	push	af
+      0004F6 F5               [11]  912 	push	af
+                                    913 ;actor.c:120: if (!act->active) {
+      0004F7 DD 75 FE         [19]  914 	ld	-2 (ix), l
+      0004FA DD 74 FF         [19]  915 	ld	-1 (ix), h
+      0004FD 4E               [ 7]  916 	ld	c, (hl)
+      0004FE 79               [ 4]  917 	ld	a, c
+      0004FF B7               [ 4]  918 	or	a, a
+                                    919 ;actor.c:121: return;
+      000500 CArC1r05         [10]  920 	jp	Z,00110$
+                                    921 ;actor.c:124: _act = act;
+      000503 DD 6E FE         [19]  922 	ld	l, -2 (ix)
+      000506 DD 66 FF         [19]  923 	ld	h, -1 (ix)
+      000509 22r10r00         [16]  924 	ld	(_draw_actor__act_65536_188), hl
+                                    925 ;actor.c:126: frame_tile = _act->base_tile + _act->frame;
+      00050C ED 4Br10r00      [20]  926 	ld	bc, (_draw_actor__act_65536_188)
+      000510 C5               [11]  927 	push	bc
+      000511 FD E1            [14]  928 	pop	iy
+      000513 FD 5E 16         [19]  929 	ld	e, 22 (iy)
+      000516 C5               [11]  930 	push	bc
+      000517 FD E1            [14]  931 	pop	iy
+      000519 FD 7E 18         [19]  932 	ld	a, 24 (iy)
+      00051C 83               [ 4]  933 	add	a, e
+      00051D 32r12r00         [13]  934 	ld	(_draw_actor_frame_tile_65536_188+0), a
+                                    935 ;actor.c:127: if (!_act->facing_left) {
+      000520 C5               [11]  936 	push	bc
+      000521 FD E1            [14]  937 	pop	iy
+      000523 FD 7E 0F         [19]  938 	ld	a, 15 (iy)
+      000526 B7               [ 4]  939 	or	a, a
+      000527 20 0C            [12]  940 	jr	NZ, 00104$
+                                    941 ;actor.c:128: frame_tile += _act->frame_max;
+      000529 59               [ 4]  942 	ld	e, c
+      00052A 50               [ 4]  943 	ld	d, b
+      00052B 21 1A 00         [10]  944 	ld	hl, #26
+      00052E 19               [11]  945 	add	hl, de
+      00052F 7E               [ 7]  946 	ld	a, (hl)
+      000530 21r12r00         [10]  947 	ld	hl, #_draw_actor_frame_tile_65536_188
+      000533 86               [ 7]  948 	add	a, (hl)
+      000534 77               [ 7]  949 	ld	(hl), a
+      000535                        950 00104$:
+                                    951 ;actor.c:131: draw_meta_sprite(_act->x, _act->y, _act->char_w, _act->char_h, frame_tile);	
+      000535 59               [ 4]  952 	ld	e, c
+      000536 50               [ 4]  953 	ld	d, b
+      000537 21 11 00         [10]  954 	ld	hl, #17
+      00053A 19               [11]  955 	add	hl, de
+      00053B 7E               [ 7]  956 	ld	a, (hl)
+      00053C DD 77 FA         [19]  957 	ld	-6 (ix), a
+      00053F DD 36 FB 00      [19]  958 	ld	-5 (ix), #0x00
+      000543 59               [ 4]  959 	ld	e, c
+      000544 50               [ 4]  960 	ld	d, b
+      000545 21 10 00         [10]  961 	ld	hl, #16
+      000548 19               [11]  962 	add	hl, de
+      000549 7E               [ 7]  963 	ld	a, (hl)
+      00054A DD 77 FC         [19]  964 	ld	-4 (ix), a
+      00054D DD 36 FD 00      [19]  965 	ld	-3 (ix), #0x00
+      000551 69               [ 4]  966 	ld	l, c
+                                    967 ;	spillPairReg hl
+                                    968 ;	spillPairReg hl
+      000552 60               [ 4]  969 	ld	h, b
+                                    970 ;	spillPairReg hl
+                                    971 ;	spillPairReg hl
+      000553 23               [ 6]  972 	inc	hl
+      000554 23               [ 6]  973 	inc	hl
+      000555 23               [ 6]  974 	inc	hl
+      000556 5E               [ 7]  975 	ld	e, (hl)
+      000557 23               [ 6]  976 	inc	hl
+      000558 56               [ 7]  977 	ld	d, (hl)
+      000559 69               [ 4]  978 	ld	l, c
+      00055A 60               [ 4]  979 	ld	h, b
+      00055B 23               [ 6]  980 	inc	hl
+      00055C 4E               [ 7]  981 	ld	c, (hl)
+      00055D 23               [ 6]  982 	inc	hl
+      00055E 46               [ 7]  983 	ld	b, (hl)
+      00055F 3Ar12r00         [13]  984 	ld	a, (_draw_actor_frame_tile_65536_188+0)
+      000562 F5               [11]  985 	push	af
+      000563 33               [ 6]  986 	inc	sp
+      000564 DD 6E FA         [19]  987 	ld	l, -6 (ix)
+                                    988 ;	spillPairReg hl
+                                    989 ;	spillPairReg hl
+      000567 DD 66 FB         [19]  990 	ld	h, -5 (ix)
+                                    991 ;	spillPairReg hl
+                                    992 ;	spillPairReg hl
+      00056A E5               [11]  993 	push	hl
+      00056B DD 6E FC         [19]  994 	ld	l, -4 (ix)
+                                    995 ;	spillPairReg hl
+                                    996 ;	spillPairReg hl
+      00056E DD 66 FD         [19]  997 	ld	h, -3 (ix)
+                                    998 ;	spillPairReg hl
+                                    999 ;	spillPairReg hl
+      000571 E5               [11] 1000 	push	hl
+      000572 69               [ 4] 1001 	ld	l, c
+                                   1002 ;	spillPairReg hl
+                                   1003 ;	spillPairReg hl
+      000573 60               [ 4] 1004 	ld	h, b
+                                   1005 ;	spillPairReg hl
+                                   1006 ;	spillPairReg hl
+      000574 CDr00r00         [17] 1007 	call	_draw_meta_sprite
+                                   1008 ;actor.c:126: frame_tile = _act->base_tile + _act->frame;
+      000577 ED 4Br10r00      [20] 1009 	ld	bc, (_draw_actor__act_65536_188)
+                                   1010 ;actor.c:133: if (_act->animation_delay) {
+      00057B 21 14 00         [10] 1011 	ld	hl, #0x0014
+      00057E 09               [11] 1012 	add	hl, bc
+      00057F 7E               [ 7] 1013 	ld	a, (hl)
+      000580 B7               [ 4] 1014 	or	a, a
+      000581 28 04            [12] 1015 	jr	Z, 00108$
+                                   1016 ;actor.c:134: _act->animation_delay--;
+      000583 3D               [ 4] 1017 	dec	a
+      000584 77               [ 7] 1018 	ld	(hl), a
+      000585 18 3A            [12] 1019 	jr	00110$
+      000587                       1020 00108$:
+                                   1021 ;actor.c:126: frame_tile = _act->base_tile + _act->frame;
+      000587 21 18 00         [10] 1022 	ld	hl, #0x0018
+      00058A 09               [11] 1023 	add	hl, bc
+      00058B EB               [ 4] 1024 	ex	de, hl
+                                   1025 ;actor.c:136: frame = _act->frame;		
+      00058C 1A               [ 7] 1026 	ld	a, (de)
+      00058D 32r13r00         [13] 1027 	ld	(_draw_actor_frame_65536_188+0), a
+                                   1028 ;actor.c:137: frame += _act->frame_increment;
+      000590 69               [ 4] 1029 	ld	l, c
+                                   1030 ;	spillPairReg hl
+                                   1031 ;	spillPairReg hl
+      000591 60               [ 4] 1032 	ld	h, b
+                                   1033 ;	spillPairReg hl
+                                   1034 ;	spillPairReg hl
+      000592 C5               [11] 1035 	push	bc
+      000593 01 19 00         [10] 1036 	ld	bc, #0x0019
+      000596 09               [11] 1037 	add	hl, bc
+      000597 C1               [10] 1038 	pop	bc
+      000598 7E               [ 7] 1039 	ld	a, (hl)
+      000599 21r13r00         [10] 1040 	ld	hl, #_draw_actor_frame_65536_188
+      00059C 86               [ 7] 1041 	add	a, (hl)
+      00059D 77               [ 7] 1042 	ld	(hl), a
+                                   1043 ;actor.c:138: if (frame >= _act->frame_max) frame = 0;		
+      00059E 21 1A 00         [10] 1044 	ld	hl, #26
+      0005A1 09               [11] 1045 	add	hl, bc
+      0005A2 4E               [ 7] 1046 	ld	c, (hl)
+      0005A3 3Ar13r00         [13] 1047 	ld	a, (_draw_actor_frame_65536_188+0)
+      0005A6 91               [ 4] 1048 	sub	a, c
+      0005A7 38 05            [12] 1049 	jr	C, 00106$
+      0005A9 21r13r00         [10] 1050 	ld	hl, #_draw_actor_frame_65536_188
+      0005AC 36 00            [10] 1051 	ld	(hl), #0x00
+      0005AE                       1052 00106$:
+                                   1053 ;actor.c:139: _act->frame = frame;
+      0005AE 3Ar13r00         [13] 1054 	ld	a, (_draw_actor_frame_65536_188+0)
+      0005B1 12               [ 7] 1055 	ld	(de), a
+                                   1056 ;actor.c:126: frame_tile = _act->base_tile + _act->frame;
+      0005B2 ED 4Br10r00      [20] 1057 	ld	bc, (_draw_actor__act_65536_188)
+                                   1058 ;actor.c:141: _act->animation_delay = _act->animation_delay_max;
+      0005B6 21 14 00         [10] 1059 	ld	hl, #0x0014
+      0005B9 09               [11] 1060 	add	hl, bc
+      0005BA EB               [ 4] 1061 	ex	de, hl
+      0005BB 21 15 00         [10] 1062 	ld	hl, #21
+      0005BE 09               [11] 1063 	add	hl, bc
+      0005BF 7E               [ 7] 1064 	ld	a, (hl)
+      0005C0 12               [ 7] 1065 	ld	(de), a
+      0005C1                       1066 00110$:
+                                   1067 ;actor.c:143: }
+      0005C1 DD F9            [10] 1068 	ld	sp, ix
+      0005C3 DD E1            [14] 1069 	pop	ix
+      0005C5 C9               [10] 1070 	ret
+                                   1071 ;actor.c:145: void wait_frames(int wait_time) {
+                                   1072 ;	---------------------------------
+                                   1073 ; Function wait_frames
+                                   1074 ; ---------------------------------
+      0005C6                       1075 _wait_frames::
+      0005C6                       1076 00103$:
+                                   1077 ;actor.c:146: for (; wait_time; wait_time--) SMS_waitForVBlank();
+      0005C6 7C               [ 4] 1078 	ld	a, h
+      0005C7 B5               [ 4] 1079 	or	a, l
+      0005C8 C8               [11] 1080 	ret	Z
+      0005C9 E5               [11] 1081 	push	hl
+      0005CA CDr00r00         [17] 1082 	call	_SMS_waitForVBlank
+      0005CD E1               [10] 1083 	pop	hl
+      0005CE 2B               [ 6] 1084 	dec	hl
+                                   1085 ;actor.c:147: }
+      0005CF 18 F5            [12] 1086 	jr	00103$
+                                   1087 ;actor.c:149: void clear_sprites() {
+                                   1088 ;	---------------------------------
+                                   1089 ; Function clear_sprites
+                                   1090 ; ---------------------------------
+      0005D1                       1091 _clear_sprites::
+                                   1092 ;actor.c:150: SMS_initSprites();	
+      0005D1 CDr00r00         [17] 1093 	call	_SMS_initSprites
+                                   1094 ;actor.c:151: SMS_finalizeSprites();
+      0005D4 CDr00r00         [17] 1095 	call	_SMS_finalizeSprites
+                                   1096 ;actor.c:152: SMS_copySpritestoSAT();
+                                   1097 ;actor.c:153: }
+      0005D7 C3r00r00         [10] 1098 	jp	_SMS_copySpritestoSAT
+                                   1099 	.area _CODE
+                                   1100 	.area _INITIALIZER
+                                   1101 	.area _CABS (ABS)
