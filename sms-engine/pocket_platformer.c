@@ -1204,10 +1204,20 @@ static void gameplay_loop(void) {
         player.on_ground = 0;
         apply_gravity();
         apply_treadmill();
-        player.vx += treadmill_bonus;
-        move_player_x();
+        /* Mirror JS bonusSpeedX pattern: add bonus → collide → remove bonus.
+           Save vx first so a wall-zero in move_player_x doesn't corrupt state. */
+        {
+            long saved_vx = player.vx;
+            player.vx = saved_vx + treadmill_bonus;
+            move_player_x();
+            /* Recover player-controlled vx: if wall zeroed (saved+bonus), keep 0.
+               Otherwise strip the bonus back out. */
+            if (player.vx == 0 && (saved_vx + treadmill_bonus) != 0)
+                player.vx = 0;   /* wall collision — controlled vx was zeroed too */
+            else
+                player.vx -= treadmill_bonus;
+        }
         move_player_y();
-        player.vx -= treadmill_bonus;
         check_object_collisions();
         check_rb_switch();
         update_disappearing_blocks();

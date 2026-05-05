@@ -43,15 +43,15 @@ Symbol Table
   D ___SMS__SDSC_signature                                         007FE0 GR
   9 ___SMS__SEGA_signature                                         007FF0 GR
     ___mulsint2slong                                               ****** GX
-  0 ___str_0                                                       003B06 R
-  0 ___str_1                                                       003B18 R
-  0 ___str_2                                                       003B2F R
+  0 ___str_0                                                       003B81 R
+  0 ___str_1                                                       003B93 R
+  0 ___str_2                                                       003BAA R
     __divslong                                                     ****** GX
     __mulint                                                       ****** GX
     __mullong                                                      ****** GX
-  0 __str_3                                                        003B7D R
-  0 __str_4                                                        003B93 R
-  0 __str_5                                                        003BB0 R
+  0 __str_3                                                        003BF8 R
+  0 __str_4                                                        003C0E R
+  0 __str_5                                                        003C2B R
   7 __xinit__treadmill_bonus                                       000000 R
   0 _apply_gravity                                                 001215 R
   0 _apply_treadmill                                               000D72 R
@@ -98,7 +98,7 @@ Symbol Table
   1 _level_complete                                                0000B0 R
   0 _load_graphics                                                 0009C6 R
   0 _load_level                                                    0035D5 R
-  0 _main                                                          003B40 GR
+  0 _main                                                          003BBB GR
   0 _move_player_x                                                 001BA5 R
   0 _move_player_y                                                 001DFB R
   0 _obj_sprite_tile                                               000B46 R
@@ -126,7 +126,7 @@ Symbol Table
   1 _res_physics                                                   000002 R
   1 _res_sprites                                                   000008 R
   1 _res_tileset                                                   000006 R
-  0 _title_screen                                                  003A93 R
+  0 _title_screen                                                  003B0E R
   2 _treadmill_bonus                                               000000 R
   0 _update_anim                                                   0035C0 R
   0 _update_camera                                                 0035B5 R
@@ -142,7 +142,7 @@ Hexadecimal [24-Bits]
 
 Area Table
 
-   0 _CODE                                      size   3BE4   flags    0
+   0 _CODE                                      size   3C5F   flags    0
    1 _DATA                                      size    262   flags    0
    2 _INITIALIZED                               size      4   flags    0
    3 _DABS                                      size      0   flags    8
