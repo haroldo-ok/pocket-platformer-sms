@@ -543,6 +543,7 @@ static long treadmill_bonus = 0;    /* fixed-point bonus velocity */
 
 static void apply_treadmill(void) {
     long bonus_target = 0;
+    map_res_bank();
     if (res_header->treadmill_right_vram_idx) {
         /* Check the tile directly under the player's feet.
            on_ground is already cleared at this point in the loop, so we probe
