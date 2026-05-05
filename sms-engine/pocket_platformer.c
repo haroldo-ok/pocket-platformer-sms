@@ -721,9 +721,10 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 }
 
 static void move_player_x(void) {
-    long new_x = player.x + player.vx;
+    long total_vx = player.vx + treadmill_bonus;
+    long new_x = player.x + total_vx;
     long px    = new_x >> 8;
-    if (player.vx > 0) {
+    if (total_vx > 0) {
         long r = new_x + FP(PLAYER_W);
         if (is_solid_px(r, player.y + FP(1)) ||
             is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
@@ -731,7 +732,7 @@ static void move_player_x(void) {
             new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
         }
-    } else if (player.vx < 0) {
+    } else if (total_vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
             is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
             long tile_l = px / TILE_SIZE + 1;
@@ -1206,22 +1207,6 @@ static void gameplay_loop(void) {
         apply_gravity();
         apply_treadmill();
         move_player_x();
-        /* Apply treadmill bonus as a direct position nudge after normal movement.
-           Bonus is small (~0.56 px/frame) so no tunneling risk.
-           Stop at walls: check the side we're moving toward before committing. */
-        if (treadmill_bonus != 0) {
-            long new_x = player.x + treadmill_bonus;
-            if (treadmill_bonus > 0) {
-                long r = new_x + FP(PLAYER_W);
-                if (!is_solid_px(r, player.y + FP(1)) &&
-                    !is_solid_px(r, player.y + FP(PLAYER_H - 2)))
-                    player.x = new_x;
-            } else {
-                if (!is_solid_px(new_x, player.y + FP(1)) &&
-                    !is_solid_px(new_x, player.y + FP(PLAYER_H - 2)))
-                    player.x = new_x;
-            }
-        }
         move_player_y();
         check_object_collisions();
         check_rb_switch();
