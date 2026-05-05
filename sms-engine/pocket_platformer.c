@@ -533,6 +533,8 @@ static void draw_player(void) {
 /* ──────────────────────────────────────────────────────────
  * Physics
  * ──────────────────────────────────────────────────────────*/
+
+
 static void apply_gravity(void) {
     /* Gravity only while falling (not during active jump ramp) */
     if (player.falling) {

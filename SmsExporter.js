@@ -234,6 +234,8 @@ const SmsExporter = (() => {
       for (const row of level.tileData) {
         for (const tileIdx of row) {
           if (tileIdx === 0) continue;
+          // 900=treadmill-right, 901=treadmill-left: handled via sentinels -202/-203
+          if (tileIdx === 900 || tileIdx === 901) continue;
           if (!tileCache.has(tileIdx)) {
             tileCache.set(tileIdx, null); // placeholder
             tileOrder.push(tileIdx);
@@ -296,6 +298,12 @@ const SmsExporter = (() => {
     // Foreground tile sprite (sentinel -200)
     if (sprites['FOREGROUND_TILE'])
       specialTilePixels.set(-200, sprites['FOREGROUND_TILE'].animation[0].sprite);
+    // Treadmill sprites: animation[0] = right, animation[1] = left (sentinel -202, -203)
+    if (sprites['TREADMILL']) {
+      specialTilePixels.set(-202, sprites['TREADMILL'].animation[0].sprite);
+      if (sprites['TREADMILL'].animation[1])
+        specialTilePixels.set(-203, sprites['TREADMILL'].animation[1].sprite);
+    }
     // Disappearing foreground tile sprite (sentinel -201)
     if (sprites['DISAPPEARING_FOREGROUND_TILE'])
       specialTilePixels.set(-201, sprites['DISAPPEARING_FOREGROUND_TILE'].animation[0].sprite);
@@ -322,6 +330,20 @@ const SmsExporter = (() => {
           tileOrder.push(k);
         }
       });
+    }
+
+    // Add treadmill tiles (900=right, 901=left stored in tileData) if any level uses them
+    const hasTreadmillRight = levels.some(l => l.tileData &&
+      l.tileData.some(row => row.some(v => v === 900)));
+    if (hasTreadmillRight && !tileCache.has(-202) && specialTilePixels.has(-202)) {
+      tileCache.set(-202, null);
+      tileOrder.push(-202);
+    }
+    const hasTreadmillLeft = levels.some(l => l.tileData &&
+      l.tileData.some(row => row.some(v => v === 901)));
+    if (hasTreadmillLeft && !tileCache.has(-203) && specialTilePixels.has(-203)) {
+      tileCache.set(-203, null);
+      tileOrder.push(-203);
     }
 
     // Add foreground tile sprite if any level uses foregroundTile objects
@@ -497,6 +519,12 @@ const SmsExporter = (() => {
           buf[off++] = clampByte(edgeVramIdx || 0);
         } else if (tileVal === 11 && connectedPos.has(`${x},${y}`)) {
           buf[off++] = clampByte(indexMap.get(10) || indexMap.get(tileVal) || 0);
+        } else if (tileVal === 900) {
+          // Treadmill right
+          buf[off++] = clampByte(indexMap.get(-202) || 0);
+        } else if (tileVal === 901) {
+          // Treadmill left
+          buf[off++] = clampByte(indexMap.get(-203) || 0);
         } else {
           buf[off++] = clampByte(indexMap.get(tileVal) || 0);
         }
