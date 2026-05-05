@@ -1204,18 +1204,22 @@ static void gameplay_loop(void) {
         player.on_ground = 0;
         apply_gravity();
         apply_treadmill();
-        /* Mirror JS bonusSpeedX pattern: add bonus → collide → remove bonus.
-           Save vx first so a wall-zero in move_player_x doesn't corrupt state. */
-        {
-            long saved_vx = player.vx;
-            player.vx = saved_vx + treadmill_bonus;
-            move_player_x();
-            /* Recover player-controlled vx: if wall zeroed (saved+bonus), keep 0.
-               Otherwise strip the bonus back out. */
-            if (player.vx == 0 && (saved_vx + treadmill_bonus) != 0)
-                player.vx = 0;   /* wall collision — controlled vx was zeroed too */
-            else
-                player.vx -= treadmill_bonus;
+        move_player_x();
+        /* Apply treadmill bonus as a direct position nudge after normal movement.
+           Bonus is small (~0.56 px/frame) so no tunneling risk.
+           Stop at walls: check the side we're moving toward before committing. */
+        if (treadmill_bonus != 0) {
+            long new_x = player.x + treadmill_bonus;
+            if (treadmill_bonus > 0) {
+                long r = new_x + FP(PLAYER_W);
+                if (!is_solid_px(r, player.y + FP(1)) &&
+                    !is_solid_px(r, player.y + FP(PLAYER_H - 2)))
+                    player.x = new_x;
+            } else {
+                if (!is_solid_px(new_x, player.y + FP(1)) &&
+                    !is_solid_px(new_x, player.y + FP(PLAYER_H - 2)))
+                    player.x = new_x;
+            }
         }
         move_player_y();
         check_object_collisions();
