@@ -7281,7 +7281,7 @@ _update_disappearing_blocks:
 	ld	-18 (ix), b
 ;pocket_platformer.c:1017: if (e->frame == FG_DISP_GONE_AT) {
 	ld	a, c
-	sub	a, #0x28
+	sub	a, #0x0f
 	jr	NZ, 00119$
 ;pocket_platformer.c:1019: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	l, -2 (ix)
@@ -7312,7 +7312,7 @@ _update_disappearing_blocks:
 00119$:
 ;pocket_platformer.c:1021: } else if (e->frame >= FG_DISP_RESET_AT) {
 	ld	a, l
-	sub	a, #0xc8
+	sub	a, #0x78
 	jp	C, 00121$
 ;pocket_platformer.c:1023: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
 	ld	c, e

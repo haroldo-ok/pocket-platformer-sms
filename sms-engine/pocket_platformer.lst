@@ -7281,7 +7281,7 @@
       002F1A DD 70 EE         [19] 7281 	ld	-18 (ix), b
                                    7282 ;pocket_platformer.c:1017: if (e->frame == FG_DISP_GONE_AT) {
       002F1D 79               [ 4] 7283 	ld	a, c
-      002F1E D6 28            [ 7] 7284 	sub	a, #0x28
+      002F1E D6 0F            [ 7] 7284 	sub	a, #0x0f
       002F20 20 1E            [12] 7285 	jr	NZ, 00119$
                                    7286 ;pocket_platformer.c:1019: SMS_setNextTileatXY(scr_x, scr_y);
       002F22 DD 6E FE         [19] 7287 	ld	l, -2 (ix)
@@ -7312,7 +7312,7 @@
       002F40                       7312 00119$:
                                    7313 ;pocket_platformer.c:1021: } else if (e->frame >= FG_DISP_RESET_AT) {
       002F40 7D               [ 4] 7314 	ld	a, l
-      002F41 D6 C8            [ 7] 7315 	sub	a, #0xc8
+      002F41 D6 78            [ 7] 7315 	sub	a, #0x78
       002F43 DAr16r31         [10] 7316 	jp	C, 00121$
                                    7317 ;pocket_platformer.c:1023: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
       002F46 4B               [ 4] 7318 	ld	c, e

@@ -187,8 +187,8 @@ static disp_entry disp_blocks[MAX_DISP];
 #define DISP_TILE_VALUE  11   /* tileData value for disappearing block */
 /* Disappearing foreground tile: same timer logic but priority bit set in nametable;
    always passable (bit 7 already handled in is_solid_px). */
-#define FG_DISP_GONE_AT   40
-#define FG_DISP_RESET_AT  200
+#define FG_DISP_GONE_AT   15
+#define FG_DISP_RESET_AT  120
 #define MAX_FG_DISP       16
 typedef struct {
     unsigned char tx, ty;
