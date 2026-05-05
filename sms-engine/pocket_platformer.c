@@ -539,51 +539,7 @@ static void draw_player(void) {
 /* Apply treadmill bonus velocity. Called after move_player_y sets on_ground.
    Mirrors JS: while on treadmill set bonusSpeedX=±maxSpeed/1.90 (already scaled),
    off treadmill decay ×0.95 until |bonus| < FP(0.1). */
-static long treadmill_bonus = 0;    /* fixed-point bonus velocity */
-static unsigned char treadmill_active = 0; /* 1 = player currently on treadmill */
 
-static void apply_treadmill(void) {
-    long bonus_target = 0;
-    map_res_bank();
-    if (res_header->treadmill_right_vram_idx) {
-        /* Check the tile directly under the player's feet.
-           on_ground is already cleared at this point in the loop, so we probe
-           the tilemap directly: the row one tile below the player's bottom edge. */
-        unsigned char fty = (unsigned char)(((player.y >> 8) + PLAYER_H) / TILE_SIZE);
-        unsigned char ftx = (unsigned char)((player.x >> 8) / TILE_SIZE);
-        unsigned char ft  = get_tile(ftx, fty);
-        if (ft == res_header->treadmill_right_vram_idx)
-            bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
-        else if (res_header->treadmill_left_vram_idx &&
-                 ft == res_header->treadmill_left_vram_idx)
-            bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
-        else {
-            /* Also check right foot */
-            unsigned char ftx2 = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
-            unsigned char ft2  = get_tile(ftx2, fty);
-            if (ft2 == res_header->treadmill_right_vram_idx)
-                bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
-            else if (res_header->treadmill_left_vram_idx &&
-                     ft2 == res_header->treadmill_left_vram_idx)
-                bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
-        }
-        /* Only apply if player is actually standing (not in mid-air).
-           Use vy == 0 as a proxy: landing sets vy=0, jumping sets it negative. */
-        if (player.falling || player.jumping || player.wall_jumping)
-            bonus_target = 0;
-    }
-    if (bonus_target != 0) {
-        treadmill_bonus = bonus_target;
-        treadmill_active = 1;
-    } else {
-        treadmill_active = 0;
-        /* Off treadmill: decay × 0.95 */
-        treadmill_bonus = FP_MUL(treadmill_bonus, FP(0.95));
-        if (treadmill_bonus > -FP(0.1) && treadmill_bonus < FP(0.1))
-            treadmill_bonus = 0;
-    treadmill_active = 0;
-    }
-}
 
 static void apply_gravity(void) {
     /* Gravity only while falling (not during active jump ramp) */
@@ -725,10 +681,9 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 }
 
 static void move_player_x(void) {
-    long total_vx = player.vx + (treadmill_active ? treadmill_bonus : 0);
-    long new_x = player.x + total_vx;
+    long new_x = player.x + player.vx;
     long px    = new_x >> 8;
-    if (total_vx > 0) {
+    if (player.vx > 0) {
         long r = new_x + FP(PLAYER_W);
         if (is_solid_px(r, player.y + FP(1)) ||
             is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
@@ -736,7 +691,7 @@ static void move_player_x(void) {
             new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
         }
-    } else if (total_vx < 0) {
+    } else if (player.vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
             is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
             long tile_l = px / TILE_SIZE + 1;
@@ -1209,7 +1164,6 @@ static void gameplay_loop(void) {
         if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
         player.on_ground = 0;
         apply_gravity();
-        apply_treadmill();
         move_player_x();
         move_player_y();
         check_object_collisions();
