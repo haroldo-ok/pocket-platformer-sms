@@ -2417,7 +2417,7 @@ _apply_gravity:
 	ld	hl, (#(_player + 12) + 0)
 	ld	de, (#(_player + 12) + 2)
 	ld	a, l
-	add	a, #0x80
+	add	a, #0x2a
 	ld	c, a
 	ld	a, h
 	adc	a, #0x00
@@ -3299,54 +3299,47 @@ _handle_input:
 ;pocket_platformer.c:617: if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
 	ld	a, -2 (ix)
 	and	a, #0x10
-	ld	-8 (ix), a
-	ld	-7 (ix), #0x00
-;pocket_platformer.c:620: player.vy = -(remaining * js);
+	ld	-6 (ix), a
+	ld	-5 (ix), #0x00
+;pocket_platformer.c:621: player.vy = -(remaining * js);
 ;pocket_platformer.c:616: if (player.jumping) {
 	ld	a, c
 	or	a, a
 	jp	Z, 00143$
 ;pocket_platformer.c:617: if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
 	ld	de, #(_player + 27)
-	ld	hl, #6
+	ld	hl, #8
 	add	hl, sp
 	ex	de, hl
 	ld	bc, #0x0004
 	ldir
 	xor	a, a
-	cp	a, -12 (ix)
-	sbc	a, -11 (ix)
-	ld	a, #0x00
-	sbc	a, -10 (ix)
-	ld	a, #0x00
+	cp	a, -10 (ix)
 	sbc	a, -9 (ix)
+	ld	a, #0x00
+	sbc	a, -8 (ix)
+	ld	a, #0x00
+	sbc	a, -7 (ix)
 	jp	PO, 00524$
 	xor	a, #0x80
 00524$:
 	rlca
 	and	a,#0x01
 	ld	-3 (ix), a
-	ld	a, -7 (ix)
-	or	a, -8 (ix)
+	ld	a, -5 (ix)
+	or	a, -6 (ix)
 	jr	NZ, 00138$
 	ld	a, -3 (ix)
 	or	a, a
 	jp	Z, 00139$
 00138$:
-;pocket_platformer.c:546: long max_spd = (long)res_physics->max_speed;
-	ld	hl, (_res_physics)
-	ld	-6 (ix), l
-	ld	-5 (ix), h
 ;pocket_platformer.c:618: long js = player.forced_jump_speed > 0 ? player.forced_jump_speed : (long)res_physics->jump_speed;
 	ld	a, -3 (ix)
 	or	a, a
 	jr	NZ, 00238$
-	ld	a, -6 (ix)
-	ld	-4 (ix), a
-	ld	a, -5 (ix)
-	ld	-3 (ix), a
-	ld	l, -4 (ix)
-	ld	h, -3 (ix)
+	ld	hl, (_res_physics)
+	ld	-4 (ix), l
+	ld	-3 (ix), h
 	ld	de, #0x000a
 	add	hl, de
 	ld	a, (hl)
@@ -3355,51 +3348,53 @@ _handle_input:
 	ld	a, (hl)
 	ld	-3 (ix), a
 	ld	a, -4 (ix)
-	ld	-12 (ix), a
+	ld	-10 (ix), a
 	ld	a, -3 (ix)
-	ld	-11 (ix), a
+	ld	-9 (ix), a
 	rlca
 	sbc	a, a
-	ld	-10 (ix), a
-	ld	-9 (ix), a
+	ld	-8 (ix), a
+	ld	-7 (ix), a
 00238$:
-	ld	c, -12 (ix)
-	ld	b, -11 (ix)
+	ld	c, -10 (ix)
+	ld	b, -9 (ix)
 	push	iy
 	ex	(sp), hl
-	ld	l, -10 (ix)
+	ld	l, -8 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ex	(sp), hl
 	ex	(sp), hl
-	ld	h, -9 (ix)
+	ld	h, -7 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ex	(sp), hl
 	pop	iy
-;pocket_platformer.c:619: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
-	ld	e, -6 (ix)
-	ld	d, -5 (ix)
-	ld	hl, #12
-	add	hl, de
-	ld	e, (hl)
-	ld	d, #0x00
+;pocket_platformer.c:619: player.jump_frames++;
 	ld	a, (#(_player + 22) + 0)
-	ld	l, a
-;	spillPairReg hl
+	inc	a
+	ld	-3 (ix), a
+	ld	hl, #(_player + 22)
+	ld	a, -3 (ix)
+	ld	(hl), a
+;pocket_platformer.c:620: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+	ld	hl, (_res_physics)
+	ld	de, #0x000c
+	add	hl, de
+	ld	l, (hl)
 ;	spillPairReg hl
 	ld	h, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
-	ld	a, e
-	sub	a, l
-	ld	e, a
+	ld	e, -3 (ix)
+	ld	d, #0x00
+	cp	a, a
+	sbc	hl, de
+	ex	de, hl
 	ld	a, d
-	sbc	a, h
-	ld	d, a
 	rlca
 	sbc	hl, hl
-;pocket_platformer.c:620: player.vy = -(remaining * js);
+;pocket_platformer.c:621: player.vy = -(remaining * js);
 	push	iy
 	push	bc
 	call	__mullong
@@ -3419,16 +3414,12 @@ _handle_input:
 	ld	d, a
 	ld	((_player + 12)), bc
 	ld	((_player + 12)+2), de
-;pocket_platformer.c:621: player.jump_frames++;
-	ld	a, (#(_player + 22) + 0)
-	inc	a
-	ld	(#(_player + 22)),a
 ;pocket_platformer.c:622: if (player.jump_frames >= res_physics->max_jump_frames) {
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
 	add	hl, de
-	ld	c, (hl)
-	sub	a, c
+	ld	a,-3 (ix)
+	sub	a,(hl)
 	jr	C, 00143$
 ;pocket_platformer.c:623: player.jumping = 0;
 	ld	hl, #(_player + 18)
@@ -3443,10 +3434,10 @@ _handle_input:
 	jr	00143$
 00139$:
 ;pocket_platformer.c:627: } else if (player.forced_jump_speed == 0) {
-	ld	a, -9 (ix)
+	ld	a, -7 (ix)
+	or	a, -8 (ix)
+	or	a, -9 (ix)
 	or	a, -10 (ix)
-	or	a, -11 (ix)
-	or	a, -12 (ix)
 	jr	NZ, 00143$
 ;pocket_platformer.c:629: player.jumping = 0;
 	ld	hl, #(_player + 18)
@@ -3466,39 +3457,37 @@ _handle_input:
 	or	a, a
 	jp	Z, 00159$
 ;pocket_platformer.c:638: if (joy & PORT_A_KEY_1) {
-	ld	a, -7 (ix)
-	or	a, -8 (ix)
+	ld	a, -5 (ix)
+	or	a, -6 (ix)
 	jp	Z, 00156$
+;pocket_platformer.c:639: player.jump_frames++;
+	ld	a, (#(_player + 22) + 0)
+	inc	a
+	ld	(#(_player + 22)),a
 ;pocket_platformer.c:546: long max_spd = (long)res_physics->max_speed;
 	ld	bc, (_res_physics)
-;pocket_platformer.c:639: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+;pocket_platformer.c:640: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
 	ld	e, c
 	ld	d, b
 	ld	hl, #12
 	add	hl, de
-	ld	e, (hl)
-	ld	d, #0x00
-	ld	a, (#(_player + 22) + 0)
-	ld	l, a
-;	spillPairReg hl
+	ld	l, (hl)
 ;	spillPairReg hl
 	ld	h, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
-	ld	a, e
-	sub	a, l
 	ld	e, a
-	ld	a, d
-	sbc	a, h
-	ld	d, a
-	ld	-8 (ix), e
-	ld	a, d
+	ld	d, #0x00
+	cp	a, a
+	sbc	hl, de
+	ld	-8 (ix), l
+	ld	a, h
 	ld	-7 (ix), a
 	rlca
 	sbc	a, a
 	ld	-6 (ix), a
 	ld	-5 (ix), a
-;pocket_platformer.c:640: player.vy = -(remaining * (long)res_physics->jump_speed);
+;pocket_platformer.c:641: player.vy = -(remaining * (long)res_physics->jump_speed);
 	ld	hl, #10
 	add	hl, bc
 	ld	c, (hl)
@@ -3534,10 +3523,6 @@ _handle_input:
 	ld	d, a
 	ld	((_player + 12)), bc
 	ld	((_player + 12)+2), de
-;pocket_platformer.c:641: player.jump_frames++;
-	ld	a, (#(_player + 22) + 0)
-	inc	a
-	ld	(#(_player + 22)),a
 ;pocket_platformer.c:643: if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
 	ld	hl, #(_player + 21)
 	ld	c, (hl)
