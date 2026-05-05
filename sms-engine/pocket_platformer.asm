@@ -7281,7 +7281,7 @@ _update_disappearing_blocks:
 	ld	-18 (ix), b
 ;pocket_platformer.c:1017: if (e->frame == FG_DISP_GONE_AT) {
 	ld	a, c
-	sub	a, #0x0f
+	sub	a, #0x05
 	jr	NZ, 00119$
 ;pocket_platformer.c:1019: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	l, -2 (ix)
