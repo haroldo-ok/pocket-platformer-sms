@@ -71,7 +71,7 @@
 #define FP_ONE      256L
 #define FP(x)       ((long)((x) * FP_ONE))
 #define FP_MUL(a,b) (((long)(a) * (long)(b)) >> 8)
-#define GRAVITY     FP(0.5)
+#define GRAVITY     FP(0.1667)  /* scaled: JS tileSize(24) / SMS tileSize(8) = 3 */
 
 /* ── Player collision box (8x8 sprite, slightly narrower) ── */
 #define PLAYER_W   6
@@ -616,9 +616,9 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
     if (player.jumping) {
         if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
             long js = player.forced_jump_speed > 0 ? player.forced_jump_speed : (long)res_physics->jump_speed;
+            player.jump_frames++;
             long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
             player.vy = -(remaining * js);
-            player.jump_frames++;
             if (player.jump_frames >= res_physics->max_jump_frames) {
                 player.jumping = 0;
                 player.falling = 1;
@@ -636,9 +636,9 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
        pushToSideWhileWallJumpingFrames = maxJumpFrames/2 - 4 */
     if (player.wall_jumping) {
         if (joy & PORT_A_KEY_1) {
+            player.jump_frames++;
             long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
             player.vy = -(remaining * (long)res_physics->jump_speed);
-            player.jump_frames++;
             /* Horizontal push for first (maxJumpFrames/2 - 4) frames */
             if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
                 /* currentJumpSpeed magnitude = remaining * jumpSpeed */
