@@ -234,6 +234,8 @@ const SmsExporter = (() => {
       for (const row of level.tileData) {
         for (const tileIdx of row) {
           if (tileIdx === 0) continue;
+          // 900=treadmill-right, 901=treadmill-left: handled via sentinels -202/-203
+          if (tileIdx === 900 || tileIdx === 901) continue;
           if (!tileCache.has(tileIdx)) {
             tileCache.set(tileIdx, null); // placeholder
             tileOrder.push(tileIdx);
