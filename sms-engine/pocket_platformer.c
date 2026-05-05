@@ -543,10 +543,12 @@ static long treadmill_bonus = 0;    /* fixed-point bonus velocity */
 
 static void apply_treadmill(void) {
     long bonus_target = 0;
-    if (player.on_ground && res_header->treadmill_right_vram_idx) {
-        /* Check the tile under the player's feet (left foot) */
-        unsigned char ftx = (unsigned char)((player.x >> 8) / TILE_SIZE);
+    if (res_header->treadmill_right_vram_idx) {
+        /* Check the tile directly under the player's feet.
+           on_ground is already cleared at this point in the loop, so we probe
+           the tilemap directly: the row one tile below the player's bottom edge. */
         unsigned char fty = (unsigned char)(((player.y >> 8) + PLAYER_H) / TILE_SIZE);
+        unsigned char ftx = (unsigned char)((player.x >> 8) / TILE_SIZE);
         unsigned char ft  = get_tile(ftx, fty);
         if (ft == res_header->treadmill_right_vram_idx)
             bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
@@ -563,6 +565,10 @@ static void apply_treadmill(void) {
                      ft2 == res_header->treadmill_left_vram_idx)
                 bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
         }
+        /* Only apply if player is actually standing (not in mid-air).
+           Use vy == 0 as a proxy: landing sets vy=0, jumping sets it negative. */
+        if (player.falling || player.jumping || player.wall_jumping)
+            bonus_target = 0;
     }
     if (bonus_target != 0) {
         treadmill_bonus = bonus_target;
