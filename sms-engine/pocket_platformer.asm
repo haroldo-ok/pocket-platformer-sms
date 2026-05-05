@@ -116,6 +116,8 @@ _cur_objects:
 	.area _INITIALIZED
 _treadmill_bonus:
 	.ds 4
+_treadmill_active:
+	.ds 1
 ;--------------------------------------------------------
 ; absolute external ram data
 ;--------------------------------------------------------
@@ -2406,7 +2408,7 @@ _draw_player:
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:544: static void apply_treadmill(void) {
+;pocket_platformer.c:545: static void apply_treadmill(void) {
 ;	---------------------------------
 ; Function apply_treadmill
 ; ---------------------------------
@@ -2417,22 +2419,22 @@ _apply_treadmill:
 	ld	hl, #-19
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:545: long bonus_target = 0;
+;pocket_platformer.c:546: long bonus_target = 0;
 	xor	a, a
 	ld	-11 (ix), a
 	ld	-10 (ix), a
 	ld	-9 (ix), a
 	ld	-8 (ix), a
-;pocket_platformer.c:546: map_res_bank();
+;pocket_platformer.c:547: map_res_bank();
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
 	ld	(hl), #0x02
-;pocket_platformer.c:547: if (res_header->treadmill_right_vram_idx) {
+;pocket_platformer.c:548: if (res_header->treadmill_right_vram_idx) {
 	ld	iy, (_res_header)
 	ld	a, 38 (iy)
 	ld	-1 (ix), a
 	or	a, a
 	jp	Z, 00119$
-;pocket_platformer.c:551: unsigned char fty = (unsigned char)(((player.y >> 8) + PLAYER_H) / TILE_SIZE);
+;pocket_platformer.c:552: unsigned char fty = (unsigned char)(((player.y >> 8) + PLAYER_H) / TILE_SIZE);
 	ld	de, #_player + 4
 	ld	hl, #15
 	add	hl, sp
@@ -2500,7 +2502,7 @@ _apply_treadmill:
 	rr	-2 (ix)
 	ld	a, -2 (ix)
 	ld	-7 (ix), a
-;pocket_platformer.c:552: unsigned char ftx = (unsigned char)((player.x >> 8) / TILE_SIZE);
+;pocket_platformer.c:553: unsigned char ftx = (unsigned char)((player.x >> 8) / TILE_SIZE);
 	ld	de, #_player
 	ld	hl, #15
 	add	hl, sp
@@ -2554,7 +2556,7 @@ _apply_treadmill:
 	rr	-2 (ix)
 	srl	-1 (ix)
 	rr	-2 (ix)
-;pocket_platformer.c:553: unsigned char ft  = get_tile(ftx, fty);
+;pocket_platformer.c:554: unsigned char ft  = get_tile(ftx, fty);
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ld	a, -2 (ix)
@@ -2562,11 +2564,11 @@ _apply_treadmill:
 	call	_get_tile
 	ld	-1 (ix), a
 	ld	-6 (ix), a
-;pocket_platformer.c:547: if (res_header->treadmill_right_vram_idx) {
+;pocket_platformer.c:548: if (res_header->treadmill_right_vram_idx) {
 	ld	hl, (_res_header)
 	ld	-5 (ix), l
 	ld	-4 (ix), h
-;pocket_platformer.c:554: if (ft == res_header->treadmill_right_vram_idx)
+;pocket_platformer.c:555: if (ft == res_header->treadmill_right_vram_idx)
 	ld	a, -5 (ix)
 	ld	-2 (ix), a
 	ld	a, -4 (ix)
@@ -2577,15 +2579,15 @@ _apply_treadmill:
 	add	hl, de
 	ld	a, (hl)
 	ld	-3 (ix), a
-;pocket_platformer.c:555: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+;pocket_platformer.c:556: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
 	ld	hl, (_res_physics)
 	ld	-2 (ix), l
 	ld	-1 (ix), h
-;pocket_platformer.c:554: if (ft == res_header->treadmill_right_vram_idx)
+;pocket_platformer.c:555: if (ft == res_header->treadmill_right_vram_idx)
 	ld	a, -6 (ix)
 	sub	a, -3 (ix)
 	jr	NZ, 00112$
-;pocket_platformer.c:555: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+;pocket_platformer.c:556: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
 	ld	l, -2 (ix)
 	ld	h, -1 (ix)
 	ld	e, (hl)
@@ -2606,7 +2608,7 @@ _apply_treadmill:
 	ld	-8 (ix), h
 	jp	00113$
 00112$:
-;pocket_platformer.c:556: else if (res_header->treadmill_left_vram_idx &&
+;pocket_platformer.c:557: else if (res_header->treadmill_left_vram_idx &&
 	ld	l, -5 (ix)
 	ld	h, -4 (ix)
 	ld	de, #0x0027
@@ -2615,11 +2617,11 @@ _apply_treadmill:
 	ld	a, c
 	or	a, a
 	jr	Z, 00108$
-;pocket_platformer.c:557: ft == res_header->treadmill_left_vram_idx)
+;pocket_platformer.c:558: ft == res_header->treadmill_left_vram_idx)
 	ld	a, -6 (ix)
 	sub	a, c
 	jr	NZ, 00108$
-;pocket_platformer.c:558: bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+;pocket_platformer.c:559: bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
 	ld	l, -2 (ix)
 	ld	h, -1 (ix)
 	ld	e, (hl)
@@ -2660,7 +2662,7 @@ _apply_treadmill:
 	ld	-8 (ix), h
 	jp	00113$
 00108$:
-;pocket_platformer.c:561: unsigned char ftx2 = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
+;pocket_platformer.c:562: unsigned char ftx2 = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
@@ -2717,18 +2719,18 @@ _apply_treadmill:
 	rr	-2 (ix)
 	ld	a, -2 (ix)
 	ld	-1 (ix), a
-;pocket_platformer.c:562: unsigned char ft2  = get_tile(ftx2, fty);
+;pocket_platformer.c:563: unsigned char ft2  = get_tile(ftx2, fty);
 	ld	l, -7 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ld	a, -1 (ix)
 	call	_get_tile
 	ld	-5 (ix), a
-;pocket_platformer.c:547: if (res_header->treadmill_right_vram_idx) {
+;pocket_platformer.c:548: if (res_header->treadmill_right_vram_idx) {
 	ld	hl, (_res_header)
 	ld	-2 (ix), l
 	ld	-1 (ix), h
-;pocket_platformer.c:563: if (ft2 == res_header->treadmill_right_vram_idx)
+;pocket_platformer.c:564: if (ft2 == res_header->treadmill_right_vram_idx)
 	ld	a, -2 (ix)
 	ld	-4 (ix), a
 	ld	a, -1 (ix)
@@ -2739,15 +2741,15 @@ _apply_treadmill:
 	add	hl, de
 	ld	a, (hl)
 	ld	-6 (ix), a
-;pocket_platformer.c:555: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+;pocket_platformer.c:556: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
 	ld	hl, (_res_physics)
 	ld	-4 (ix), l
 	ld	-3 (ix), h
-;pocket_platformer.c:563: if (ft2 == res_header->treadmill_right_vram_idx)
+;pocket_platformer.c:564: if (ft2 == res_header->treadmill_right_vram_idx)
 	ld	a, -5 (ix)
 	sub	a, -6 (ix)
 	jr	NZ, 00105$
-;pocket_platformer.c:564: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+;pocket_platformer.c:565: bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
 	ld	l, -4 (ix)
 	ld	h, -3 (ix)
 	ld	e, (hl)
@@ -2776,21 +2778,21 @@ _apply_treadmill:
 	djnz	00222$
 	jp	00113$
 00105$:
-;pocket_platformer.c:556: else if (res_header->treadmill_left_vram_idx &&
+;pocket_platformer.c:557: else if (res_header->treadmill_left_vram_idx &&
 	ld	l, -2 (ix)
 	ld	h, -1 (ix)
 	ld	de, #0x0027
 	add	hl, de
 	ld	a, (hl)
-;pocket_platformer.c:565: else if (res_header->treadmill_left_vram_idx &&
+;pocket_platformer.c:566: else if (res_header->treadmill_left_vram_idx &&
 	ld	-1 (ix), a
 	or	a, a
 	jp	Z, 00113$
-;pocket_platformer.c:566: ft2 == res_header->treadmill_left_vram_idx)
+;pocket_platformer.c:567: ft2 == res_header->treadmill_left_vram_idx)
 	ld	a, -5 (ix)
 	sub	a, -1 (ix)
 	jp	NZ,00113$
-;pocket_platformer.c:567: bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+;pocket_platformer.c:568: bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
 	ld	l, -4 (ix)
 	ld	h, -3 (ix)
 	ld	a, (hl)
@@ -2841,7 +2843,7 @@ _apply_treadmill:
 	ld	bc, #4
 	ldir
 00113$:
-;pocket_platformer.c:571: if (player.falling || player.jumping || player.wall_jumping)
+;pocket_platformer.c:572: if (player.falling || player.jumping || player.wall_jumping)
 	ld	a, (#_player + 17)
 	or	a, a
 	jr	NZ, 00114$
@@ -2853,28 +2855,34 @@ _apply_treadmill:
 	or	a, a
 	jr	Z, 00119$
 00114$:
-;pocket_platformer.c:572: bonus_target = 0;
+;pocket_platformer.c:573: bonus_target = 0;
 	xor	a, a
 	ld	-11 (ix), a
 	ld	-10 (ix), a
 	ld	-9 (ix), a
 	ld	-8 (ix), a
 00119$:
-;pocket_platformer.c:574: if (bonus_target != 0) {
+;pocket_platformer.c:575: if (bonus_target != 0) {
 	ld	a, -8 (ix)
 	or	a, -9 (ix)
 	or	a, -10 (ix)
 	or	a, -11 (ix)
 	jr	Z, 00124$
-;pocket_platformer.c:575: treadmill_bonus = bonus_target;
+;pocket_platformer.c:576: treadmill_bonus = bonus_target;
 	ld	de, #_treadmill_bonus
 	ld	hl, #8
 	add	hl, sp
 	ld	bc, #4
 	ldir
-	jr	00126$
+;pocket_platformer.c:577: treadmill_active = 1;
+	ld	hl, #_treadmill_active
+	ld	(hl), #0x01
+	jp	00126$
 00124$:
-;pocket_platformer.c:578: treadmill_bonus = FP_MUL(treadmill_bonus, FP(0.95));
+;pocket_platformer.c:579: treadmill_active = 0;
+	ld	hl, #_treadmill_active
+	ld	(hl), #0x00
+;pocket_platformer.c:581: treadmill_bonus = FP_MUL(treadmill_bonus, FP(0.95));
 	ld	hl, (_treadmill_bonus + 2)
 	push	hl
 	ld	hl, (_treadmill_bonus)
@@ -2884,18 +2892,28 @@ _apply_treadmill:
 	call	__mullong
 	pop	af
 	pop	af
+	ld	-4 (ix), e
+	ld	-3 (ix), d
+	ld	-2 (ix), l
+	ld	-1 (ix), h
+	ld	a, -4 (ix)
+	ld	(_treadmill_bonus+0), a
+	ld	a, -3 (ix)
+	ld	(_treadmill_bonus+1), a
+	ld	a, -2 (ix)
+	ld	(_treadmill_bonus+2), a
+	ld	a, -1 (ix)
+	ld	(_treadmill_bonus+3), a
 	ld	b, #0x08
 00228$:
-	sra	h
-	rr	l
-	rr	d
-	rr	e
-	djnz	00228$
-	ld	(_treadmill_bonus), de
-	ld	(_treadmill_bonus + 2), hl
-;pocket_platformer.c:579: if (treadmill_bonus > -FP(0.1) && treadmill_bonus < FP(0.1))
-	ld	a, #0xe7
 	ld	iy, #_treadmill_bonus
+	sra	3 (iy)
+	rr	2 (iy)
+	rr	1 (iy)
+	rr	0 (iy)
+	djnz	00228$
+;pocket_platformer.c:582: if (treadmill_bonus > -FP(0.1) && treadmill_bonus < FP(0.1))
+	ld	a, #0xe7
 	cp	a, 0 (iy)
 	ld	de, (_treadmill_bonus + 1)
 	ld	hl, #0xffff
@@ -2905,7 +2923,7 @@ _apply_treadmill:
 	jp	PO, 00230$
 	xor	a, #0x80
 00230$:
-	jp	P, 00126$
+	jp	P, 00121$
 	ld	a, (_treadmill_bonus+0)
 	sub	a, #0x19
 	ld	a, (_treadmill_bonus+1)
@@ -2917,28 +2935,32 @@ _apply_treadmill:
 	ccf
 	rra
 	sbc	a, #0x80
-	jr	NC, 00126$
-;pocket_platformer.c:580: treadmill_bonus = 0;
+	jr	NC, 00121$
+;pocket_platformer.c:583: treadmill_bonus = 0;
 	xor	a, a
 	ld	(_treadmill_bonus+0), a
 	ld	(_treadmill_bonus+1), a
 	ld	(_treadmill_bonus+2), a
 	ld	(_treadmill_bonus+3), a
+00121$:
+;pocket_platformer.c:584: treadmill_active = 0;
+	ld	hl, #_treadmill_active
+	ld	(hl), #0x00
 00126$:
-;pocket_platformer.c:582: }
+;pocket_platformer.c:586: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:584: static void apply_gravity(void) {
+;pocket_platformer.c:588: static void apply_gravity(void) {
 ;	---------------------------------
 ; Function apply_gravity
 ; ---------------------------------
 _apply_gravity:
-;pocket_platformer.c:586: if (player.falling) {
+;pocket_platformer.c:590: if (player.falling) {
 	ld	a, (#_player + 17)
 	or	a, a
 	ret	Z
-;pocket_platformer.c:587: player.vy += GRAVITY;
+;pocket_platformer.c:591: player.vy += GRAVITY;
 	ld	hl, (#(_player + 12) + 0)
 	ld	de, (#(_player + 12) + 2)
 	ld	a, l
@@ -2952,7 +2974,7 @@ _apply_gravity:
 00117$:
 	ld	((_player + 12)), bc
 	ld	((_player + 12)+2), de
-;pocket_platformer.c:588: if (player.vy > MAX_VY)
+;pocket_platformer.c:592: if (player.vy > MAX_VY)
 	xor	a, a
 	cp	a, c
 	ld	a, #0x07
@@ -2965,14 +2987,14 @@ _apply_gravity:
 	xor	a, #0x80
 00118$:
 	ret	P
-;pocket_platformer.c:589: player.vy = MAX_VY;
+;pocket_platformer.c:593: player.vy = MAX_VY;
 	ld	hl, #0x0700
 	ld	((_player + 12)), hl
 	ld	h, l
 	ld	((_player + 12)+2), hl
-;pocket_platformer.c:591: }
+;pocket_platformer.c:595: }
 	ret
-;pocket_platformer.c:593: static void handle_input(unsigned int joy, unsigned int joy_pressed) {
+;pocket_platformer.c:597: static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 ;	---------------------------------
 ; Function handle_input
 ; ---------------------------------
@@ -2987,7 +3009,7 @@ _handle_input:
 	ld	-1 (ix), h
 	ld	c, e
 	ld	b, d
-;pocket_platformer.c:594: long max_spd = (long)res_physics->max_speed;
+;pocket_platformer.c:598: long max_spd = (long)res_physics->max_speed;
 	ld	hl, (_res_physics)
 	ld	-8 (ix), l
 	ld	-7 (ix), h
@@ -3000,7 +3022,7 @@ _handle_input:
 	sbc	a, a
 	ld	-16 (ix), a
 	ld	-15 (ix), a
-;pocket_platformer.c:595: long accel = player.on_ground ? (long)res_physics->ground_accel : (long)res_physics->air_accel;
+;pocket_platformer.c:599: long accel = player.on_ground ? (long)res_physics->ground_accel : (long)res_physics->air_accel;
 	ld	hl, #(_player + 16)
 	ld	e, (hl)
 	ld	a, e
@@ -3057,7 +3079,7 @@ _handle_input:
 	ld	-12 (ix), a
 	ld	a, -3 (ix)
 	ld	-11 (ix), a
-;pocket_platformer.c:596: long fric  = player.on_ground ? (long)res_physics->ground_friction : (long)res_physics->air_friction;
+;pocket_platformer.c:600: long fric  = player.on_ground ? (long)res_physics->ground_friction : (long)res_physics->air_friction;
 	ld	a, e
 	or	a, a
 	jr	Z, 00170$
@@ -3091,9 +3113,9 @@ _handle_input:
 	ld	-4 (ix), a
 	ld	-3 (ix), a
 00171$:
-;pocket_platformer.c:600: player.vx -= accel;
-;pocket_platformer.c:602: player.facing_left = 1;
-;pocket_platformer.c:608: player.vx = FP_MUL(player.vx, fric);
+;pocket_platformer.c:604: player.vx -= accel;
+;pocket_platformer.c:606: player.facing_left = 1;
+;pocket_platformer.c:612: player.vx = FP_MUL(player.vx, fric);
 	push	bc
 	ld	de, #(_player + 8)
 	ld	hl, #10
@@ -3102,10 +3124,10 @@ _handle_input:
 	ld	bc, #0x0004
 	ldir
 	pop	bc
-;pocket_platformer.c:599: if (joy & PORT_A_KEY_LEFT) {
+;pocket_platformer.c:603: if (joy & PORT_A_KEY_LEFT) {
 	bit	2, -2 (ix)
 	jp	Z,00112$
-;pocket_platformer.c:600: player.vx -= accel;
+;pocket_platformer.c:604: player.vx -= accel;
 	ld	a, -10 (ix)
 	sub	a, -14 (ix)
 	ld	-6 (ix), a
@@ -3125,7 +3147,7 @@ _handle_input:
 	ld	bc, #0x0004
 	ldir
 	pop	bc
-;pocket_platformer.c:601: if (player.vx < -max_spd) player.vx = -max_spd;
+;pocket_platformer.c:605: if (player.vx < -max_spd) player.vx = -max_spd;
 	xor	a, a
 	sub	a, -18 (ix)
 	ld	-10 (ix), a
@@ -3158,15 +3180,15 @@ _handle_input:
 	ldir
 	pop	bc
 00102$:
-;pocket_platformer.c:602: player.facing_left = 1;
+;pocket_platformer.c:606: player.facing_left = 1;
 	ld	hl, #(_player + 23)
 	ld	(hl), #0x01
 	jp	00113$
 00112$:
-;pocket_platformer.c:603: } else if (joy & PORT_A_KEY_RIGHT) {
+;pocket_platformer.c:607: } else if (joy & PORT_A_KEY_RIGHT) {
 	bit	3, -2 (ix)
 	jr	Z, 00109$
-;pocket_platformer.c:604: player.vx += accel;
+;pocket_platformer.c:608: player.vx += accel;
 	ld	a, -10 (ix)
 	add	a, -14 (ix)
 	ld	-6 (ix), a
@@ -3186,7 +3208,7 @@ _handle_input:
 	ld	bc, #0x0004
 	ldir
 	pop	bc
-;pocket_platformer.c:605: if (player.vx > max_spd) player.vx = max_spd;
+;pocket_platformer.c:609: if (player.vx > max_spd) player.vx = max_spd;
 	ld	a, -18 (ix)
 	sub	a, -6 (ix)
 	ld	a, -17 (ix)
@@ -3207,12 +3229,12 @@ _handle_input:
 	ldir
 	pop	bc
 00104$:
-;pocket_platformer.c:606: player.facing_left = 0;
+;pocket_platformer.c:610: player.facing_left = 0;
 	ld	hl, #(_player + 23)
 	ld	(hl), #0x00
 	jp	00113$
 00109$:
-;pocket_platformer.c:608: player.vx = FP_MUL(player.vx, fric);
+;pocket_platformer.c:612: player.vx = FP_MUL(player.vx, fric);
 	push	bc
 	ld	l, -4 (ix)
 ;	spillPairReg hl
@@ -3259,7 +3281,7 @@ _handle_input:
 	ld	bc, #0x0004
 	ldir
 	pop	bc
-;pocket_platformer.c:609: if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
+;pocket_platformer.c:613: if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
 	ld	de, (#(_player + 8) + 0)
 	ld	hl, (#(_player + 8) + 2)
 	ld	a, #0x80
@@ -3290,7 +3312,7 @@ _handle_input:
 	ld	((_player + 8)), hl
 	ld	((_player + 8)+2), hl
 00113$:
-;pocket_platformer.c:616: long px_l = (player.x >> 8) - 1;           /* 1px left of player */
+;pocket_platformer.c:620: long px_l = (player.x >> 8) - 1;           /* 1px left of player */
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	a, #0x08
@@ -3313,7 +3335,7 @@ _handle_input:
 	ld	a, h
 	adc	a, #0xff
 	ld	-15 (ix), a
-;pocket_platformer.c:617: long px_r = (player.x >> 8) + PLAYER_W + 1; /* 1px beyond right edge */
+;pocket_platformer.c:621: long px_r = (player.x >> 8) + PLAYER_W + 1; /* 1px beyond right edge */
 	ld	a, e
 	add	a, #0x07
 	ld	-10 (ix), a
@@ -3326,7 +3348,7 @@ _handle_input:
 	ld	a, h
 	adc	a, #0x00
 	ld	-7 (ix), a
-;pocket_platformer.c:618: unsigned char px8_l = (unsigned char)(px_l >= 0 ? px_l / TILE_SIZE : 255);
+;pocket_platformer.c:622: unsigned char px8_l = (unsigned char)(px_l >= 0 ? px_l / TILE_SIZE : 255);
 	ld	a, -15 (ix)
 	rlca
 	and	a,#0x01
@@ -3375,7 +3397,7 @@ _handle_input:
 00173$:
 	ld	a, -6 (ix)
 	ld	-13 (ix), a
-;pocket_platformer.c:619: unsigned char px8_r = (unsigned char)(px_r / TILE_SIZE);
+;pocket_platformer.c:623: unsigned char px8_r = (unsigned char)(px_r / TILE_SIZE);
 	ld	e, -10 (ix)
 	ld	d, -9 (ix)
 ;	spillPairReg hl
@@ -3402,7 +3424,7 @@ _handle_input:
 	srl	d
 	rr	e
 	ld	-12 (ix), e
-;pocket_platformer.c:620: unsigned char py8   = (unsigned char)((player.y >> 8) / TILE_SIZE);
+;pocket_platformer.c:624: unsigned char py8   = (unsigned char)((player.y >> 8) / TILE_SIZE);
 	ld	de, (#_player + 4)
 	ld	hl, (#_player + 6)
 	ld	a, #0x08
@@ -3451,7 +3473,7 @@ _handle_input:
 	srl	d
 	rr	e
 	ld	-3 (ix), e
-;pocket_platformer.c:621: unsigned char pb8   = (unsigned char)(((player.y >> 8) + PLAYER_H - 1) / TILE_SIZE);
+;pocket_platformer.c:625: unsigned char pb8   = (unsigned char)(((player.y >> 8) + PLAYER_H - 1) / TILE_SIZE);
 	ld	e, -7 (ix)
 	ld	d, -6 (ix)
 ;	spillPairReg hl
@@ -3478,7 +3500,7 @@ _handle_input:
 	srl	d
 	rr	e
 	ld	-4 (ix), e
-;pocket_platformer.c:624: unsigned char wall_left  = (px_l >= 0) &&
+;pocket_platformer.c:628: unsigned char wall_left  = (px_l >= 0) &&
 	bit	0, -14 (ix)
 	jp	NZ, 00178$
 	push	bc
@@ -3583,7 +3605,7 @@ _handle_input:
 	ld	a, #0x01
 00180$:
 	ld	-5 (ix), a
-;pocket_platformer.c:626: unsigned char wall_right =
+;pocket_platformer.c:630: unsigned char wall_right =
 	push	bc
 	ld	l, -3 (ix)
 ;	spillPairReg hl
@@ -3686,59 +3708,59 @@ _handle_input:
 	ld	a, #0x01
 00210$:
 	ld	-6 (ix), a
-;pocket_platformer.c:633: player.jumping = 1;
-;pocket_platformer.c:634: player.wall_jumping = 0;
-;pocket_platformer.c:635: player.jump_frames = 0;
-;pocket_platformer.c:636: player.falling = 0;
-;pocket_platformer.c:649: player.wall_jump_dir = wall_left ? 1 : 255;
-;pocket_platformer.c:650: player.wall_push_frames = 0;
-;pocket_platformer.c:631: if (joy_pressed & PORT_A_KEY_1) {
+;pocket_platformer.c:637: player.jumping = 1;
+;pocket_platformer.c:638: player.wall_jumping = 0;
+;pocket_platformer.c:639: player.jump_frames = 0;
+;pocket_platformer.c:640: player.falling = 0;
+;pocket_platformer.c:653: player.wall_jump_dir = wall_left ? 1 : 255;
+;pocket_platformer.c:654: player.wall_push_frames = 0;
+;pocket_platformer.c:635: if (joy_pressed & PORT_A_KEY_1) {
 	bit	4, c
 	jp	Z,00133$
-;pocket_platformer.c:632: if (player.on_ground) {
+;pocket_platformer.c:636: if (player.on_ground) {
 	ld	hl, #(_player + 16)
 	ld	c, (hl)
 	ld	a, c
 	or	a, a
 	jr	Z, 00130$
-;pocket_platformer.c:633: player.jumping = 1;
+;pocket_platformer.c:637: player.jumping = 1;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x01
-;pocket_platformer.c:634: player.wall_jumping = 0;
+;pocket_platformer.c:638: player.wall_jumping = 0;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x00
-;pocket_platformer.c:635: player.jump_frames = 0;
+;pocket_platformer.c:639: player.jump_frames = 0;
 	ld	hl, #(_player + 22)
 	ld	(hl), #0x00
-;pocket_platformer.c:636: player.falling = 0;
+;pocket_platformer.c:640: player.falling = 0;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x00
-;pocket_platformer.c:637: player.on_ground = 0;
+;pocket_platformer.c:641: player.on_ground = 0;
 	ld	hl, #(_player + 16)
 	ld	(hl), #0x00
-;pocket_platformer.c:638: if (vp_block_count) vp_toggle();
+;pocket_platformer.c:642: if (vp_block_count) vp_toggle();
 	ld	a, (_vp_block_count+0)
 	or	a, a
 	jp	Z, 00133$
 	call	_vp_toggle
 	jp	00133$
 00130$:
-;pocket_platformer.c:594: long max_spd = (long)res_physics->max_speed;
+;pocket_platformer.c:598: long max_spd = (long)res_physics->max_speed;
 	ld	hl, (_res_physics)
-;pocket_platformer.c:639: } else if (res_physics->has_wall_jump && !player.on_ground &&
+;pocket_platformer.c:643: } else if (res_physics->has_wall_jump && !player.on_ground &&
 	ld	-4 (ix), l
 	ld	-3 (ix), h
 	ld	de, #16
 	add	hl, de
-;pocket_platformer.c:646: player.double_jump_used = 0;
-;pocket_platformer.c:639: } else if (res_physics->has_wall_jump && !player.on_ground &&
+;pocket_platformer.c:650: player.double_jump_used = 0;
+;pocket_platformer.c:643: } else if (res_physics->has_wall_jump && !player.on_ground &&
 	ld	a, (hl)
 	or	a, a
 	jr	Z, 00124$
 	ld	a, c
 	or	a, a
 	jr	NZ, 00124$
-;pocket_platformer.c:640: (wall_left || wall_right)) {
+;pocket_platformer.c:644: (wall_left || wall_right)) {
 	ld	a, -5 (ix)
 	or	a, a
 	jr	NZ, 00123$
@@ -3746,22 +3768,22 @@ _handle_input:
 	or	a, a
 	jr	Z, 00124$
 00123$:
-;pocket_platformer.c:642: player.jumping = 0;
+;pocket_platformer.c:646: player.jumping = 0;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x00
-;pocket_platformer.c:643: player.wall_jumping = 1;
+;pocket_platformer.c:647: player.wall_jumping = 1;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x01
-;pocket_platformer.c:644: player.jump_frames = 0;
+;pocket_platformer.c:648: player.jump_frames = 0;
 	ld	hl, #(_player + 22)
 	ld	(hl), #0x00
-;pocket_platformer.c:645: player.falling = 0;
+;pocket_platformer.c:649: player.falling = 0;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x00
-;pocket_platformer.c:646: player.double_jump_used = 0;
+;pocket_platformer.c:650: player.double_jump_used = 0;
 	ld	hl, #(_player + 24)
 	ld	(hl), #0x00
-;pocket_platformer.c:649: player.wall_jump_dir = wall_left ? 1 : 255;
+;pocket_platformer.c:653: player.wall_jump_dir = wall_left ? 1 : 255;
 	ld	a, -5 (ix)
 	or	a, a
 	jr	Z, 00235$
@@ -3777,17 +3799,17 @@ _handle_input:
 	ld	hl, #(_player + 20)
 	ld	a, -3 (ix)
 	ld	(hl), a
-;pocket_platformer.c:650: player.wall_push_frames = 0;
+;pocket_platformer.c:654: player.wall_push_frames = 0;
 	ld	hl, #(_player + 21)
 	ld	(hl), #0x00
-;pocket_platformer.c:651: if (vp_block_count) vp_toggle();
+;pocket_platformer.c:655: if (vp_block_count) vp_toggle();
 	ld	a, (_vp_block_count+0)
 	or	a, a
 	jr	Z, 00133$
 	call	_vp_toggle
 	jr	00133$
 00124$:
-;pocket_platformer.c:652: } else if (res_physics->has_double_jump && !player.double_jump_used) {
+;pocket_platformer.c:656: } else if (res_physics->has_double_jump && !player.double_jump_used) {
 	ld	l, -4 (ix)
 	ld	h, -3 (ix)
 	ld	de, #0x000f
@@ -3800,38 +3822,38 @@ _handle_input:
 	ld	-3 (ix), a
 	or	a, a
 	jr	NZ, 00133$
-;pocket_platformer.c:653: player.jumping = 1;
+;pocket_platformer.c:657: player.jumping = 1;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x01
-;pocket_platformer.c:654: player.wall_jumping = 0;
+;pocket_platformer.c:658: player.wall_jumping = 0;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x00
-;pocket_platformer.c:655: player.jump_frames = 0;
+;pocket_platformer.c:659: player.jump_frames = 0;
 	ld	hl, #(_player + 22)
 	ld	(hl), #0x00
-;pocket_platformer.c:656: player.double_jump_used = 1;
+;pocket_platformer.c:660: player.double_jump_used = 1;
 	ld	hl, #(_player + 24)
 	ld	(hl), #0x01
-;pocket_platformer.c:657: if (vp_block_count) vp_toggle();
+;pocket_platformer.c:661: if (vp_block_count) vp_toggle();
 	ld	a, (_vp_block_count+0)
 	or	a, a
 	jr	Z, 00133$
 	call	_vp_toggle
 00133$:
-;pocket_platformer.c:664: if (player.jumping) {
+;pocket_platformer.c:668: if (player.jumping) {
 	ld	hl, #(_player + 18)
 	ld	c, (hl)
-;pocket_platformer.c:665: if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
+;pocket_platformer.c:669: if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
 	ld	a, -2 (ix)
 	and	a, #0x10
 	ld	-6 (ix), a
 	ld	-5 (ix), #0x00
-;pocket_platformer.c:669: player.vy = -(remaining * js);
-;pocket_platformer.c:664: if (player.jumping) {
+;pocket_platformer.c:673: player.vy = -(remaining * js);
+;pocket_platformer.c:668: if (player.jumping) {
 	ld	a, c
 	or	a, a
 	jp	Z, 00143$
-;pocket_platformer.c:665: if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
+;pocket_platformer.c:669: if (joy & PORT_A_KEY_1 || player.forced_jump_speed > 0) {
 	ld	de, #(_player + 28)
 	ld	hl, #8
 	add	hl, sp
@@ -3858,7 +3880,7 @@ _handle_input:
 	or	a, a
 	jp	Z, 00139$
 00138$:
-;pocket_platformer.c:666: long js = player.forced_jump_speed > 0 ? player.forced_jump_speed : (long)res_physics->jump_speed;
+;pocket_platformer.c:670: long js = player.forced_jump_speed > 0 ? player.forced_jump_speed : (long)res_physics->jump_speed;
 	ld	a, -3 (ix)
 	or	a, a
 	jr	NZ, 00238$
@@ -3895,14 +3917,14 @@ _handle_input:
 ;	spillPairReg hl
 	ex	(sp), hl
 	pop	iy
-;pocket_platformer.c:667: player.jump_frames++;
+;pocket_platformer.c:671: player.jump_frames++;
 	ld	a, (#(_player + 22) + 0)
 	inc	a
 	ld	-3 (ix), a
 	ld	hl, #(_player + 22)
 	ld	a, -3 (ix)
 	ld	(hl), a
-;pocket_platformer.c:668: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+;pocket_platformer.c:672: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
 	add	hl, de
@@ -3919,7 +3941,7 @@ _handle_input:
 	ld	a, d
 	rlca
 	sbc	hl, hl
-;pocket_platformer.c:669: player.vy = -(remaining * js);
+;pocket_platformer.c:673: player.vy = -(remaining * js);
 	push	iy
 	push	bc
 	call	__mullong
@@ -3939,59 +3961,59 @@ _handle_input:
 	ld	d, a
 	ld	((_player + 12)), bc
 	ld	((_player + 12)+2), de
-;pocket_platformer.c:670: if (player.jump_frames >= res_physics->max_jump_frames) {
+;pocket_platformer.c:674: if (player.jump_frames >= res_physics->max_jump_frames) {
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
 	add	hl, de
 	ld	a,-3 (ix)
 	sub	a,(hl)
 	jr	C, 00143$
-;pocket_platformer.c:671: player.jumping = 0;
+;pocket_platformer.c:675: player.jumping = 0;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x00
-;pocket_platformer.c:672: player.falling = 1;
+;pocket_platformer.c:676: player.falling = 1;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x01
-;pocket_platformer.c:673: player.forced_jump_speed = 0;
+;pocket_platformer.c:677: player.forced_jump_speed = 0;
 	ld	hl, #0x0000
 	ld	((_player + 28)), hl
 	ld	((_player + 28)+2), hl
 	jr	00143$
 00139$:
-;pocket_platformer.c:675: } else if (player.forced_jump_speed == 0) {
+;pocket_platformer.c:679: } else if (player.forced_jump_speed == 0) {
 	ld	a, -7 (ix)
 	or	a, -8 (ix)
 	or	a, -9 (ix)
 	or	a, -10 (ix)
 	jr	NZ, 00143$
-;pocket_platformer.c:677: player.jumping = 0;
+;pocket_platformer.c:681: player.jumping = 0;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x00
-;pocket_platformer.c:678: player.jump_frames = res_physics->max_jump_frames;
+;pocket_platformer.c:682: player.jump_frames = res_physics->max_jump_frames;
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
 	add	hl, de
 	ld	a, (hl)
 	ld	(#(_player + 22)),a
-;pocket_platformer.c:679: player.falling = 1;
+;pocket_platformer.c:683: player.falling = 1;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x01
 00143$:
-;pocket_platformer.c:685: if (player.wall_jumping) {
+;pocket_platformer.c:689: if (player.wall_jumping) {
 	ld	a, (#(_player + 19) + 0)
 	or	a, a
 	jp	Z, 00159$
-;pocket_platformer.c:686: if (joy & PORT_A_KEY_1) {
+;pocket_platformer.c:690: if (joy & PORT_A_KEY_1) {
 	ld	a, -5 (ix)
 	or	a, -6 (ix)
 	jp	Z, 00156$
-;pocket_platformer.c:687: player.jump_frames++;
+;pocket_platformer.c:691: player.jump_frames++;
 	ld	a, (#(_player + 22) + 0)
 	inc	a
 	ld	(#(_player + 22)),a
-;pocket_platformer.c:594: long max_spd = (long)res_physics->max_speed;
+;pocket_platformer.c:598: long max_spd = (long)res_physics->max_speed;
 	ld	bc, (_res_physics)
-;pocket_platformer.c:688: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
+;pocket_platformer.c:692: long remaining = (long)(res_physics->max_jump_frames - player.jump_frames);
 	ld	e, c
 	ld	d, b
 	ld	hl, #12
@@ -4012,7 +4034,7 @@ _handle_input:
 	sbc	a, a
 	ld	-6 (ix), a
 	ld	-5 (ix), a
-;pocket_platformer.c:689: player.vy = -(remaining * (long)res_physics->jump_speed);
+;pocket_platformer.c:693: player.vy = -(remaining * (long)res_physics->jump_speed);
 	ld	hl, #10
 	add	hl, bc
 	ld	c, (hl)
@@ -4048,12 +4070,12 @@ _handle_input:
 	ld	d, a
 	ld	((_player + 12)), bc
 	ld	((_player + 12)+2), de
-;pocket_platformer.c:691: if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
+;pocket_platformer.c:695: if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
 	ld	hl, #(_player + 21)
 	ld	c, (hl)
-;pocket_platformer.c:594: long max_spd = (long)res_physics->max_speed;
+;pocket_platformer.c:598: long max_spd = (long)res_physics->max_speed;
 	ld	hl, (_res_physics)
-;pocket_platformer.c:691: if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
+;pocket_platformer.c:695: if (player.wall_push_frames < (res_physics->max_jump_frames / 2 - 4)) {
 	ld	-4 (ix), l
 	ld	-3 (ix), h
 	ld	de, #12
@@ -4087,7 +4109,7 @@ _handle_input:
 	xor	a, #0x80
 00525$:
 	jp	P, 00152$
-;pocket_platformer.c:693: long push = remaining * (long)res_physics->jump_speed;
+;pocket_platformer.c:697: long push = remaining * (long)res_physics->jump_speed;
 	ld	c, -4 (ix)
 	ld	b, -3 (ix)
 	ld	hl, #10
@@ -4113,10 +4135,10 @@ _handle_input:
 	pop	af
 	ld	c, l
 	ld	b, h
-;pocket_platformer.c:694: if (player.wall_jump_dir == 1) {   /* off left wall → push right */
+;pocket_platformer.c:698: if (player.wall_jump_dir == 1) {   /* off left wall → push right */
 	ld	a, (#(_player + 20) + 0)
 	ld	-3 (ix), a
-;pocket_platformer.c:608: player.vx = FP_MUL(player.vx, fric);
+;pocket_platformer.c:612: player.vx = FP_MUL(player.vx, fric);
 	push	de
 	push	bc
 	ld	de, #(_player + 8)
@@ -4127,7 +4149,7 @@ _handle_input:
 	ldir
 	pop	bc
 	pop	de
-;pocket_platformer.c:695: player.vx += push >> 4;         /* scale down push */
+;pocket_platformer.c:699: player.vx += push >> 4;         /* scale down push */
 	ld	-10 (ix), e
 	ld	-9 (ix), d
 	ld	-8 (ix), c
@@ -4139,11 +4161,11 @@ _handle_input:
 	rr	-9 (ix)
 	rr	-10 (ix)
 	djnz	00526$
-;pocket_platformer.c:694: if (player.wall_jump_dir == 1) {   /* off left wall → push right */
+;pocket_platformer.c:698: if (player.wall_jump_dir == 1) {   /* off left wall → push right */
 	ld	a, -3 (ix)
 	dec	a
 	jr	NZ, 00149$
-;pocket_platformer.c:695: player.vx += push >> 4;         /* scale down push */
+;pocket_platformer.c:699: player.vx += push >> 4;         /* scale down push */
 	ld	a, -14 (ix)
 	add	a, -10 (ix)
 	ld	-6 (ix), a
@@ -4161,12 +4183,12 @@ _handle_input:
 	add	hl, sp
 	ld	bc, #0x0004
 	ldir
-;pocket_platformer.c:594: long max_spd = (long)res_physics->max_speed;
+;pocket_platformer.c:598: long max_spd = (long)res_physics->max_speed;
 	ld	hl, (_res_physics)
 	ld	c, (hl)
 	inc	hl
 	ld	b, (hl)
-;pocket_platformer.c:696: if (player.vx > (long)res_physics->max_speed)
+;pocket_platformer.c:700: if (player.vx > (long)res_physics->max_speed)
 	ld	a, b
 	rlca
 	sbc	a, a
@@ -4184,12 +4206,12 @@ _handle_input:
 	xor	a, #0x80
 00530$:
 	jp	P, 00150$
-;pocket_platformer.c:697: player.vx = (long)res_physics->max_speed;
+;pocket_platformer.c:701: player.vx = (long)res_physics->max_speed;
 	ld	((_player + 8)), bc
 	ld	((_player + 8)+2), de
 	jr	00150$
 00149$:
-;pocket_platformer.c:699: player.vx -= push >> 4;
+;pocket_platformer.c:703: player.vx -= push >> 4;
 	ld	a, -14 (ix)
 	sub	a, -10 (ix)
 	ld	-6 (ix), a
@@ -4207,18 +4229,18 @@ _handle_input:
 	add	hl, sp
 	ld	bc, #0x0004
 	ldir
-;pocket_platformer.c:594: long max_spd = (long)res_physics->max_speed;
+;pocket_platformer.c:598: long max_spd = (long)res_physics->max_speed;
 	ld	hl, (_res_physics)
 	ld	c, (hl)
 	inc	hl
 	ld	b, (hl)
-;pocket_platformer.c:696: if (player.vx > (long)res_physics->max_speed)
+;pocket_platformer.c:700: if (player.vx > (long)res_physics->max_speed)
 	ld	a, b
 	rlca
 	sbc	a, a
 	ld	e, a
 	ld	d, a
-;pocket_platformer.c:700: if (player.vx < -(long)res_physics->max_speed)
+;pocket_platformer.c:704: if (player.vx < -(long)res_physics->max_speed)
 	xor	a, a
 	sub	a, c
 	ld	c, a
@@ -4240,16 +4262,16 @@ _handle_input:
 	xor	a, #0x80
 00531$:
 	jp	P, 00150$
-;pocket_platformer.c:701: player.vx = -(long)res_physics->max_speed;
+;pocket_platformer.c:705: player.vx = -(long)res_physics->max_speed;
 	ld	((_player + 8)), bc
 	ld	((_player + 8)+2), de
 00150$:
-;pocket_platformer.c:703: player.wall_push_frames++;
+;pocket_platformer.c:707: player.wall_push_frames++;
 	ld	a, (#(_player + 21) + 0)
 	inc	a
 	ld	(#(_player + 21)),a
 00152$:
-;pocket_platformer.c:705: if (player.jump_frames >= res_physics->max_jump_frames) {
+;pocket_platformer.c:709: if (player.jump_frames >= res_physics->max_jump_frames) {
 	ld	a, (#(_player + 22) + 0)
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
@@ -4257,28 +4279,28 @@ _handle_input:
 	ld	c, (hl)
 	sub	a, c
 	jr	C, 00159$
-;pocket_platformer.c:706: player.wall_jumping = 0;
+;pocket_platformer.c:710: player.wall_jumping = 0;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x00
-;pocket_platformer.c:707: player.falling = 1;
+;pocket_platformer.c:711: player.falling = 1;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x01
 	jr	00159$
 00156$:
-;pocket_platformer.c:710: player.wall_jumping = 0;
+;pocket_platformer.c:714: player.wall_jumping = 0;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x00
-;pocket_platformer.c:711: player.jump_frames = res_physics->max_jump_frames;
+;pocket_platformer.c:715: player.jump_frames = res_physics->max_jump_frames;
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
 	add	hl, de
 	ld	a, (hl)
 	ld	(#(_player + 22)),a
-;pocket_platformer.c:712: player.falling = 1;
+;pocket_platformer.c:716: player.falling = 1;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x01
 00159$:
-;pocket_platformer.c:717: if (!player.jumping && !player.wall_jumping && player.vy < 0) {
+;pocket_platformer.c:721: if (!player.jumping && !player.wall_jumping && player.vy < 0) {
 	ld	a, (#(_player + 18) + 0)
 	or	a, a
 	jr	NZ, 00166$
@@ -4289,7 +4311,7 @@ _handle_input:
 	ld	hl, (#(_player + 12) + 2)
 	bit	7, h
 	jr	Z, 00166$
-;pocket_platformer.c:718: player.vy = FP_MUL(player.vy, FP(0.75));
+;pocket_platformer.c:722: player.vy = FP_MUL(player.vy, FP(0.75));
 	push	hl
 	push	bc
 	ld	de, #0x00c0
@@ -4309,7 +4331,7 @@ _handle_input:
 	jr	NZ, 00532$
 	ld	((_player + 12)), de
 	ld	((_player + 12)+2), bc
-;pocket_platformer.c:719: if (player.vy > -FP(0.5)) player.vy = 0;
+;pocket_platformer.c:723: if (player.vy > -FP(0.5)) player.vy = 0;
 	ld	a, #0x80
 	cp	a, e
 	ld	a, #0xff
@@ -4326,11 +4348,11 @@ _handle_input:
 	ld	((_player + 12)), hl
 	ld	((_player + 12)+2), hl
 00166$:
-;pocket_platformer.c:721: }
+;pocket_platformer.c:725: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:723: static void move_player_x(void) {
+;pocket_platformer.c:727: static void move_player_x(void) {
 ;	---------------------------------
 ; Function move_player_x
 ; ---------------------------------
@@ -4341,56 +4363,78 @@ _move_player_x:
 	ld	hl, #-12
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:724: long total_vx = player.vx + treadmill_bonus;
-	ld	bc, (#(_player + 8) + 0)
-	ld	de, (#(_player + 8) + 2)
-	ld	a, c
-	ld	hl, #_treadmill_bonus
-	add	a, (hl)
-	inc	hl
-	ld	c, a
-	ld	a, b
-	adc	a, (hl)
-	inc	hl
-	ld	b, a
-	ld	a, e
-	adc	a, (hl)
-	inc	hl
-	ld	e, a
-	ld	a, d
-	adc	a, (hl)
-	ld	d, a
-	ld	-4 (ix), c
-	ld	-3 (ix), b
-	ld	-2 (ix), e
-	ld	-1 (ix), d
-;pocket_platformer.c:725: long new_x = player.x + total_vx;
-	ld	de, #_player
-	ld	hl, #0
+;pocket_platformer.c:728: long total_vx = player.vx + (treadmill_active ? treadmill_bonus : 0);
+	ld	de, #(_player + 8)
+	ld	hl, #4
 	add	hl, sp
 	ex	de, hl
 	ld	bc, #0x0004
 	ldir
-	ld	a, -12 (ix)
-	add	a, -4 (ix)
-	ld	-8 (ix), a
-	ld	a, -11 (ix)
-	adc	a, -3 (ix)
-	ld	-7 (ix), a
-	ld	a, -10 (ix)
-	adc	a, -2 (ix)
-	ld	-6 (ix), a
-	ld	a, -9 (ix)
-	adc	a, -1 (ix)
-	ld	-5 (ix), a
-	ld	hl, #0
+	ld	a, (_treadmill_active+0)
+	or	a, a
+	jr	Z, 00114$
+	ld	hl, #8
 	add	hl, sp
 	ex	de, hl
-	ld	hl, #4
-	add	hl, sp
+	ld	hl, #_treadmill_bonus
 	ld	bc, #4
 	ldir
-;pocket_platformer.c:726: long px    = new_x >> 8;
+	jr	00115$
+00114$:
+	xor	a, a
+	ld	-4 (ix), a
+	ld	-3 (ix), a
+	ld	-2 (ix), a
+	ld	-1 (ix), a
+00115$:
+	ld	a, -8 (ix)
+	add	a, -4 (ix)
+	ld	c, a
+	ld	a, -7 (ix)
+	adc	a, -3 (ix)
+	ld	b, a
+	ld	a, -6 (ix)
+	adc	a, -2 (ix)
+	ld	e, a
+	ld	a, -5 (ix)
+	adc	a, -1 (ix)
+	ld	d, a
+;pocket_platformer.c:729: long new_x = player.x + total_vx;
+	push	de
+	push	bc
+	ld	de, #_player
+	ld	hl, #12
+	add	hl, sp
+	ex	de, hl
+	ld	bc, #0x0004
+	ldir
+	pop	bc
+	pop	de
+	ld	a, c
+	add	a, -4 (ix)
+	ld	l, a
+;	spillPairReg hl
+;	spillPairReg hl
+	ld	a, b
+	adc	a, -3 (ix)
+	ld	h, a
+;	spillPairReg hl
+;	spillPairReg hl
+	ld	a, e
+	adc	a, -2 (ix)
+	push	iy
+	ld	-14 (ix), a
+	pop	iy
+	ld	a, d
+	adc	a, -1 (ix)
+	ex	(sp), hl
+	push	iy
+	ex	(sp), hl
+	ld	-10 (ix), l
+	ex	(sp), hl
+	pop	iy
+	ld	-9 (ix), a
+;pocket_platformer.c:730: long px    = new_x >> 8;
 	ld	a, -12 (ix)
 	ld	-8 (ix), a
 	ld	a, -11 (ix)
@@ -4399,27 +4443,28 @@ _move_player_x:
 	ld	-6 (ix), a
 	ld	a, -9 (ix)
 	ld	-5 (ix), a
-	ld	b, #0x08
-00146$:
+	ld	a, #0x08
+00153$:
 	sra	-5 (ix)
 	rr	-6 (ix)
 	rr	-7 (ix)
 	rr	-8 (ix)
-	djnz	00146$
-;pocket_platformer.c:729: if (is_solid_px(r, player.y + FP(1)) ||
-;pocket_platformer.c:727: if (total_vx > 0) {
+	dec	a
+	jr	NZ, 00153$
+;pocket_platformer.c:733: if (is_solid_px(r, player.y + FP(1)) ||
+;pocket_platformer.c:731: if (total_vx > 0) {
 	xor	a, a
-	cp	a, -4 (ix)
-	sbc	a, -3 (ix)
+	cp	a, c
+	sbc	a, b
 	ld	a, #0x00
-	sbc	a, -2 (ix)
+	sbc	a, e
 	ld	a, #0x00
-	sbc	a, -1 (ix)
-	jp	PO, 00148$
+	sbc	a, d
+	jp	PO, 00155$
 	xor	a, #0x80
-00148$:
+00155$:
 	jp	P, 00110$
-;pocket_platformer.c:728: long r = new_x + FP(PLAYER_W);
+;pocket_platformer.c:732: long r = new_x + FP(PLAYER_W);
 	ld	a, -12 (ix)
 	ld	-4 (ix), a
 	ld	a, -11 (ix)
@@ -4431,15 +4476,15 @@ _move_player_x:
 	ld	a, -9 (ix)
 	adc	a, #0x00
 	ld	-1 (ix), a
-;pocket_platformer.c:729: if (is_solid_px(r, player.y + FP(1)) ||
+;pocket_platformer.c:733: if (is_solid_px(r, player.y + FP(1)) ||
 	ld	bc, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	a, b
 	add	a, #0x01
 	ld	b, a
-	jr	NC, 00149$
+	jr	NC, 00156$
 	inc	hl
-00149$:
+00156$:
 	push	hl
 	push	bc
 	ld	e, -4 (ix)
@@ -4453,15 +4498,15 @@ _move_player_x:
 	call	_is_solid_px
 	or	a, a
 	jr	NZ, 00101$
-;pocket_platformer.c:730: is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
+;pocket_platformer.c:734: is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
 	ld	bc, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	a, b
 	add	a, #0x06
 	ld	b, a
-	jr	NC, 00150$
+	jr	NC, 00157$
 	inc	hl
-00150$:
+00157$:
 	push	hl
 	push	bc
 	ld	e, -4 (ix)
@@ -4476,63 +4521,60 @@ _move_player_x:
 	or	a, a
 	jp	Z, 00111$
 00101$:
-;pocket_platformer.c:731: long tile_r = (px + PLAYER_W) / TILE_SIZE;
+;pocket_platformer.c:735: long tile_r = (px + PLAYER_W) / TILE_SIZE;
 	ld	a, -8 (ix)
 	add	a, #0x06
-	ld	-4 (ix), a
+	ld	c, a
 	ld	a, -7 (ix)
 	adc	a, #0x00
-	ld	-3 (ix), a
+	ld	b, a
 	ld	a, -6 (ix)
 	adc	a, #0x00
-	ld	-2 (ix), a
+	ld	e, a
 	ld	a, -5 (ix)
 	adc	a, #0x00
-	ld	-1 (ix), a
-	ld	hl, #4
-	add	hl, sp
-	ex	de, hl
-	ld	hl, #8
-	add	hl, sp
-	ld	bc, #4
-	ldir
-	bit	7, -1 (ix)
-	jr	Z, 00114$
-	ld	a, -4 (ix)
+	ld	d, a
+	ld	-4 (ix), c
+	ld	-3 (ix), b
+	ld	-2 (ix), e
+	ld	-1 (ix), d
+	bit	7, d
+	jr	Z, 00116$
+	ld	a, c
 	add	a, #0x07
-	ld	-8 (ix), a
-	ld	a, -3 (ix)
+	ld	-4 (ix), a
+	ld	a, b
 	adc	a, #0x00
-	ld	-7 (ix), a
-	ld	a, -2 (ix)
+	ld	-3 (ix), a
+	ld	a, e
 	adc	a, #0x00
-	ld	-6 (ix), a
-	ld	a, -1 (ix)
+	ld	-2 (ix), a
+	ld	a, d
 	adc	a, #0x00
-	ld	-5 (ix), a
-00114$:
-	ld	l, -8 (ix)
+	ld	-1 (ix), a
+00116$:
+	ld	l, -4 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
-	ld	h, -7 (ix)
+	ld	h, -3 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
-	ld	e, -6 (ix)
-	ld	d, -5 (ix)
+	ld	e, -2 (ix)
+	ld	d, -1 (ix)
 	ld	b, #0x03
-00151$:
+00158$:
 	sra	d
 	rr	e
 	rr	h
 	rr	l
-	djnz	00151$
-;pocket_platformer.c:732: new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
+	djnz	00158$
+;pocket_platformer.c:736: new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
 	ld	b, #0x03
-00153$:
+00160$:
 	add	hl, hl
 	rl	e
 	rl	d
-	djnz	00153$
+	djnz	00160$
 	ld	bc, #0xfff9
 	add	hl,bc
 	ld	c, l
@@ -4546,24 +4588,24 @@ _move_player_x:
 	ld	-10 (ix), b
 	ld	-9 (ix), e
 	ld	-12 (ix), #0x00
-;pocket_platformer.c:733: player.vx = 0;
+;pocket_platformer.c:737: player.vx = 0;
 	ld	hl, #0x0000
 	ld	((_player + 8)), hl
 	ld	((_player + 8)+2), hl
 	jp	00111$
 00110$:
-;pocket_platformer.c:735: } else if (total_vx < 0) {
-	bit	7, -1 (ix)
+;pocket_platformer.c:739: } else if (total_vx < 0) {
+	bit	7, d
 	jp	Z, 00111$
-;pocket_platformer.c:736: if (is_solid_px(new_x, player.y + FP(1)) ||
+;pocket_platformer.c:740: if (is_solid_px(new_x, player.y + FP(1)) ||
 	ld	bc, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	a, b
 	add	a, #0x01
 	ld	b, a
-	jr	NC, 00157$
+	jr	NC, 00164$
 	inc	hl
-00157$:
+00164$:
 	push	hl
 	push	bc
 	ld	e, -12 (ix)
@@ -4577,15 +4619,15 @@ _move_player_x:
 	call	_is_solid_px
 	or	a, a
 	jr	NZ, 00104$
-;pocket_platformer.c:737: is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
+;pocket_platformer.c:741: is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
 	ld	bc, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	a, b
 	add	a, #0x06
 	ld	b, a
-	jr	NC, 00158$
+	jr	NC, 00165$
 	inc	hl
-00158$:
+00165$:
 	push	hl
 	push	bc
 	ld	e, -12 (ix)
@@ -4600,7 +4642,7 @@ _move_player_x:
 	or	a, a
 	jr	Z, 00111$
 00104$:
-;pocket_platformer.c:738: long tile_l = px / TILE_SIZE + 1;
+;pocket_platformer.c:742: long tile_l = px / TILE_SIZE + 1;
 	ld	c, -8 (ix)
 	ld	b, -7 (ix)
 	ld	l, -6 (ix)
@@ -4610,7 +4652,7 @@ _move_player_x:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	bit	7, -5 (ix)
-	jr	Z, 00115$
+	jr	Z, 00117$
 	ld	a, -8 (ix)
 	add	a, #0x07
 	ld	c, a
@@ -4627,23 +4669,23 @@ _move_player_x:
 	ld	h, a
 ;	spillPairReg hl
 ;	spillPairReg hl
-00115$:
+00117$:
 	ld	e, c
 	ld	d, b
 	ld	b, #0x03
-00159$:
+00166$:
 	sra	h
 	rr	l
 	rr	d
 	rr	e
-	djnz	00159$
+	djnz	00166$
 	inc	e
-	jr	NZ, 00161$
+	jr	NZ, 00168$
 	inc	d
-	jr	NZ, 00161$
+	jr	NZ, 00168$
 	inc	hl
-00161$:
-;pocket_platformer.c:739: new_x = tile_l * TILE_SIZE * FP_ONE;
+00168$:
+;pocket_platformer.c:743: new_x = tile_l * TILE_SIZE * FP_ONE;
 	ld	h, l
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -4653,31 +4695,31 @@ _move_player_x:
 	ld	d, e
 	ld	e, #0x00
 	ld	b, #0x03
-00162$:
+00169$:
 	sla	d
 	adc	hl, hl
-	djnz	00162$
+	djnz	00169$
 	inc	sp
 	inc	sp
 	push	de
 	ld	-10 (ix), l
 	ld	-9 (ix), h
-;pocket_platformer.c:740: player.vx = 0;
+;pocket_platformer.c:744: player.vx = 0;
 	ld	hl, #0x0000
 	ld	((_player + 8)), hl
 	ld	((_player + 8)+2), hl
 00111$:
-;pocket_platformer.c:743: player.x = new_x;
+;pocket_platformer.c:747: player.x = new_x;
 	ld	de, #_player
 	ld	hl, #0
 	add	hl, sp
 	ld	bc, #0x0004
 	ldir
-;pocket_platformer.c:744: }
+;pocket_platformer.c:748: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:746: static void move_player_y(void) {
+;pocket_platformer.c:750: static void move_player_y(void) {
 ;	---------------------------------
 ; Function move_player_y
 ; ---------------------------------
@@ -4688,7 +4730,7 @@ _move_player_y:
 	ld	hl, #-29
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:747: long new_y = player.y + player.vy;
+;pocket_platformer.c:751: long new_y = player.y + player.vy;
 	ld	bc, (#(_player + 4) + 0)
 	ld	de, (#(_player + 4) + 2)
 	push	de
@@ -4716,7 +4758,7 @@ _move_player_y:
 	ld	-3 (ix), b
 	ld	-2 (ix), e
 	ld	-1 (ix), a
-;pocket_platformer.c:748: long py    = new_y >> 8;
+;pocket_platformer.c:752: long py    = new_y >> 8;
 	ld	a, -4 (ix)
 	ld	-8 (ix), a
 	ld	a, -3 (ix)
@@ -4739,12 +4781,12 @@ _move_player_y:
 	add	hl, sp
 	ld	bc, #4
 	ldir
-;pocket_platformer.c:751: if (is_solid_falling_px(player.x + FP(1),            b) ||
+;pocket_platformer.c:755: if (is_solid_falling_px(player.x + FP(1),            b) ||
 	ld	bc, (#_player + 0)
 	ld	hl, (#_player + 2)
-;pocket_platformer.c:776: player.jumping = 0;
-;pocket_platformer.c:777: player.wall_jumping = 0;
-;pocket_platformer.c:751: if (is_solid_falling_px(player.x + FP(1),            b) ||
+;pocket_platformer.c:780: player.jumping = 0;
+;pocket_platformer.c:781: player.wall_jumping = 0;
+;pocket_platformer.c:755: if (is_solid_falling_px(player.x + FP(1),            b) ||
 	ld	-12 (ix), c
 	ld	a, b
 	add	a, #0x01
@@ -4755,10 +4797,10 @@ _move_player_y:
 	ld	a, h
 	adc	a, #0x00
 	ld	-9 (ix), a
-;pocket_platformer.c:749: if (player.vy >= 0) {
+;pocket_platformer.c:753: if (player.vy >= 0) {
 	bit	7, -17 (ix)
 	jp	NZ, 00131$
-;pocket_platformer.c:750: long b = new_y + FP(PLAYER_H);
+;pocket_platformer.c:754: long b = new_y + FP(PLAYER_H);
 	ld	c, -4 (ix)
 	ld	a, -3 (ix)
 	add	a, #0x08
@@ -4773,7 +4815,7 @@ _move_player_y:
 	push	iy
 	ld	-30 (ix), a
 	pop	iy
-;pocket_platformer.c:751: if (is_solid_falling_px(player.x + FP(1),            b) ||
+;pocket_platformer.c:755: if (is_solid_falling_px(player.x + FP(1),            b) ||
 	push	bc
 	push	iy
 	push	iy
@@ -4791,7 +4833,7 @@ _move_player_y:
 	pop	bc
 	or	a, a
 	jr	NZ, 00108$
-;pocket_platformer.c:752: is_solid_falling_px(player.x + FP(PLAYER_W - 2), b)) {
+;pocket_platformer.c:756: is_solid_falling_px(player.x + FP(PLAYER_W - 2), b)) {
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	a, d
@@ -4806,7 +4848,7 @@ _move_player_y:
 	or	a, a
 	jp	Z, 00132$
 00108$:
-;pocket_platformer.c:753: long tile_b = (py + PLAYER_H) / TILE_SIZE;
+;pocket_platformer.c:757: long tile_b = (py + PLAYER_H) / TILE_SIZE;
 	ld	a, -16 (ix)
 	add	a, #0x08
 	ld	-12 (ix), a
@@ -4856,12 +4898,12 @@ _move_player_y:
 	rr	-13 (ix)
 	rr	-14 (ix)
 	djnz	00341$
-;pocket_platformer.c:756: if (res_header->one_way_vram_idx) {
+;pocket_platformer.c:760: if (res_header->one_way_vram_idx) {
 	ld	iy, (_res_header)
 	ld	a, 6 (iy)
 	or	a, a
 	jp	Z, 00106$
-;pocket_platformer.c:757: unsigned char t1 = get_tile(
+;pocket_platformer.c:761: unsigned char t1 = get_tile(
 	ld	a, -14 (ix)
 	ld	-5 (ix), a
 	ld	bc, (#_player + 0)
@@ -4907,7 +4949,7 @@ _move_player_y:
 	ld	a, c
 	call	_get_tile
 	ld	-10 (ix), a
-;pocket_platformer.c:760: unsigned char t2 = get_tile(
+;pocket_platformer.c:764: unsigned char t2 = get_tile(
 	ld	a, -5 (ix)
 	ld	-9 (ix), a
 	ld	bc, (#_player + 0)
@@ -4954,9 +4996,9 @@ _move_player_y:
 	ld	a, c
 	call	_get_tile
 	ld	c, a
-;pocket_platformer.c:756: if (res_header->one_way_vram_idx) {
+;pocket_platformer.c:760: if (res_header->one_way_vram_idx) {
 	ld	iy, (_res_header)
-;pocket_platformer.c:763: unsigned char is_one_way =
+;pocket_platformer.c:767: unsigned char is_one_way =
 	ld	b, 6 (iy)
 	ld	a, -10 (ix)
 	sub	a, b
@@ -4969,10 +5011,10 @@ _move_player_y:
 00145$:
 	ld	a, #0x01
 00146$:
-;pocket_platformer.c:766: if (is_one_way) {
+;pocket_platformer.c:770: if (is_one_way) {
 	or	a, a
 	jr	Z, 00106$
-;pocket_platformer.c:767: long prev_feet = player.y + FP(PLAYER_H);
+;pocket_platformer.c:771: long prev_feet = player.y + FP(PLAYER_H);
 	ld	bc, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	-8 (ix), c
@@ -4985,7 +5027,7 @@ _move_player_y:
 	ld	a, h
 	adc	a, #0x00
 	ld	-5 (ix), a
-;pocket_platformer.c:768: long tile_top  = tile_b * TILE_SIZE * FP_ONE;
+;pocket_platformer.c:772: long tile_top  = tile_b * TILE_SIZE * FP_ONE;
 	ld	d, -14 (ix)
 	ld	l, -13 (ix)
 ;	spillPairReg hl
@@ -4999,7 +5041,7 @@ _move_player_y:
 	sla	d
 	adc	hl, hl
 	djnz	00349$
-;pocket_platformer.c:769: if (prev_feet > tile_top) goto skip_land;
+;pocket_platformer.c:773: if (prev_feet > tile_top) goto skip_land;
 	ld	a, e
 	sub	a, -8 (ix)
 	ld	a, d
@@ -5013,7 +5055,7 @@ _move_player_y:
 00351$:
 	jp	M, 00132$
 00106$:
-;pocket_platformer.c:772: new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
+;pocket_platformer.c:776: new_y = (tile_b * TILE_SIZE - PLAYER_H) * FP_ONE;
 	ld	a, -14 (ix)
 	ld	e, -13 (ix)
 	ld	l, -12 (ix)
@@ -5042,29 +5084,29 @@ _move_player_y:
 	ld	-2 (ix), b
 	ld	-1 (ix), e
 	ld	-4 (ix), #0x00
-;pocket_platformer.c:773: player.vy = 0;
+;pocket_platformer.c:777: player.vy = 0;
 	ld	hl, #0x0000
 	ld	((_player + 12)), hl
 	ld	((_player + 12)+2), hl
-;pocket_platformer.c:774: player.on_ground = 1;
+;pocket_platformer.c:778: player.on_ground = 1;
 	ld	hl, #(_player + 16)
 	ld	(hl), #0x01
-;pocket_platformer.c:775: player.falling = 0;
+;pocket_platformer.c:779: player.falling = 0;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x00
-;pocket_platformer.c:776: player.jumping = 0;
+;pocket_platformer.c:780: player.jumping = 0;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x00
-;pocket_platformer.c:777: player.wall_jumping = 0;
+;pocket_platformer.c:781: player.wall_jumping = 0;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x00
-;pocket_platformer.c:778: player.double_jump_used = 0;
+;pocket_platformer.c:782: player.double_jump_used = 0;
 	ld	hl, #(_player + 24)
 	ld	(hl), #0x00
-;pocket_platformer.c:779: skip_land:;
+;pocket_platformer.c:783: skip_land:;
 	jp	00132$
 00131$:
-;pocket_platformer.c:782: if (is_solid_px(player.x + FP(1),            new_y) ||
+;pocket_platformer.c:786: if (is_solid_px(player.x + FP(1),            new_y) ||
 	ld	l, -2 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -5090,7 +5132,7 @@ _move_player_y:
 	call	_is_solid_px
 	or	a, a
 	jr	NZ, 00127$
-;pocket_platformer.c:783: is_solid_px(player.x + FP(PLAYER_W - 2), new_y)) {
+;pocket_platformer.c:787: is_solid_px(player.x + FP(PLAYER_W - 2), new_y)) {
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	a, d
@@ -5109,7 +5151,7 @@ _move_player_y:
 	or	a, a
 	jp	Z, 00132$
 00127$:
-;pocket_platformer.c:784: long tile_t = py / TILE_SIZE + 1;
+;pocket_platformer.c:788: long tile_t = py / TILE_SIZE + 1;
 	ld	l, -16 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -5156,7 +5198,7 @@ _move_player_y:
 	ld	a, d
 	adc	a, #0x00
 	ld	-26 (ix), a
-;pocket_platformer.c:787: if (!rb_switch_locked && res_header->switch_vram_idx) {
+;pocket_platformer.c:791: if (!rb_switch_locked && res_header->switch_vram_idx) {
 	ld	a, (_rb_switch_locked+0)
 	or	a, a
 	jp	NZ, 00125$
@@ -5166,7 +5208,7 @@ _move_player_y:
 	ld	a, (hl)
 	or	a, a
 	jp	Z, 00125$
-;pocket_platformer.c:788: unsigned char htx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
+;pocket_platformer.c:792: unsigned char htx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
 	ld	bc, (#_player + 0)
 	ld	de, (#_player + 2)
 	ld	a, #0x08
@@ -5211,7 +5253,7 @@ _move_player_y:
 	ld	h, l
 ;	spillPairReg hl
 ;	spillPairReg hl
-;pocket_platformer.c:789: unsigned char htx_r = (unsigned char)(((player.x >> 8) + PLAYER_W) / TILE_SIZE);
+;pocket_platformer.c:793: unsigned char htx_r = (unsigned char)(((player.x >> 8) + PLAYER_W) / TILE_SIZE);
 	ld	a, c
 	add	a, #0x06
 	ld	-12 (ix), a
@@ -5255,11 +5297,11 @@ _move_player_y:
 	rr	c
 	srl	b
 	rr	c
-;pocket_platformer.c:790: unsigned char hty   = (unsigned char)(tile_t - 1);  /* ceiling row */
+;pocket_platformer.c:794: unsigned char hty   = (unsigned char)(tile_t - 1);  /* ceiling row */
 	ld	a, -29 (ix)
 	dec	a
 	ld	b, a
-;pocket_platformer.c:791: unsigned char tl = get_tile(htx_l, hty);
+;pocket_platformer.c:795: unsigned char tl = get_tile(htx_l, hty);
 	push	bc
 	ld	l, b
 ;	spillPairReg hl
@@ -5268,16 +5310,16 @@ _move_player_y:
 	call	_get_tile
 	pop	bc
 	ld	-1 (ix), a
-;pocket_platformer.c:792: unsigned char tr = get_tile(htx_r, hty);
+;pocket_platformer.c:796: unsigned char tr = get_tile(htx_r, hty);
 	ld	l, b
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ld	a, c
 	call	_get_tile
 	ld	c, a
-;pocket_platformer.c:756: if (res_header->one_way_vram_idx) {
+;pocket_platformer.c:760: if (res_header->one_way_vram_idx) {
 	ld	iy, (_res_header)
-;pocket_platformer.c:793: if ((tl == res_header->switch_vram_idx || tl == res_header->switch_blue_vram_idx ||
+;pocket_platformer.c:797: if ((tl == res_header->switch_vram_idx || tl == res_header->switch_blue_vram_idx ||
 	push	iy
 	pop	de
 	ld	hl, #13
@@ -5290,26 +5332,26 @@ _move_player_y:
 	ld	a, -1 (ix)
 	sub	a, b
 	jr	Z, 00119$
-;pocket_platformer.c:794: tr == res_header->switch_vram_idx || tr == res_header->switch_blue_vram_idx)) {
+;pocket_platformer.c:798: tr == res_header->switch_vram_idx || tr == res_header->switch_blue_vram_idx)) {
 	ld	a,c
 	cp	a,e
 	jr	Z, 00119$
 	sub	a, b
 	jp	NZ,00125$
 00119$:
-;pocket_platformer.c:796: rb_red_active = !rb_red_active;
+;pocket_platformer.c:800: rb_red_active = !rb_red_active;
 	ld	a, (_rb_red_active+0)
 	sub	a,#0x01
 	ld	a, #0x00
 	rla
 	ld	(_rb_red_active+0), a
-;pocket_platformer.c:797: rb_redraw_all();
+;pocket_platformer.c:801: rb_redraw_all();
 	call	_rb_redraw_all
-;pocket_platformer.c:756: if (res_header->one_way_vram_idx) {
+;pocket_platformer.c:760: if (res_header->one_way_vram_idx) {
 	ld	hl, (_res_header)
 	ld	-2 (ix), l
 	ld	-1 (ix), h
-;pocket_platformer.c:800: unsigned char sw_idx = rb_red_active
+;pocket_platformer.c:804: unsigned char sw_idx = rb_red_active
 	ld	a, (_rb_red_active+0)
 	or	a, a
 	jr	Z, 00150$
@@ -5327,7 +5369,7 @@ _move_player_y:
 	ld	c, (hl)
 00151$:
 	ld	b, c
-;pocket_platformer.c:803: unsigned int sw_vt = sw_idx
+;pocket_platformer.c:807: unsigned int sw_vt = sw_idx
 	ld	a, c
 	or	a, a
 	jr	Z, 00152$
@@ -5337,14 +5379,14 @@ _move_player_y:
 00152$:
 	ld	bc, #0x0000
 00153$:
-;pocket_platformer.c:805: for (si = 0; si < rb_switch_count; si++) {
+;pocket_platformer.c:809: for (si = 0; si < rb_switch_count; si++) {
 	ld	e, #0x00
 00134$:
 	ld	hl, #_rb_switch_count
 	ld	a, e
 	sub	a, (hl)
 	jr	NC, 00111$
-;pocket_platformer.c:806: SMS_setNextTileatXY(rb_switches[si].tx % SCREEN_TILES_W,
+;pocket_platformer.c:810: SMS_setNextTileatXY(rb_switches[si].tx % SCREEN_TILES_W,
 	ld	l, e
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -5400,7 +5442,7 @@ _move_player_y:
 	push	bc
 	rst	#0x08
 	pop	bc
-;pocket_platformer.c:808: SMS_setTile(sw_vt);
+;pocket_platformer.c:812: SMS_setTile(sw_vt);
 	ld	l, c
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -5408,11 +5450,11 @@ _move_player_y:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x18
-;pocket_platformer.c:805: for (si = 0; si < rb_switch_count; si++) {
+;pocket_platformer.c:809: for (si = 0; si < rb_switch_count; si++) {
 	inc	e
 	jr	00134$
 00111$:
-;pocket_platformer.c:814: long ppx = player.x >> 8, ppy = new_y >> 8;
+;pocket_platformer.c:818: long ppx = player.x >> 8, ppy = new_y >> 8;
 	ld	bc, (#_player + 0)
 	ld	de, (#_player + 2)
 	ld	a, #0x08
@@ -5431,7 +5473,7 @@ _move_player_y:
 	ld	-23 (ix), a
 	ld	a, -5 (ix)
 	ld	-22 (ix), a
-;pocket_platformer.c:815: for (b = 0; b < rb_block_count; b++) {
+;pocket_platformer.c:819: for (b = 0; b < rb_block_count; b++) {
 	ld	a, -8 (ix)
 	add	a, #0x08
 	ld	-21 (ix), a
@@ -5462,7 +5504,7 @@ _move_player_y:
 	ld	a, -1 (ix)
 	sub	a, (hl)
 	jp	NC, 00118$
-;pocket_platformer.c:816: long bx = (long)rb_blocks[b].tx * TILE_SIZE;
+;pocket_platformer.c:820: long bx = (long)rb_blocks[b].tx * TILE_SIZE;
 	push	de
 	ld	e, -1 (ix)
 	ld	d, #0x00
@@ -5501,7 +5543,7 @@ _move_player_y:
 	rl	-10 (ix)
 	dec	a
 	jr	NZ,00369$
-;pocket_platformer.c:817: long by = (long)rb_blocks[b].ty * TILE_SIZE;
+;pocket_platformer.c:821: long by = (long)rb_blocks[b].ty * TILE_SIZE;
 	push	iy
 	pop	hl
 	inc	hl
@@ -5529,7 +5571,7 @@ _move_player_y:
 	rl	-6 (ix)
 	dec	a
 	jr	NZ,00371$
-;pocket_platformer.c:818: unsigned char solid = rb_blocks[b].is_red ? rb_red_active : !rb_red_active;
+;pocket_platformer.c:822: unsigned char solid = rb_blocks[b].is_red ? rb_red_active : !rb_red_active;
 	ld	a, 2 (iy)
 	or	a, a
 	jr	Z, 00154$
@@ -5541,10 +5583,10 @@ _move_player_y:
 	ld	a, #0x00
 	rla
 00155$:
-;pocket_platformer.c:819: if (solid &&
+;pocket_platformer.c:823: if (solid &&
 	or	a, a
 	jp	Z, 00138$
-;pocket_platformer.c:820: ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
+;pocket_platformer.c:824: ppx + PLAYER_W > bx && ppx < bx + TILE_SIZE &&
 	ld	a, -13 (ix)
 	sub	a, -17 (ix)
 	ld	a, -12 (ix)
@@ -5581,7 +5623,7 @@ _move_player_y:
 	xor	a, #0x80
 00374$:
 	jp	P, 00138$
-;pocket_platformer.c:821: ppy + PLAYER_H > by && ppy < by + TILE_SIZE)
+;pocket_platformer.c:825: ppy + PLAYER_H > by && ppy < by + TILE_SIZE)
 	ld	a, -9 (ix)
 	sub	a, -21 (ix)
 	ld	a, -8 (ix)
@@ -5618,19 +5660,19 @@ _move_player_y:
 	xor	a, #0x80
 00376$:
 	jp	P, 00138$
-;pocket_platformer.c:822: player_died = 1;
+;pocket_platformer.c:826: player_died = 1;
 	ld	hl, #_player_died
 	ld	(hl), #0x01
 00138$:
-;pocket_platformer.c:815: for (b = 0; b < rb_block_count; b++) {
+;pocket_platformer.c:819: for (b = 0; b < rb_block_count; b++) {
 	inc	-1 (ix)
 	jp	00137$
 00118$:
-;pocket_platformer.c:825: rb_switch_locked = 1;
+;pocket_platformer.c:829: rb_switch_locked = 1;
 	ld	hl, #_rb_switch_locked
 	ld	(hl), #0x01
 00125$:
-;pocket_platformer.c:828: new_y = tile_t * TILE_SIZE * FP_ONE;
+;pocket_platformer.c:832: new_y = tile_t * TILE_SIZE * FP_ONE;
 	ld	a, -29 (ix)
 	ld	-3 (ix), a
 	ld	a, -28 (ix)
@@ -5644,34 +5686,34 @@ _move_player_y:
 	rl	-2 (ix)
 	rl	-1 (ix)
 	djnz	00377$
-;pocket_platformer.c:829: player.vy = 0;
+;pocket_platformer.c:833: player.vy = 0;
 	ld	hl, #0x0000
 	ld	((_player + 12)), hl
 	ld	((_player + 12)+2), hl
-;pocket_platformer.c:830: player.jumping = 0;
+;pocket_platformer.c:834: player.jumping = 0;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x00
-;pocket_platformer.c:831: player.wall_jumping = 0;
+;pocket_platformer.c:835: player.wall_jumping = 0;
 	ld	hl, #(_player + 19)
 	ld	(hl), #0x00
-;pocket_platformer.c:832: player.jump_frames = res_physics->max_jump_frames;
+;pocket_platformer.c:836: player.jump_frames = res_physics->max_jump_frames;
 	ld	hl, (_res_physics)
 	ld	de, #0x000c
 	add	hl, de
 	ld	a, (hl)
 	ld	(#(_player + 22)),a
 00132$:
-;pocket_platformer.c:835: player.y = new_y;
+;pocket_platformer.c:839: player.y = new_y;
 	ld	de, #(_player + 4)
 	ld	hl, #25
 	add	hl, sp
 	ld	bc, #0x0004
 	ldir
-;pocket_platformer.c:836: }
+;pocket_platformer.c:840: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:841: static void check_object_collisions(void) {
+;pocket_platformer.c:845: static void check_object_collisions(void) {
 ;	---------------------------------
 ; Function check_object_collisions
 ; ---------------------------------
@@ -5682,7 +5724,7 @@ _check_object_collisions:
 	ld	hl, #-30
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:842: long px = player.x >> 8, py = player.y >> 8;
+;pocket_platformer.c:846: long px = player.x >> 8, py = player.y >> 8;
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
@@ -5710,7 +5752,7 @@ _check_object_collisions:
 	ld	-25 (ix), d
 	ld	-24 (ix), l
 	ld	-23 (ix), h
-;pocket_platformer.c:844: unsigned char obj_count = cur_level->obj_count < MAX_OBJECTS
+;pocket_platformer.c:848: unsigned char obj_count = cur_level->obj_count < MAX_OBJECTS
 	ld	hl, (_cur_level)
 	inc	hl
 	inc	hl
@@ -5725,10 +5767,10 @@ _check_object_collisions:
 	ld	-1 (ix), #0
 00130$:
 	ld	c, -2 (ix)
-;pocket_platformer.c:846: map_res_bank();
+;pocket_platformer.c:850: map_res_bank();
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
 	ld	(hl), #0x02
-;pocket_platformer.c:847: for (i = 0; i < obj_count; i++) {
+;pocket_platformer.c:851: for (i = 0; i < obj_count; i++) {
 	ld	a, -26 (ix)
 	add	a, #0x08
 	ld	-22 (ix), a
@@ -5758,7 +5800,7 @@ _check_object_collisions:
 	ld	a, e
 	sub	a, c
 	jp	NC, 00127$
-;pocket_platformer.c:848: level_object *obj = &cur_objects[i];
+;pocket_platformer.c:852: level_object *obj = &cur_objects[i];
 	push	de
 	ld	d, #0x00
 	ld	l, e
@@ -5775,7 +5817,7 @@ _check_object_collisions:
 	ld	a, d
 	adc	a, (hl)
 	ld	d, a
-;pocket_platformer.c:849: long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
+;pocket_platformer.c:853: long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
 	ld	-14 (ix), b
 	ld	-13 (ix), d
 	ld	l, b
@@ -5829,7 +5871,7 @@ _check_object_collisions:
 	ld	-2 (ix), a
 	ld	a, -5 (ix)
 	ld	-1 (ix), a
-;pocket_platformer.c:850: if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
+;pocket_platformer.c:854: if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
 	ld	a, -12 (ix)
 	sub	a, -18 (ix)
 	ld	a, -11 (ix)
@@ -5870,7 +5912,7 @@ _check_object_collisions:
 	xor	a, #0x80
 00226$:
 	jp	P, 00123$
-;pocket_platformer.c:851: if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
+;pocket_platformer.c:855: if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
 	ld	a, -4 (ix)
 	sub	a, -22 (ix)
 	ld	a, -3 (ix)
@@ -5911,7 +5953,7 @@ _check_object_collisions:
 	xor	a, #0x80
 00228$:
 	jp	P, 00123$
-;pocket_platformer.c:852: switch (obj->type) {
+;pocket_platformer.c:856: switch (obj->type) {
 	ld	l, -14 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -5932,14 +5974,14 @@ _check_object_collisions:
 	sub	a, #0x0c
 	jr	Z, 00108$
 	jp	00123$
-;pocket_platformer.c:853: case OBJ_FINISH_FLAG: level_complete = 1; break;
+;pocket_platformer.c:857: case OBJ_FINISH_FLAG: level_complete = 1; break;
 00107$:
 	ld	hl, #_level_complete
 	ld	(hl), #0x01
 	jp	00123$
-;pocket_platformer.c:854: case OBJ_FINISH_FLAG_LOCKED:
+;pocket_platformer.c:858: case OBJ_FINISH_FLAG_LOCKED:
 00108$:
-;pocket_platformer.c:855: if (!coins_remaining()) level_complete = 1;
+;pocket_platformer.c:859: if (!coins_remaining()) level_complete = 1;
 	push	bc
 	push	de
 	call	_coins_remaining
@@ -5949,16 +5991,16 @@ _check_object_collisions:
 	jp	NZ, 00123$
 	ld	hl, #_level_complete
 	ld	(hl), #0x01
-;pocket_platformer.c:856: break;
+;pocket_platformer.c:860: break;
 	jp	00123$
-;pocket_platformer.c:857: case OBJ_SPIKE: player_died = 1; break;
+;pocket_platformer.c:861: case OBJ_SPIKE: player_died = 1; break;
 00111$:
 	ld	hl, #_player_died
 	ld	(hl), #0x01
 	jp	00123$
-;pocket_platformer.c:858: case OBJ_TRAMPOLINE:
+;pocket_platformer.c:862: case OBJ_TRAMPOLINE:
 00112$:
-;pocket_platformer.c:859: if (player.vy >= 0) {
+;pocket_platformer.c:863: if (player.vy >= 0) {
 	ld	hl, #_player + 12
 	ld	b, (hl)
 	inc	hl
@@ -5973,7 +6015,7 @@ _check_object_collisions:
 ;	spillPairReg hl
 	bit	7,a
 	jp	NZ, 00123$
-;pocket_platformer.c:860: long tramp_mid = (long)obj->y * TILE_SIZE + TILE_SIZE / 2;
+;pocket_platformer.c:864: long tramp_mid = (long)obj->y * TILE_SIZE + TILE_SIZE / 2;
 	ld	a, -8 (ix)
 	add	a, #0x04
 	ld	-4 (ix), a
@@ -5986,7 +6028,7 @@ _check_object_collisions:
 	ld	a, -5 (ix)
 	adc	a, #0x00
 	ld	-1 (ix), a
-;pocket_platformer.c:861: if ((player.y >> 8) + PLAYER_H <= tramp_mid + 2) {
+;pocket_platformer.c:865: if ((player.y >> 8) + PLAYER_H <= tramp_mid + 2) {
 	ld	hl, #(_player + 4)
 	ld	b, (hl)
 	inc	hl
@@ -6051,7 +6093,7 @@ _check_object_collisions:
 	xor	a, #0x80
 00236$:
 	jp	M, 00123$
-;pocket_platformer.c:862: long base = (long)res_physics->jump_speed;
+;pocket_platformer.c:866: long base = (long)res_physics->jump_speed;
 	ld	hl, (_res_physics)
 	push	bc
 	ld	bc, #0x000a
@@ -6066,7 +6108,7 @@ _check_object_collisions:
 	sbc	a, a
 	ld	-6 (ix), a
 	ld	-5 (ix), a
-;pocket_platformer.c:863: player.forced_jump_speed = base + base * 4 / 15;
+;pocket_platformer.c:867: player.forced_jump_speed = base + base * 4 / 15;
 	ld	l, -8 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -6124,22 +6166,22 @@ _check_object_collisions:
 	ldir
 	pop	bc
 	pop	de
-;pocket_platformer.c:864: player.jumping = 1;
+;pocket_platformer.c:868: player.jumping = 1;
 	ld	hl, #(_player + 18)
 	ld	(hl), #0x01
-;pocket_platformer.c:865: player.jump_frames = 0;
+;pocket_platformer.c:869: player.jump_frames = 0;
 	ld	hl, #(_player + 22)
 	ld	(hl), #0x00
-;pocket_platformer.c:866: player.falling = 0;
+;pocket_platformer.c:870: player.falling = 0;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x00
-;pocket_platformer.c:867: player.on_ground = 0;
+;pocket_platformer.c:871: player.on_ground = 0;
 	ld	hl, #(_player + 16)
 	ld	(hl), #0x00
-;pocket_platformer.c:868: player.double_jump_used = 0;
+;pocket_platformer.c:872: player.double_jump_used = 0;
 	ld	hl, #(_player + 24)
 	ld	(hl), #0x00
-;pocket_platformer.c:869: if (vp_block_count) vp_toggle();
+;pocket_platformer.c:873: if (vp_block_count) vp_toggle();
 	ld	a, (_vp_block_count+0)
 	or	a, a
 	jr	Z, 00123$
@@ -6148,11 +6190,11 @@ _check_object_collisions:
 	call	_vp_toggle
 	pop	de
 	pop	bc
-;pocket_platformer.c:872: break;
+;pocket_platformer.c:876: break;
 	jr	00123$
-;pocket_platformer.c:873: case OBJ_COIN:
+;pocket_platformer.c:877: case OBJ_COIN:
 00119$:
-;pocket_platformer.c:874: if (!coin_collected[i]) coin_collected[i] = 1; break;
+;pocket_platformer.c:878: if (!coin_collected[i]) coin_collected[i] = 1; break;
 	ld	hl, #_coin_collected
 	ld	d, #0x00
 	add	hl, de
@@ -6160,17 +6202,17 @@ _check_object_collisions:
 	or	a, a
 	jr	NZ, 00123$
 	ld	(hl), #0x01
-;pocket_platformer.c:875: }
+;pocket_platformer.c:879: }
 00123$:
-;pocket_platformer.c:847: for (i = 0; i < obj_count; i++) {
+;pocket_platformer.c:851: for (i = 0; i < obj_count; i++) {
 	inc	e
 	jp	00126$
 00127$:
-;pocket_platformer.c:877: }
+;pocket_platformer.c:881: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:892: static unsigned char vp_is_passable(unsigned char tx, unsigned char ty) {
+;pocket_platformer.c:896: static unsigned char vp_is_passable(unsigned char tx, unsigned char ty) {
 ;	---------------------------------
 ; Function vp_is_passable
 ; ---------------------------------
@@ -6181,14 +6223,14 @@ _vp_is_passable:
 	push	af
 	ld	-1 (ix), a
 	ld	-2 (ix), l
-;pocket_platformer.c:894: for (i = 0; i < vp_block_count; i++) {
+;pocket_platformer.c:898: for (i = 0; i < vp_block_count; i++) {
 	ld	c, #0x00
 00106$:
 	ld	hl, #_vp_block_count
 	ld	a, c
 	sub	a, (hl)
 	jr	NC, 00104$
-;pocket_platformer.c:895: if (vp_blocks[i].tx == tx && vp_blocks[i].ty == ty) {
+;pocket_platformer.c:899: if (vp_blocks[i].tx == tx && vp_blocks[i].ty == ty) {
 	ld	de, #_vp_blocks+0
 	ld	b, #0x00
 	ld	l, c
@@ -6212,7 +6254,7 @@ _vp_is_passable:
 	ld	a,-2 (ix)
 	sub	a,(hl)
 	jr	NZ, 00107$
-;pocket_platformer.c:898: return vp_blocks[i].is_violet ? !vp_violet_active : vp_violet_active;
+;pocket_platformer.c:902: return vp_blocks[i].is_violet ? !vp_violet_active : vp_violet_active;
 	inc	de
 	inc	de
 	ld	a, (de)
@@ -6227,18 +6269,18 @@ _vp_is_passable:
 	ld	a, (_vp_violet_active+0)
 	jr	00108$
 00107$:
-;pocket_platformer.c:894: for (i = 0; i < vp_block_count; i++) {
+;pocket_platformer.c:898: for (i = 0; i < vp_block_count; i++) {
 	inc	c
 	jr	00106$
 00104$:
-;pocket_platformer.c:901: return 0;
+;pocket_platformer.c:905: return 0;
 	xor	a, a
 00108$:
-;pocket_platformer.c:902: }
+;pocket_platformer.c:906: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:905: static void vp_toggle(void) {
+;pocket_platformer.c:909: static void vp_toggle(void) {
 ;	---------------------------------
 ; Function vp_toggle
 ; ---------------------------------
@@ -6249,20 +6291,20 @@ _vp_toggle:
 	ld	hl, #-21
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:907: vp_violet_active = !vp_violet_active;
+;pocket_platformer.c:911: vp_violet_active = !vp_violet_active;
 	ld	a, (_vp_violet_active+0)
 	sub	a,#0x01
 	ld	a, #0x00
 	rla
 	ld	(_vp_violet_active+0), a
-;pocket_platformer.c:908: for (i = 0; i < vp_block_count; i++) {
+;pocket_platformer.c:912: for (i = 0; i < vp_block_count; i++) {
 	ld	-1 (ix), #0x00
 00113$:
 	ld	hl, #_vp_block_count
 	ld	a, -1 (ix)
 	sub	a, (hl)
 	jp	NC, 00115$
-;pocket_platformer.c:909: unsigned char tx    = vp_blocks[i].tx;
+;pocket_platformer.c:913: unsigned char tx    = vp_blocks[i].tx;
 	ld	c, -1 (ix)
 	ld	b, #0x00
 	ld	l, c
@@ -6281,7 +6323,7 @@ _vp_toggle:
 	ld	h, -4 (ix)
 	ld	a, (hl)
 	ld	-3 (ix), a
-;pocket_platformer.c:910: unsigned char ty    = vp_blocks[i].ty;
+;pocket_platformer.c:914: unsigned char ty    = vp_blocks[i].ty;
 	ld	a, -5 (ix)
 	ld	-7 (ix), a
 	ld	a, -4 (ix)
@@ -6291,7 +6333,7 @@ _vp_toggle:
 	inc	hl
 	ld	a, (hl)
 	ld	-2 (ix), a
-;pocket_platformer.c:911: unsigned char solid = vp_blocks[i].is_violet ? vp_violet_active : !vp_violet_active;
+;pocket_platformer.c:915: unsigned char solid = vp_blocks[i].is_violet ? vp_violet_active : !vp_violet_active;
 	ld	l, -5 (ix)
 	ld	h, -4 (ix)
 	inc	hl
@@ -6309,15 +6351,15 @@ _vp_toggle:
 	rla
 00118$:
 	ld	-6 (ix), a
-;pocket_platformer.c:915: idx = solid ? res_header->vio_solid_vram_idx : res_header->vio_ghost_vram_idx;
+;pocket_platformer.c:919: idx = solid ? res_header->vio_solid_vram_idx : res_header->vio_ghost_vram_idx;
 	ld	hl, (_res_header)
 	ld	-5 (ix), l
 	ld	-4 (ix), h
-;pocket_platformer.c:914: if (vp_blocks[i].is_violet)
+;pocket_platformer.c:918: if (vp_blocks[i].is_violet)
 	ld	a, c
 	or	a, a
 	jr	Z, 00102$
-;pocket_platformer.c:915: idx = solid ? res_header->vio_solid_vram_idx : res_header->vio_ghost_vram_idx;
+;pocket_platformer.c:919: idx = solid ? res_header->vio_solid_vram_idx : res_header->vio_ghost_vram_idx;
 	ld	a, -6 (ix)
 	or	a, a
 	jr	Z, 00119$
@@ -6337,7 +6379,7 @@ _vp_toggle:
 	ld	a, b
 	jr	00103$
 00102$:
-;pocket_platformer.c:917: idx = solid ? res_header->pink_solid_vram_idx : res_header->pink_ghost_vram_idx;
+;pocket_platformer.c:921: idx = solid ? res_header->pink_solid_vram_idx : res_header->pink_ghost_vram_idx;
 	ld	a, -6 (ix)
 	or	a, a
 	jr	Z, 00121$
@@ -6355,7 +6397,7 @@ _vp_toggle:
 	ld	a, (hl)
 00122$:
 00103$:
-;pocket_platformer.c:918: vt = idx ? (unsigned int)(VRAM_BG_BASE + idx - 1) : 0u;
+;pocket_platformer.c:922: vt = idx ? (unsigned int)(VRAM_BG_BASE + idx - 1) : 0u;
 	or	a, a
 	jr	Z, 00123$
 	ld	b, #0x00
@@ -6366,7 +6408,7 @@ _vp_toggle:
 00124$:
 	ld	e, a
 	ld	d, b
-;pocket_platformer.c:919: SMS_setNextTileatXY(tx % SCREEN_TILES_W, ty);
+;pocket_platformer.c:923: SMS_setNextTileatXY(tx % SCREEN_TILES_W, ty);
 	ld	l, -2 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -6390,14 +6432,14 @@ _vp_toggle:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x08
-;pocket_platformer.c:920: SMS_setTile(vt);
+;pocket_platformer.c:924: SMS_setTile(vt);
 	ex	de, hl
 	rst	#0x18
-;pocket_platformer.c:922: if (solid) {
+;pocket_platformer.c:926: if (solid) {
 	ld	a, -6 (ix)
 	or	a, a
 	jp	Z, 00114$
-;pocket_platformer.c:923: long px = player.x >> 8, py = player.y >> 8;
+;pocket_platformer.c:927: long px = player.x >> 8, py = player.y >> 8;
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
@@ -6425,7 +6467,7 @@ _vp_toggle:
 	ld	-16 (ix), d
 	ld	-15 (ix), l
 	ld	-14 (ix), h
-;pocket_platformer.c:924: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
+;pocket_platformer.c:928: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
 	ld	l, -3 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -6462,7 +6504,7 @@ _vp_toggle:
 	ld	-8 (ix), h
 	ld	-7 (ix), a
 	ld	-6 (ix), c
-;pocket_platformer.c:925: if (px + PLAYER_W > bx && px < bx + TILE_SIZE &&
+;pocket_platformer.c:929: if (px + PLAYER_W > bx && px < bx + TILE_SIZE &&
 	ld	a, -21 (ix)
 	add	a, #0x06
 	ld	c, a
@@ -6511,7 +6553,7 @@ _vp_toggle:
 	xor	a, #0x80
 00207$:
 	jp	P, 00114$
-;pocket_platformer.c:926: py + PLAYER_H > by && py < by + TILE_SIZE)
+;pocket_platformer.c:930: py + PLAYER_H > by && py < by + TILE_SIZE)
 	ld	a, -17 (ix)
 	add	a, #0x08
 	ld	c, a
@@ -6560,19 +6602,19 @@ _vp_toggle:
 	xor	a, #0x80
 00209$:
 	jp	P, 00114$
-;pocket_platformer.c:927: player_died = 1;
+;pocket_platformer.c:931: player_died = 1;
 	ld	hl, #_player_died
 	ld	(hl), #0x01
 00114$:
-;pocket_platformer.c:908: for (i = 0; i < vp_block_count; i++) {
+;pocket_platformer.c:912: for (i = 0; i < vp_block_count; i++) {
 	inc	-1 (ix)
 	jp	00113$
 00115$:
-;pocket_platformer.c:930: }
+;pocket_platformer.c:934: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:933: static unsigned char rb_is_passable(unsigned char tx, unsigned char ty) {
+;pocket_platformer.c:937: static unsigned char rb_is_passable(unsigned char tx, unsigned char ty) {
 ;	---------------------------------
 ; Function rb_is_passable
 ; ---------------------------------
@@ -6583,14 +6625,14 @@ _rb_is_passable:
 	push	af
 	ld	-1 (ix), a
 	ld	-2 (ix), l
-;pocket_platformer.c:935: for (i = 0; i < rb_block_count; i++) {
+;pocket_platformer.c:939: for (i = 0; i < rb_block_count; i++) {
 	ld	c, #0x00
 00106$:
 	ld	hl, #_rb_block_count
 	ld	a, c
 	sub	a, (hl)
 	jr	NC, 00104$
-;pocket_platformer.c:936: if (rb_blocks[i].tx == tx && rb_blocks[i].ty == ty) {
+;pocket_platformer.c:940: if (rb_blocks[i].tx == tx && rb_blocks[i].ty == ty) {
 	ld	de, #_rb_blocks+0
 	ld	b, #0x00
 	ld	l, c
@@ -6614,7 +6656,7 @@ _rb_is_passable:
 	ld	a,-2 (ix)
 	sub	a,(hl)
 	jr	NZ, 00107$
-;pocket_platformer.c:938: return rb_blocks[i].is_red ? !rb_red_active : rb_red_active;
+;pocket_platformer.c:942: return rb_blocks[i].is_red ? !rb_red_active : rb_red_active;
 	inc	de
 	inc	de
 	ld	a, (de)
@@ -6629,28 +6671,28 @@ _rb_is_passable:
 	ld	a, (_rb_red_active+0)
 	jr	00108$
 00107$:
-;pocket_platformer.c:935: for (i = 0; i < rb_block_count; i++) {
+;pocket_platformer.c:939: for (i = 0; i < rb_block_count; i++) {
 	inc	c
 	jr	00106$
 00104$:
-;pocket_platformer.c:941: return 0;
+;pocket_platformer.c:945: return 0;
 	xor	a, a
 00108$:
-;pocket_platformer.c:942: }
+;pocket_platformer.c:946: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:944: static unsigned int rb_vram_for_block(unsigned char is_red, unsigned char solid) {
+;pocket_platformer.c:948: static unsigned int rb_vram_for_block(unsigned char is_red, unsigned char solid) {
 ;	---------------------------------
 ; Function rb_vram_for_block
 ; ---------------------------------
 _rb_vram_for_block:
-;pocket_platformer.c:947: idx = solid ? res_header->red_solid_vram_idx  : res_header->red_ghost_vram_idx;
-;pocket_platformer.c:946: if (is_red)
+;pocket_platformer.c:951: idx = solid ? res_header->red_solid_vram_idx  : res_header->red_ghost_vram_idx;
+;pocket_platformer.c:950: if (is_red)
 	ld	de, (_res_header)
 	or	a, a
 	jr	Z, 00102$
-;pocket_platformer.c:947: idx = solid ? res_header->red_solid_vram_idx  : res_header->red_ghost_vram_idx;
+;pocket_platformer.c:951: idx = solid ? res_header->red_solid_vram_idx  : res_header->red_ghost_vram_idx;
 	ld	a, l
 	or	a, a
 	jr	Z, 00106$
@@ -6664,7 +6706,7 @@ _rb_vram_for_block:
 	ld	a, (hl)
 	jr	00103$
 00102$:
-;pocket_platformer.c:949: idx = solid ? res_header->blue_solid_vram_idx : res_header->blue_ghost_vram_idx;
+;pocket_platformer.c:953: idx = solid ? res_header->blue_solid_vram_idx : res_header->blue_ghost_vram_idx;
 	ld	a, l
 	or	a, a
 	jr	Z, 00108$
@@ -6678,7 +6720,7 @@ _rb_vram_for_block:
 	ld	a, (hl)
 00109$:
 00103$:
-;pocket_platformer.c:950: return idx ? (unsigned int)(VRAM_BG_BASE + idx - 1) : 0u;
+;pocket_platformer.c:954: return idx ? (unsigned int)(VRAM_BG_BASE + idx - 1) : 0u;
 	or	a, a
 	jr	Z, 00110$
 	ld	d, #0x00
@@ -6686,9 +6728,9 @@ _rb_vram_for_block:
 	ret
 00110$:
 	ld	de, #0x0000
-;pocket_platformer.c:951: }
+;pocket_platformer.c:955: }
 	ret
-;pocket_platformer.c:954: static void rb_redraw_all(void) {
+;pocket_platformer.c:958: static void rb_redraw_all(void) {
 ;	---------------------------------
 ; Function rb_redraw_all
 ; ---------------------------------
@@ -6697,14 +6739,14 @@ _rb_redraw_all:
 	ld	ix,#0
 	add	ix,sp
 	push	af
-;pocket_platformer.c:956: for (i = 0; i < rb_block_count; i++) {
+;pocket_platformer.c:960: for (i = 0; i < rb_block_count; i++) {
 	ld	-1 (ix), #0x00
 00103$:
 	ld	hl, #_rb_block_count
 	ld	a, -1 (ix)
 	sub	a, (hl)
 	jr	NC, 00105$
-;pocket_platformer.c:957: unsigned char tx = rb_blocks[i].tx;
+;pocket_platformer.c:961: unsigned char tx = rb_blocks[i].tx;
 	ld	c, -1 (ix)
 	ld	b, #0x00
 	ld	l, c
@@ -6717,7 +6759,7 @@ _rb_redraw_all:
 	ex	de, hl
 	ld	a, (de)
 	ld	c, a
-;pocket_platformer.c:958: unsigned char ty = rb_blocks[i].ty;
+;pocket_platformer.c:962: unsigned char ty = rb_blocks[i].ty;
 	ld	l, e
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -6727,7 +6769,7 @@ _rb_redraw_all:
 	inc	hl
 	ld	a, (hl)
 	ld	-2 (ix), a
-;pocket_platformer.c:959: unsigned char solid = rb_blocks[i].is_red ? rb_red_active : !rb_red_active;
+;pocket_platformer.c:963: unsigned char solid = rb_blocks[i].is_red ? rb_red_active : !rb_red_active;
 	inc	de
 	inc	de
 	ld	a, (de)
@@ -6745,12 +6787,12 @@ _rb_redraw_all:
 	ld	l, a
 ;	spillPairReg hl
 ;	spillPairReg hl
-;pocket_platformer.c:960: unsigned int vt = rb_vram_for_block(rb_blocks[i].is_red, solid);
+;pocket_platformer.c:964: unsigned int vt = rb_vram_for_block(rb_blocks[i].is_red, solid);
 	push	bc
 	ld	a, b
 	call	_rb_vram_for_block
 	pop	bc
-;pocket_platformer.c:961: SMS_setNextTileatXY(tx % SCREEN_TILES_W, ty);
+;pocket_platformer.c:965: SMS_setNextTileatXY(tx % SCREEN_TILES_W, ty);
 	ld	l, -2 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -6774,23 +6816,23 @@ _rb_redraw_all:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x08
-;pocket_platformer.c:962: SMS_setTile(vt);
+;pocket_platformer.c:966: SMS_setTile(vt);
 	ex	de, hl
 	rst	#0x18
-;pocket_platformer.c:956: for (i = 0; i < rb_block_count; i++) {
+;pocket_platformer.c:960: for (i = 0; i < rb_block_count; i++) {
 	inc	-1 (ix)
 	jr	00103$
 00105$:
-;pocket_platformer.c:964: }
+;pocket_platformer.c:968: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:966: static void check_rb_switch(void) {
+;pocket_platformer.c:970: static void check_rb_switch(void) {
 ;	---------------------------------
 ; Function check_rb_switch
 ; ---------------------------------
 _check_rb_switch:
-;pocket_platformer.c:968: if (rb_switch_locked && player.vy > 0) rb_switch_locked = 0;
+;pocket_platformer.c:972: if (rb_switch_locked && player.vy > 0) rb_switch_locked = 0;
 	ld	a, (_rb_switch_locked+0)
 	or	a, a
 	ret	Z
@@ -6809,9 +6851,9 @@ _check_rb_switch:
 	ret	P
 	ld	hl, #_rb_switch_locked
 	ld	(hl), #0x00
-;pocket_platformer.c:969: }
+;pocket_platformer.c:973: }
 	ret
-;pocket_platformer.c:971: static void check_disp_touch(void) {
+;pocket_platformer.c:975: static void check_disp_touch(void) {
 ;	---------------------------------
 ; Function check_disp_touch
 ; ---------------------------------
@@ -6822,7 +6864,7 @@ _check_disp_touch:
 	ld	hl, #-21
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:976: long px = player.x >> 8, py = player.y >> 8;
+;pocket_platformer.c:980: long px = player.x >> 8, py = player.y >> 8;
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
@@ -6845,7 +6887,7 @@ _check_disp_touch:
 	rr	h
 	rr	l
 	djnz	00252$
-;pocket_platformer.c:977: unsigned char tx_l = (unsigned char)(px / TILE_SIZE);
+;pocket_platformer.c:981: unsigned char tx_l = (unsigned char)(px / TILE_SIZE);
 	ld	c, -11 (ix)
 	ld	b, -10 (ix)
 	push	iy
@@ -6886,7 +6928,7 @@ _check_disp_touch:
 	srl	b
 	rr	c
 	ld	-3 (ix), c
-;pocket_platformer.c:978: unsigned char tx_r = (unsigned char)((px + PLAYER_W - 1) / TILE_SIZE);
+;pocket_platformer.c:982: unsigned char tx_r = (unsigned char)((px + PLAYER_W - 1) / TILE_SIZE);
 	ld	a, -11 (ix)
 	add	a, #0x05
 	ld	-7 (ix), a
@@ -6939,7 +6981,7 @@ _check_disp_touch:
 	srl	b
 	rr	c
 	ld	-2 (ix), c
-;pocket_platformer.c:979: unsigned char ty_body  = (unsigned char)(py / TILE_SIZE);
+;pocket_platformer.c:983: unsigned char ty_body  = (unsigned char)(py / TILE_SIZE);
 	push	de
 	pop	iy
 	ld	c, l
@@ -6970,7 +7012,7 @@ _check_disp_touch:
 	srl	b
 	rr	c
 	ld	-1 (ix), c
-;pocket_platformer.c:980: unsigned char ty_feet  = (unsigned char)((py + PLAYER_H) / TILE_SIZE); /* tile below feet */
+;pocket_platformer.c:984: unsigned char ty_feet  = (unsigned char)((py + PLAYER_H) / TILE_SIZE); /* tile below feet */
 	push	bc
 	ld	bc, #0x0008
 	add	hl, bc
@@ -7005,7 +7047,7 @@ _check_disp_touch:
 	rr	c
 	srl	b
 	rr	c
-;pocket_platformer.c:981: unsigned char probes[3][2] = {
+;pocket_platformer.c:985: unsigned char probes[3][2] = {
 	ld	a, -3 (ix)
 	ld	-17 (ix), a
 	ld	-16 (ix), c
@@ -7016,10 +7058,10 @@ _check_disp_touch:
 	ld	-13 (ix), a
 	ld	a, -1 (ix)
 	ld	-12 (ix), a
-;pocket_platformer.c:987: for (c = 0; c < 3; c++) {
+;pocket_platformer.c:991: for (c = 0; c < 3; c++) {
 	ld	-1 (ix), #0x00
 00119$:
-;pocket_platformer.c:988: unsigned char tx = probes[c][0], ty = probes[c][1];
+;pocket_platformer.c:992: unsigned char tx = probes[c][0], ty = probes[c][1];
 	ld	l, -1 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7036,7 +7078,7 @@ _check_disp_touch:
 	ld	-6 (ix), a
 	inc	hl
 	ld	a, (hl)
-;pocket_platformer.c:989: unsigned char t = get_tile(tx, ty);
+;pocket_platformer.c:993: unsigned char t = get_tile(tx, ty);
 	ld	-5 (ix), a
 	ld	l, a
 ;	spillPairReg hl
@@ -7044,7 +7086,7 @@ _check_disp_touch:
 	ld	a, -6 (ix)
 	call	_get_tile
 	ld	-4 (ix), a
-;pocket_platformer.c:990: if (res_header->disp_vram_idx && t == res_header->disp_vram_idx)
+;pocket_platformer.c:994: if (res_header->disp_vram_idx && t == res_header->disp_vram_idx)
 	ld	hl, (_res_header)
 	ld	-3 (ix), l
 	ld	-2 (ix), h
@@ -7057,7 +7099,7 @@ _check_disp_touch:
 	ld	a, -4 (ix)
 	sub	a, c
 	jr	NZ, 00109$
-;pocket_platformer.c:991: disp_touch(tx, ty);
+;pocket_platformer.c:995: disp_touch(tx, ty);
 	ld	l, -5 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7065,7 +7107,7 @@ _check_disp_touch:
 	call	_disp_touch
 	jr	00120$
 00109$:
-;pocket_platformer.c:992: else if (res_header->conn_vram_idx && t == res_header->conn_vram_idx)
+;pocket_platformer.c:996: else if (res_header->conn_vram_idx && t == res_header->conn_vram_idx)
 	ld	c, -3 (ix)
 	ld	b, -2 (ix)
 	ld	hl, #8
@@ -7077,7 +7119,7 @@ _check_disp_touch:
 	ld	a, -4 (ix)
 	sub	a, c
 	jr	NZ, 00105$
-;pocket_platformer.c:993: disp_touch_connected(tx, ty);
+;pocket_platformer.c:997: disp_touch_connected(tx, ty);
 	ld	l, -5 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7085,7 +7127,7 @@ _check_disp_touch:
 	call	_disp_touch_connected
 	jr	00120$
 00105$:
-;pocket_platformer.c:995: else if (res_header->fg_disp_vram_idx &&
+;pocket_platformer.c:999: else if (res_header->fg_disp_vram_idx &&
 	ld	c, -3 (ix)
 	ld	b, -2 (ix)
 	ld	hl, #37
@@ -7093,31 +7135,31 @@ _check_disp_touch:
 	ld	a, (hl)
 	or	a, a
 	jr	Z, 00120$
-;pocket_platformer.c:996: t == (res_header->fg_disp_vram_idx | 0x80))
+;pocket_platformer.c:1000: t == (res_header->fg_disp_vram_idx | 0x80))
 	ld	c, a
 	set	7, c
 	ld	a, -4 (ix)
 	sub	a, c
 	jr	NZ, 00120$
-;pocket_platformer.c:997: fg_disp_touch_connected(tx, ty);
+;pocket_platformer.c:1001: fg_disp_touch_connected(tx, ty);
 	ld	l, -5 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ld	a, -6 (ix)
 	call	_fg_disp_touch_connected
 00120$:
-;pocket_platformer.c:987: for (c = 0; c < 3; c++) {
+;pocket_platformer.c:991: for (c = 0; c < 3; c++) {
 	inc	-1 (ix)
 	ld	a, -1 (ix)
 	sub	a, #0x03
 	jp	C, 00119$
-;pocket_platformer.c:1001: if (res_header->fg_disp_vram_idx) {
+;pocket_platformer.c:1005: if (res_header->fg_disp_vram_idx) {
 	ld	iy, (_res_header)
 	ld	a, 37 (iy)
 	ld	-1 (ix), a
 	or	a, a
 	jp	Z, 00127$
-;pocket_platformer.c:1002: unsigned char tx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
+;pocket_platformer.c:1006: unsigned char tx_l = (unsigned char)((player.x >> 8) / TILE_SIZE);
 	ld	de, #_player
 	ld	hl, #17
 	add	hl, sp
@@ -7173,7 +7215,7 @@ _check_disp_touch:
 	rr	-2 (ix)
 	ld	a, -2 (ix)
 	ld	-11 (ix), a
-;pocket_platformer.c:1003: unsigned char tx_r = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
+;pocket_platformer.c:1007: unsigned char tx_r = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
 	ld	a, -21 (ix)
 	add	a, #0x05
 	ld	-8 (ix), a
@@ -7220,7 +7262,7 @@ _check_disp_touch:
 	rr	-2 (ix)
 	ld	a, -2 (ix)
 	ld	-10 (ix), a
-;pocket_platformer.c:1004: unsigned char ty_t = (unsigned char)((player.y >> 8) / TILE_SIZE);
+;pocket_platformer.c:1008: unsigned char ty_t = (unsigned char)((player.y >> 8) / TILE_SIZE);
 	ld	de, #(_player + 4)
 	ld	hl, #17
 	add	hl, sp
@@ -7280,7 +7322,7 @@ _check_disp_touch:
 	srl	b
 	rr	c
 	ld	-1 (ix), c
-;pocket_platformer.c:1005: unsigned char ty_b = (unsigned char)(((player.y >> 8) + PLAYER_H - 1) / TILE_SIZE);
+;pocket_platformer.c:1009: unsigned char ty_b = (unsigned char)(((player.y >> 8) + PLAYER_H - 1) / TILE_SIZE);
 	ld	c, -5 (ix)
 	ld	b, -4 (ix)
 	bit	7, -2 (ix)
@@ -7299,19 +7341,19 @@ _check_disp_touch:
 	srl	b
 	rr	c
 	ld	-2 (ix), c
-;pocket_platformer.c:1007: for (bx = tx_l; bx <= tx_r; bx++) {
+;pocket_platformer.c:1011: for (bx = tx_l; bx <= tx_r; bx++) {
 	ld	c, -11 (ix)
 00125$:
 	ld	a, -10 (ix)
 	sub	a, c
 	jr	C, 00127$
-;pocket_platformer.c:1008: for (by = ty_t; by <= ty_b; by++) {
+;pocket_platformer.c:1012: for (by = ty_t; by <= ty_b; by++) {
 	ld	b, -1 (ix)
 00122$:
 	ld	a, -2 (ix)
 	sub	a, b
 	jr	C, 00126$
-;pocket_platformer.c:1009: unsigned char bt = get_tile(bx, by);
+;pocket_platformer.c:1013: unsigned char bt = get_tile(bx, by);
 	push	bc
 	ld	l, b
 ;	spillPairReg hl
@@ -7319,7 +7361,7 @@ _check_disp_touch:
 	ld	a, c
 	call	_get_tile
 	pop	bc
-;pocket_platformer.c:1010: if (bt == (res_header->fg_disp_vram_idx | 0x80))
+;pocket_platformer.c:1014: if (bt == (res_header->fg_disp_vram_idx | 0x80))
 	ld	hl, (_res_header)
 	ld	de, #0x0025
 	add	hl, de
@@ -7327,7 +7369,7 @@ _check_disp_touch:
 	set	7, e
 	sub	a, e
 	jr	NZ, 00123$
-;pocket_platformer.c:1011: fg_disp_touch_connected(bx, by);
+;pocket_platformer.c:1015: fg_disp_touch_connected(bx, by);
 	push	bc
 	ld	l, b
 ;	spillPairReg hl
@@ -7336,19 +7378,19 @@ _check_disp_touch:
 	call	_fg_disp_touch_connected
 	pop	bc
 00123$:
-;pocket_platformer.c:1008: for (by = ty_t; by <= ty_b; by++) {
+;pocket_platformer.c:1012: for (by = ty_t; by <= ty_b; by++) {
 	inc	b
 	jr	00122$
 00126$:
-;pocket_platformer.c:1007: for (bx = tx_l; bx <= tx_r; bx++) {
+;pocket_platformer.c:1011: for (bx = tx_l; bx <= tx_r; bx++) {
 	inc	c
 	jr	00125$
 00127$:
-;pocket_platformer.c:1015: }
+;pocket_platformer.c:1019: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:1017: static void update_disappearing_blocks(void) {
+;pocket_platformer.c:1021: static void update_disappearing_blocks(void) {
 ;	---------------------------------
 ; Function update_disappearing_blocks
 ; ---------------------------------
@@ -7359,12 +7401,12 @@ _update_disappearing_blocks:
 	ld	hl, #-24
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:1019: check_disp_touch();
+;pocket_platformer.c:1023: check_disp_touch();
 	call	_check_disp_touch
-;pocket_platformer.c:1020: for (i = 0; i < MAX_DISP; i++) {
+;pocket_platformer.c:1024: for (i = 0; i < MAX_DISP; i++) {
 	ld	-1 (ix), #0x00
 00125$:
-;pocket_platformer.c:1023: disp_entry *e = &disp_blocks[i];
+;pocket_platformer.c:1027: disp_entry *e = &disp_blocks[i];
 	ld	a, -1 (ix)
 	ld	-3 (ix), a
 	ld	-2 (ix), #0x00
@@ -7387,7 +7429,7 @@ _update_disappearing_blocks:
 	ld	-24 (ix), a
 	ld	a, -2 (ix)
 	ld	-23 (ix), a
-;pocket_platformer.c:1024: if (!e->frame) continue;
+;pocket_platformer.c:1028: if (!e->frame) continue;
 	ld	a, -24 (ix)
 	add	a, #0x02
 	ld	-22 (ix), a
@@ -7400,7 +7442,7 @@ _update_disappearing_blocks:
 	ld	-2 (ix), a
 	or	a, a
 	jp	Z, 00110$
-;pocket_platformer.c:1026: e->frame++;
+;pocket_platformer.c:1030: e->frame++;
 	ld	e, -2 (ix)
 	inc	e
 	pop	bc
@@ -7408,7 +7450,7 @@ _update_disappearing_blocks:
 	push	hl
 	push	bc
 	ld	(hl), e
-;pocket_platformer.c:1027: tx = e->tx; ty = e->ty;
+;pocket_platformer.c:1031: tx = e->tx; ty = e->ty;
 	pop	hl
 	push	hl
 	ld	b, (hl)
@@ -7416,25 +7458,25 @@ _update_disappearing_blocks:
 	push	hl
 	inc	hl
 	ld	c, (hl)
-;pocket_platformer.c:1028: scr_x = tx % SCREEN_TILES_W;
+;pocket_platformer.c:1032: scr_x = tx % SCREEN_TILES_W;
 	ld	a, b
 	and	a, #0x1f
-;pocket_platformer.c:1029: scr_y = ty;
+;pocket_platformer.c:1033: scr_y = ty;
 	ld	-20 (ix), c
-;pocket_platformer.c:1031: if (e->frame == DISP_GONE_AT) {
+;pocket_platformer.c:1035: if (e->frame == DISP_GONE_AT) {
 	ld	l, -22 (ix)
 	ld	h, -21 (ix)
 	ld	l, (hl)
 ;	spillPairReg hl
-;pocket_platformer.c:1033: SMS_setNextTileatXY(scr_x, scr_y);
+;pocket_platformer.c:1037: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	d, #0x00
 	ld	-19 (ix), a
 	ld	-18 (ix), d
-;pocket_platformer.c:1031: if (e->frame == DISP_GONE_AT) {
+;pocket_platformer.c:1035: if (e->frame == DISP_GONE_AT) {
 	ld	a, e
 	sub	a, #0x28
 	jr	NZ, 00108$
-;pocket_platformer.c:1033: SMS_setNextTileatXY(scr_x, scr_y);
+;pocket_platformer.c:1037: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	l, c
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7456,16 +7498,16 @@ _update_disappearing_blocks:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x08
-;pocket_platformer.c:1034: SMS_setTile(0);
+;pocket_platformer.c:1038: SMS_setTile(0);
 	ld	hl, #0x0000
 	rst	#0x18
 	jp	00110$
 00108$:
-;pocket_platformer.c:1036: else if (e->frame >= DISP_RESET_AT) {
+;pocket_platformer.c:1040: else if (e->frame >= DISP_RESET_AT) {
 	ld	a, l
 	sub	a, #0xc8
 	jp	C, 00110$
-;pocket_platformer.c:1039: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
+;pocket_platformer.c:1043: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
 	ld	l, b
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7502,7 +7544,7 @@ _update_disappearing_blocks:
 	ld	-12 (ix), h
 	ld	-11 (ix), a
 	ld	-10 (ix), c
-;pocket_platformer.c:1040: long ppx = player.x >> 8, ppy = player.y >> 8;
+;pocket_platformer.c:1044: long ppx = player.x >> 8, ppy = player.y >> 8;
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
@@ -7529,7 +7571,7 @@ _update_disappearing_blocks:
 	ld	-4 (ix), d
 	ld	-3 (ix), l
 	ld	-2 (ix), h
-;pocket_platformer.c:1041: unsigned char on_top =
+;pocket_platformer.c:1045: unsigned char on_top =
 	ld	a, -9 (ix)
 	add	a, #0x06
 	ld	c, a
@@ -7633,10 +7675,10 @@ _update_disappearing_blocks:
 	ld	-2 (ix), #0x01
 00131$:
 	ld	a, -2 (ix)
-;pocket_platformer.c:1044: if (!on_top) {
+;pocket_platformer.c:1048: if (!on_top) {
 	or	a, a
 	jp	NZ, 00110$
-;pocket_platformer.c:1045: unsigned char orig_vram = e->is_connected
+;pocket_platformer.c:1049: unsigned char orig_vram = e->is_connected
 	pop	hl
 	push	hl
 	inc	hl
@@ -7665,7 +7707,7 @@ _update_disappearing_blocks:
 	ld	-2 (ix), a
 00139$:
 	ld	c, -2 (ix)
-;pocket_platformer.c:1048: vt = orig_vram ? (unsigned int)(VRAM_BG_BASE + orig_vram - 1) : 0u;
+;pocket_platformer.c:1052: vt = orig_vram ? (unsigned int)(VRAM_BG_BASE + orig_vram - 1) : 0u;
 	ld	a, -2 (ix)
 	or	a, a
 	jr	Z, 00140$
@@ -7682,7 +7724,7 @@ _update_disappearing_blocks:
 	ld	-5 (ix), a
 	ld	a, -2 (ix)
 	ld	-4 (ix), a
-;pocket_platformer.c:1049: SMS_setNextTileatXY(scr_x, scr_y);
+;pocket_platformer.c:1053: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	a, -20 (ix)
 	ld	-3 (ix), a
 	ld	-2 (ix), #0x00
@@ -7715,7 +7757,7 @@ _update_disappearing_blocks:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x08
-;pocket_platformer.c:1050: SMS_setTile(vt);
+;pocket_platformer.c:1054: SMS_setTile(vt);
 	ld	l, -5 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7723,29 +7765,29 @@ _update_disappearing_blocks:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x18
-;pocket_platformer.c:1051: e->frame = 0;
+;pocket_platformer.c:1055: e->frame = 0;
 	pop	bc
 	pop	hl
 	push	hl
 	push	bc
 	ld	(hl), #0x00
 00110$:
-;pocket_platformer.c:1020: for (i = 0; i < MAX_DISP; i++) {
+;pocket_platformer.c:1024: for (i = 0; i < MAX_DISP; i++) {
 	inc	-1 (ix)
 	ld	a, -1 (ix)
 	sub	a, #0x10
 	jp	C, 00125$
-;pocket_platformer.c:1056: if (res_header->fg_disp_vram_idx) {
+;pocket_platformer.c:1060: if (res_header->fg_disp_vram_idx) {
 	ld	hl, (_res_header)
 	ld	de, #0x0025
 	add	hl, de
 	ld	a, (hl)
 	or	a, a
 	jp	Z, 00127$
-;pocket_platformer.c:1058: for (j = 0; j < MAX_FG_DISP; j++) {
+;pocket_platformer.c:1062: for (j = 0; j < MAX_FG_DISP; j++) {
 	ld	-1 (ix), #0x00
 00126$:
-;pocket_platformer.c:1060: fg_disp_entry *e = &fg_disp_blocks[j];
+;pocket_platformer.c:1064: fg_disp_entry *e = &fg_disp_blocks[j];
 	ld	c, -1 (ix)
 	ld	b, #0x00
 	ld	l, c
@@ -7756,7 +7798,7 @@ _update_disappearing_blocks:
 	add	hl, de
 	ld	-3 (ix), l
 	ld	-2 (ix), h
-;pocket_platformer.c:1061: if (!e->frame) continue;
+;pocket_platformer.c:1065: if (!e->frame) continue;
 	ld	a, -3 (ix)
 	add	a, #0x02
 	ld	-22 (ix), a
@@ -7769,14 +7811,14 @@ _update_disappearing_blocks:
 	ld	a, c
 	or	a, a
 	jp	Z, 00121$
-;pocket_platformer.c:1062: e->frame++;
+;pocket_platformer.c:1066: e->frame++;
 	inc	c
 	pop	de
 	pop	hl
 	push	hl
 	push	de
 	ld	(hl), c
-;pocket_platformer.c:1063: tx = e->tx; ty = e->ty;
+;pocket_platformer.c:1067: tx = e->tx; ty = e->ty;
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	e, (hl)
@@ -7789,28 +7831,28 @@ _update_disappearing_blocks:
 	inc	hl
 	ld	a, (hl)
 	ld	-2 (ix), a
-;pocket_platformer.c:1064: scr_x = tx % SCREEN_TILES_W;
+;pocket_platformer.c:1068: scr_x = tx % SCREEN_TILES_W;
 	ld	a, e
 	and	a, #0x1f
-;pocket_platformer.c:1065: scr_y = ty;
+;pocket_platformer.c:1069: scr_y = ty;
 	push	af
 	ld	a, -2 (ix)
 	ld	-20 (ix), a
 	pop	af
-;pocket_platformer.c:1066: if (e->frame == FG_DISP_GONE_AT) {
+;pocket_platformer.c:1070: if (e->frame == FG_DISP_GONE_AT) {
 	ld	l, -22 (ix)
 	ld	h, -21 (ix)
 	ld	l, (hl)
 ;	spillPairReg hl
-;pocket_platformer.c:1068: SMS_setNextTileatXY(scr_x, scr_y);
+;pocket_platformer.c:1072: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	b, #0x00
 	ld	-19 (ix), a
 	ld	-18 (ix), b
-;pocket_platformer.c:1066: if (e->frame == FG_DISP_GONE_AT) {
+;pocket_platformer.c:1070: if (e->frame == FG_DISP_GONE_AT) {
 	ld	a, c
 	sub	a, #0x05
 	jr	NZ, 00119$
-;pocket_platformer.c:1068: SMS_setNextTileatXY(scr_x, scr_y);
+;pocket_platformer.c:1072: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	l, -2 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -7832,16 +7874,16 @@ _update_disappearing_blocks:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x08
-;pocket_platformer.c:1069: SMS_setTile(0);
+;pocket_platformer.c:1073: SMS_setTile(0);
 	ld	hl, #0x0000
 	rst	#0x18
 	jp	00121$
 00119$:
-;pocket_platformer.c:1070: } else if (e->frame >= FG_DISP_RESET_AT) {
+;pocket_platformer.c:1074: } else if (e->frame >= FG_DISP_RESET_AT) {
 	ld	a, l
 	sub	a, #0x78
 	jp	C, 00121$
-;pocket_platformer.c:1072: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
+;pocket_platformer.c:1076: long bx = (long)tx * TILE_SIZE, by = (long)ty * TILE_SIZE;
 	ld	c, e
 	ld	b, #0x00
 	ld	de, #0x0000
@@ -7877,7 +7919,7 @@ _update_disappearing_blocks:
 	rl	-14 (ix)
 	dec	a
 	jr	NZ,00290$
-;pocket_platformer.c:1073: long ppx = player.x >> 8, ppy = player.y >> 8;
+;pocket_platformer.c:1077: long ppx = player.x >> 8, ppy = player.y >> 8;
 	push	de
 	push	bc
 	ld	de, #_player
@@ -7930,7 +7972,7 @@ _update_disappearing_blocks:
 	rr	-9 (ix)
 	dec	a
 	jr	NZ, 00294$
-;pocket_platformer.c:1074: unsigned char overlap =
+;pocket_platformer.c:1078: unsigned char overlap =
 	ld	a, -13 (ix)
 	add	a, #0x06
 	ld	-5 (ix), a
@@ -8033,15 +8075,15 @@ _update_disappearing_blocks:
 00143$:
 	ld	a, #0x01
 00144$:
-;pocket_platformer.c:1077: if (!overlap) {
+;pocket_platformer.c:1081: if (!overlap) {
 	or	a, a
 	jr	NZ, 00121$
-;pocket_platformer.c:1078: unsigned int vt = (unsigned int)(VRAM_BG_BASE + res_header->fg_disp_vram_idx - 1) | TILE_PRIORITY;
+;pocket_platformer.c:1082: unsigned int vt = (unsigned int)(VRAM_BG_BASE + res_header->fg_disp_vram_idx - 1) | TILE_PRIORITY;
 	ld	iy, (_res_header)
 	ld	e, 37 (iy)
 	ld	d, #0x00
 	set	4, d
-;pocket_platformer.c:1079: SMS_setNextTileatXY(scr_x, scr_y);
+;pocket_platformer.c:1083: SMS_setNextTileatXY(scr_x, scr_y);
 	ld	l, -20 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -8063,46 +8105,46 @@ _update_disappearing_blocks:
 ;	spillPairReg hl
 ;	spillPairReg hl
 	rst	#0x08
-;pocket_platformer.c:1080: SMS_setTile(vt);
+;pocket_platformer.c:1084: SMS_setTile(vt);
 	ex	de, hl
 	rst	#0x18
-;pocket_platformer.c:1081: e->frame = 0;
+;pocket_platformer.c:1085: e->frame = 0;
 	pop	bc
 	pop	hl
 	push	hl
 	push	bc
 	ld	(hl), #0x00
 00121$:
-;pocket_platformer.c:1058: for (j = 0; j < MAX_FG_DISP; j++) {
+;pocket_platformer.c:1062: for (j = 0; j < MAX_FG_DISP; j++) {
 	inc	-1 (ix)
 	ld	a, -1 (ix)
 	sub	a, #0x10
 	jp	C, 00126$
 00127$:
-;pocket_platformer.c:1086: }
+;pocket_platformer.c:1090: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:1093: static void update_camera(void) {
+;pocket_platformer.c:1097: static void update_camera(void) {
 ;	---------------------------------
 ; Function update_camera
 ; ---------------------------------
 _update_camera:
-;pocket_platformer.c:1095: camera_x = 0;
+;pocket_platformer.c:1099: camera_x = 0;
 	ld	hl, #0x0000
 	ld	(_camera_x), hl
-;pocket_platformer.c:1096: SMS_setBGScrollX(0);
+;pocket_platformer.c:1100: SMS_setBGScrollX(0);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
-;pocket_platformer.c:1097: }
+;pocket_platformer.c:1101: }
 	jp	_SMS_setBGScrollX
-;pocket_platformer.c:1102: static void update_anim(void) {
+;pocket_platformer.c:1106: static void update_anim(void) {
 ;	---------------------------------
 ; Function update_anim
 ; ---------------------------------
 _update_anim:
-;pocket_platformer.c:1103: if (player.anim_timer) { player.anim_timer--; }
+;pocket_platformer.c:1107: if (player.anim_timer) { player.anim_timer--; }
 	ld	hl, #_player + 26
 	ld	a, (hl)
 	or	a, a
@@ -8111,16 +8153,16 @@ _update_anim:
 	ld	(hl), a
 	ret
 00102$:
-;pocket_platformer.c:1104: else { player.anim_timer = 5; player.anim_frame = (player.anim_frame + 1) & 3; }
+;pocket_platformer.c:1108: else { player.anim_timer = 5; player.anim_frame = (player.anim_frame + 1) & 3; }
 	ld	(hl), #0x05
 	ld	bc, #_player + 25
 	ld	a, (bc)
 	inc	a
 	and	a, #0x03
 	ld	(bc), a
-;pocket_platformer.c:1105: }
+;pocket_platformer.c:1109: }
 	ret
-;pocket_platformer.c:1107: static void load_level(unsigned char n) {
+;pocket_platformer.c:1111: static void load_level(unsigned char n) {
 ;	---------------------------------
 ; Function load_level
 ; ---------------------------------
@@ -8132,19 +8174,19 @@ _load_level:
 	add	hl, sp
 	ld	sp, hl
 	ld	c, a
-;pocket_platformer.c:1109: map_res_bank();
+;pocket_platformer.c:1113: map_res_bank();
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
 	ld	(hl), #0x02
-;pocket_platformer.c:1110: cur_level   = get_level(n);
+;pocket_platformer.c:1114: cur_level   = get_level(n);
 	ld	a, c
 	call	_get_level
 	ld	(_cur_level), de
-;pocket_platformer.c:1111: cur_map     = (unsigned char *)cur_level + sizeof(level_header);
+;pocket_platformer.c:1115: cur_map     = (unsigned char *)cur_level + sizeof(level_header);
 	ld	bc, (_cur_level)
 	ld	hl, #0x0004
 	add	hl, bc
 	ld	(_cur_map), hl
-;pocket_platformer.c:1113: (unsigned int)cur_level->map_w * cur_level->map_h);
+;pocket_platformer.c:1117: (unsigned int)cur_level->map_w * cur_level->map_h);
 	ld	hl, (_cur_level)
 	ld	c, (hl)
 	inc	hl
@@ -8161,7 +8203,7 @@ _load_level:
 	ld	hl, (_cur_map)
 	add	hl, de
 	ld	(_cur_objects), hl
-;pocket_platformer.c:1115: for (i = 0; i < MAX_OBJECTS; i++) coin_collected[i] = 0;
+;pocket_platformer.c:1119: for (i = 0; i < MAX_OBJECTS; i++) coin_collected[i] = 0;
 	ld	c, #0x00
 00118$:
 	ld	hl, #_coin_collected
@@ -8172,7 +8214,7 @@ _load_level:
 	ld	a, c
 	sub	a, #0x80
 	jr	C, 00118$
-;pocket_platformer.c:1116: for (i = 0; i < MAX_DISP; i++) disp_blocks[i].frame = 0;
+;pocket_platformer.c:1120: for (i = 0; i < MAX_DISP; i++) disp_blocks[i].frame = 0;
 	ld	bc, #_disp_blocks+0
 	ld	e, #0x00
 00120$:
@@ -8192,28 +8234,28 @@ _load_level:
 	ld	a, e
 	sub	a, #0x10
 	jr	C, 00120$
-;pocket_platformer.c:1119: rb_block_count  = 0;
+;pocket_platformer.c:1123: rb_block_count  = 0;
 	ld	hl, #_rb_block_count
 	ld	(hl), #0x00
-;pocket_platformer.c:1120: rb_switch_count = 0;
+;pocket_platformer.c:1124: rb_switch_count = 0;
 	ld	hl, #_rb_switch_count
 	ld	(hl), #0x00
-;pocket_platformer.c:1121: rb_red_active   = 1;   /* red starts solid per pocket-platformer default */
+;pocket_platformer.c:1125: rb_red_active   = 1;   /* red starts solid per pocket-platformer default */
 	ld	hl, #_rb_red_active
 	ld	(hl), #0x01
-;pocket_platformer.c:1122: rb_switch_locked = 0;
+;pocket_platformer.c:1126: rb_switch_locked = 0;
 	ld	hl, #_rb_switch_locked
 	ld	(hl), #0x00
-;pocket_platformer.c:1124: vp_block_count  = 0;
+;pocket_platformer.c:1128: vp_block_count  = 0;
 	ld	hl, #_vp_block_count
 	ld	(hl), #0x00
-;pocket_platformer.c:1125: vp_violet_active = 0;  /* state = "violet turn" (violet passable, pink solid) */
+;pocket_platformer.c:1129: vp_violet_active = 0;  /* state = "violet turn" (violet passable, pink solid) */
 	ld	hl, #_vp_violet_active
 	ld	(hl), #0x00
-;pocket_platformer.c:1126: map_res_bank();
+;pocket_platformer.c:1130: map_res_bank();
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
 	ld	(hl), #0x02
-;pocket_platformer.c:1127: for (i = 0; i < cur_level->obj_count; i++) {
+;pocket_platformer.c:1131: for (i = 0; i < cur_level->obj_count; i++) {
 	ld	-1 (ix), #0x00
 00123$:
 	ld	hl, (_cur_level)
@@ -8223,7 +8265,7 @@ _load_level:
 	ld	a, -1 (ix)
 	sub	a, c
 	jp	NC, 00114$
-;pocket_platformer.c:1128: level_object *obj = &cur_objects[i];
+;pocket_platformer.c:1132: level_object *obj = &cur_objects[i];
 	ld	c, -1 (ix)
 	ld	b, #0x00
 	ld	l, c
@@ -8234,7 +8276,7 @@ _load_level:
 	ld	hl, (_cur_objects)
 	add	hl, de
 	ex	(sp), hl
-;pocket_platformer.c:1129: if ((obj->type == 7 || obj->type == 8) && rb_block_count < MAX_RB_BLOCKS) {
+;pocket_platformer.c:1133: if ((obj->type == 7 || obj->type == 8) && rb_block_count < MAX_RB_BLOCKS) {
 	ld	a, -9 (ix)
 	add	a, #0x02
 	ld	-3 (ix), a
@@ -8244,14 +8286,14 @@ _load_level:
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	c, (hl)
-;pocket_platformer.c:1131: rb_blocks[rb_block_count].ty     = obj->y;
+;pocket_platformer.c:1135: rb_blocks[rb_block_count].ty     = obj->y;
 	ld	a, -9 (ix)
 	add	a, #0x01
 	ld	-7 (ix), a
 	ld	a, -8 (ix)
 	adc	a, #0x00
 	ld	-6 (ix), a
-;pocket_platformer.c:1129: if ((obj->type == 7 || obj->type == 8) && rb_block_count < MAX_RB_BLOCKS) {
+;pocket_platformer.c:1133: if ((obj->type == 7 || obj->type == 8) && rb_block_count < MAX_RB_BLOCKS) {
 	ld	a,c
 	cp	a,#0x07
 	jr	Z, 00106$
@@ -8261,7 +8303,7 @@ _load_level:
 	ld	a, (_rb_block_count+0)
 	sub	a, #0x30
 	jr	NC, 00104$
-;pocket_platformer.c:1130: rb_blocks[rb_block_count].tx     = obj->x;
+;pocket_platformer.c:1134: rb_blocks[rb_block_count].tx     = obj->x;
 	ld	bc, (_rb_block_count)
 	ld	b, #0x00
 	ld	l, c
@@ -8276,7 +8318,7 @@ _load_level:
 	push	hl
 	ld	a, (hl)
 	ld	(de), a
-;pocket_platformer.c:1131: rb_blocks[rb_block_count].ty     = obj->y;
+;pocket_platformer.c:1135: rb_blocks[rb_block_count].ty     = obj->y;
 	ld	bc, (_rb_block_count)
 	ld	b, #0x00
 	ld	l, c
@@ -8291,7 +8333,7 @@ _load_level:
 	ld	h, -6 (ix)
 	ld	a, (hl)
 	ld	(de), a
-;pocket_platformer.c:1132: rb_blocks[rb_block_count].is_red = (obj->type == 7);
+;pocket_platformer.c:1136: rb_blocks[rb_block_count].is_red = (obj->type == 7);
 	ld	bc, (_rb_block_count)
 	ld	b, #0x00
 	ld	l, c
@@ -8312,11 +8354,11 @@ _load_level:
 	xor	a, a
 00212$:
 	ld	(de), a
-;pocket_platformer.c:1133: rb_block_count++;
+;pocket_platformer.c:1137: rb_block_count++;
 	ld	hl, #_rb_block_count
 	inc	(hl)
 00104$:
-;pocket_platformer.c:1135: if ((obj->type == 10 || obj->type == 11) && vp_block_count < MAX_VP_BLOCKS) {
+;pocket_platformer.c:1139: if ((obj->type == 10 || obj->type == 11) && vp_block_count < MAX_VP_BLOCKS) {
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	a, (hl)
@@ -8328,7 +8370,7 @@ _load_level:
 	ld	a, (_vp_block_count+0)
 	sub	a, #0x30
 	jr	NC, 00108$
-;pocket_platformer.c:1136: vp_blocks[vp_block_count].tx        = obj->x;
+;pocket_platformer.c:1140: vp_blocks[vp_block_count].tx        = obj->x;
 	ld	bc, (_vp_block_count)
 	ld	b, #0x00
 	ld	l, c
@@ -8343,7 +8385,7 @@ _load_level:
 	push	hl
 	ld	a, (hl)
 	ld	(de), a
-;pocket_platformer.c:1137: vp_blocks[vp_block_count].ty        = obj->y;
+;pocket_platformer.c:1141: vp_blocks[vp_block_count].ty        = obj->y;
 	ld	bc, (_vp_block_count)
 	ld	b, #0x00
 	ld	l, c
@@ -8358,7 +8400,7 @@ _load_level:
 	ld	h, -6 (ix)
 	ld	a, (hl)
 	ld	(de), a
-;pocket_platformer.c:1138: vp_blocks[vp_block_count].is_violet = (obj->type == 10);
+;pocket_platformer.c:1142: vp_blocks[vp_block_count].is_violet = (obj->type == 10);
 	ld	bc, (_vp_block_count)
 	ld	b, #0x00
 	ld	l, c
@@ -8379,11 +8421,11 @@ _load_level:
 	xor	a, a
 00217$:
 	ld	(de), a
-;pocket_platformer.c:1139: vp_block_count++;
+;pocket_platformer.c:1143: vp_block_count++;
 	ld	hl, #_vp_block_count
 	inc	(hl)
 00108$:
-;pocket_platformer.c:1141: if (obj->type == 9 && rb_switch_count < MAX_RB_SWITCHES) {
+;pocket_platformer.c:1145: if (obj->type == 9 && rb_switch_count < MAX_RB_SWITCHES) {
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	a, (hl)
@@ -8392,7 +8434,7 @@ _load_level:
 	ld	a, (_rb_switch_count+0)
 	sub	a, #0x08
 	jr	NC, 00124$
-;pocket_platformer.c:1142: rb_switches[rb_switch_count].tx = obj->x;
+;pocket_platformer.c:1146: rb_switches[rb_switch_count].tx = obj->x;
 	ld	a, (_rb_switch_count+0)
 	ld	-3 (ix), a
 	ld	-2 (ix), #0x00
@@ -8414,7 +8456,7 @@ _load_level:
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	(hl), a
-;pocket_platformer.c:1143: rb_switches[rb_switch_count].ty = obj->y;
+;pocket_platformer.c:1147: rb_switches[rb_switch_count].ty = obj->y;
 	ld	a, (_rb_switch_count+0)
 	ld	-3 (ix), a
 	ld	-2 (ix), #0x00
@@ -8438,53 +8480,53 @@ _load_level:
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	(hl), a
-;pocket_platformer.c:1144: rb_switch_count++;
+;pocket_platformer.c:1148: rb_switch_count++;
 	ld	hl, #_rb_switch_count
 	inc	(hl)
 00124$:
-;pocket_platformer.c:1127: for (i = 0; i < cur_level->obj_count; i++) {
+;pocket_platformer.c:1131: for (i = 0; i < cur_level->obj_count; i++) {
 	inc	-1 (ix)
 	jp	00123$
 00114$:
-;pocket_platformer.c:1147: level_complete = player_died = 0;
+;pocket_platformer.c:1151: level_complete = player_died = 0;
 	ld	hl, #_player_died
 	ld	(hl), #0x00
 	ld	hl, #_level_complete
 	ld	(hl), #0x00
-;pocket_platformer.c:1148: camera_x = prev_cam_x = 0;
+;pocket_platformer.c:1152: camera_x = prev_cam_x = 0;
 	ld	hl, #0x0000
 	ld	(_prev_cam_x), hl
 	ld	(_camera_x), hl
-;pocket_platformer.c:1151: player.x  = FP(2 * TILE_SIZE);
+;pocket_platformer.c:1155: player.x  = FP(2 * TILE_SIZE);
 	ld	h, #0x10
 	ld	(_player), hl
 	ld	h, l
 	ld	(_player+2), hl
-;pocket_platformer.c:1152: player.y  = FP(4 * TILE_SIZE);
+;pocket_platformer.c:1156: player.y  = FP(4 * TILE_SIZE);
 	ld	de, #_player+0
 	ld	h, #0x20
 	ld	((_player + 4)), hl
 	ld	h, l
 	ld	((_player + 4)+2), hl
-;pocket_platformer.c:1153: player.vx = player.vy = 0;
+;pocket_platformer.c:1157: player.vx = player.vy = 0;
 	ld	((_player + 12)), hl
 	ld	((_player + 12)+2), hl
 	ld	((_player + 8)), hl
 	ld	((_player + 8)+2), hl
-;pocket_platformer.c:1154: player.on_ground = player.jump_frames = player.double_jump_used = 0;
+;pocket_platformer.c:1158: player.on_ground = player.jump_frames = player.double_jump_used = 0;
 	ld	hl, #(_player + 24)
 	ld	(hl), #0x00
 	ld	hl, #(_player + 22)
 	ld	(hl), #0x00
 	ld	hl, #(_player + 16)
 	ld	(hl), #0x00
-;pocket_platformer.c:1155: treadmill_bonus = 0;
+;pocket_platformer.c:1159: treadmill_bonus = 0;
 	xor	a, a
 	ld	(_treadmill_bonus+0), a
 	ld	(_treadmill_bonus+1), a
 	ld	(_treadmill_bonus+2), a
 	ld	(_treadmill_bonus+3), a
-;pocket_platformer.c:1156: player.falling = 1; player.jumping = 0; player.wall_jumping = 0; player.wall_push_frames = 0;
+;pocket_platformer.c:1160: player.falling = 1; player.jumping = 0; player.wall_jumping = 0; player.wall_push_frames = 0;
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x01
 	ld	hl, #(_player + 18)
@@ -8493,14 +8535,14 @@ _load_level:
 	ld	(hl), #0x00
 	ld	hl, #(_player + 21)
 	ld	(hl), #0x00
-;pocket_platformer.c:1157: player.facing_left = player.anim_frame = player.anim_timer = 0;
+;pocket_platformer.c:1161: player.facing_left = player.anim_frame = player.anim_timer = 0;
 	ld	hl, #(_player + 26)
 	ld	(hl), #0x00
 	ld	hl, #(_player + 25)
 	ld	(hl), #0x00
 	ld	hl, #(_player + 23)
 	ld	(hl), #0x00
-;pocket_platformer.c:1159: for (i = 0; i < cur_level->obj_count; i++) {
+;pocket_platformer.c:1163: for (i = 0; i < cur_level->obj_count; i++) {
 	ld	-1 (ix), #0x00
 00126$:
 	ld	hl, (_cur_level)
@@ -8509,7 +8551,7 @@ _load_level:
 	ld	a,-1 (ix)
 	sub	a,(hl)
 	jp	NC, 00117$
-;pocket_platformer.c:1160: if (cur_objects[i].type == OBJ_START_FLAG) {
+;pocket_platformer.c:1164: if (cur_objects[i].type == OBJ_START_FLAG) {
 	ld	c, -1 (ix)
 	ld	b, #0x00
 	ld	l, c
@@ -8535,7 +8577,7 @@ _load_level:
 	ld	a, (hl)
 	dec	a
 	jr	NZ, 00127$
-;pocket_platformer.c:1161: player.x = (long)cur_objects[i].x * TILE_SIZE * FP_ONE;
+;pocket_platformer.c:1165: player.x = (long)cur_objects[i].x * TILE_SIZE * FP_ONE;
 	ld	l, -3 (ix)
 	ld	h, -2 (ix)
 	ld	a, (hl)
@@ -8558,7 +8600,7 @@ _load_level:
 	ld	bc, #0x0004
 	ldir
 	pop	bc
-;pocket_platformer.c:1163: player.y = (long)(cur_objects[i].y - 1) * TILE_SIZE * FP_ONE;
+;pocket_platformer.c:1167: player.y = (long)(cur_objects[i].y - 1) * TILE_SIZE * FP_ONE;
 	ld	hl, (_cur_objects)
 	add	hl, bc
 	inc	hl
@@ -8581,47 +8623,47 @@ _load_level:
 	jr	NZ,00226$
 	ld	((_player + 4)), bc
 	ld	((_player + 4)+2), de
-;pocket_platformer.c:1164: break;
+;pocket_platformer.c:1168: break;
 	jr	00117$
 00127$:
-;pocket_platformer.c:1159: for (i = 0; i < cur_level->obj_count; i++) {
+;pocket_platformer.c:1163: for (i = 0; i < cur_level->obj_count; i++) {
 	inc	-1 (ix)
 	jp	00126$
 00117$:
-;pocket_platformer.c:1168: SMS_waitForVBlank();
+;pocket_platformer.c:1172: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
-;pocket_platformer.c:1169: SMS_displayOff();
+;pocket_platformer.c:1173: SMS_displayOff();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOffFeature
-;pocket_platformer.c:1170: SMS_VRAMmemsetW(0x3800, 0, 0x700);
+;pocket_platformer.c:1174: SMS_VRAMmemsetW(0x3800, 0, 0x700);
 	ld	hl, #0x0700
 	push	hl
 	ld	de, #0x0000
 	ld	h, #0x38
 	call	_SMS_VRAMmemsetW
-;pocket_platformer.c:1171: draw_tilemap_full();
+;pocket_platformer.c:1175: draw_tilemap_full();
 	call	_draw_tilemap_full
-;pocket_platformer.c:1172: SMS_displayOn();
+;pocket_platformer.c:1176: SMS_displayOn();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOnFeature
-;pocket_platformer.c:1173: }
+;pocket_platformer.c:1177: }
 	ld	sp, ix
 	pop	ix
 	ret
-;pocket_platformer.c:1175: static void death_sequence(unsigned char n) {
+;pocket_platformer.c:1179: static void death_sequence(unsigned char n) {
 ;	---------------------------------
 ; Function death_sequence
 ; ---------------------------------
 _death_sequence:
 	ld	c, a
-;pocket_platformer.c:1177: for (i = 0; i < 8; i++) {
+;pocket_platformer.c:1181: for (i = 0; i < 8; i++) {
 	ld	b, #0x00
 00102$:
-;pocket_platformer.c:1178: SMS_waitForVBlank();
+;pocket_platformer.c:1182: SMS_waitForVBlank();
 	push	bc
 	call	_SMS_waitForVBlank
 	pop	bc
-;pocket_platformer.c:1179: SMS_setBackdropColor(i & 1 ? 0x3F : 0);
+;pocket_platformer.c:1183: SMS_setBackdropColor(i & 1 ? 0x3F : 0);
 	bit	0, b
 	jr	Z, 00106$
 	ld	hl, #0x003f
@@ -8632,23 +8674,23 @@ _death_sequence:
 	push	bc
 	call	_SMS_setBackdropColor
 	pop	bc
-;pocket_platformer.c:1177: for (i = 0; i < 8; i++) {
+;pocket_platformer.c:1181: for (i = 0; i < 8; i++) {
 	inc	b
 	ld	a, b
 	sub	a, #0x08
 	jr	C, 00102$
-;pocket_platformer.c:1181: SMS_setBackdropColor(0);
+;pocket_platformer.c:1185: SMS_setBackdropColor(0);
 	push	bc
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_setBackdropColor
 	pop	bc
-;pocket_platformer.c:1182: load_level(n);
+;pocket_platformer.c:1186: load_level(n);
 	ld	a, c
-;pocket_platformer.c:1183: }
+;pocket_platformer.c:1187: }
 	jp	_load_level
-;pocket_platformer.c:1188: static void gameplay_loop(void) {
+;pocket_platformer.c:1192: static void gameplay_loop(void) {
 ;	---------------------------------
 ; Function gameplay_loop
 ; ---------------------------------
@@ -8659,36 +8701,36 @@ _gameplay_loop:
 	ld	hl, #-5
 	add	hl, sp
 	ld	sp, hl
-;pocket_platformer.c:1189: unsigned int joy = 0, joy_prev = 0, joy_pressed;
+;pocket_platformer.c:1193: unsigned int joy = 0, joy_prev = 0, joy_pressed;
 	ld	hl, #0x0000
 	ex	(sp), hl
-;pocket_platformer.c:1190: unsigned char level_n = 0, total;
+;pocket_platformer.c:1194: unsigned char level_n = 0, total;
 	ld	-1 (ix), #0x00
-;pocket_platformer.c:1192: map_res_bank();
+;pocket_platformer.c:1196: map_res_bank();
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
 	ld	(hl), #0x02
-;pocket_platformer.c:1193: total = res_header->level_count;
+;pocket_platformer.c:1197: total = res_header->level_count;
 	ld	iy, (_res_header)
 	ld	a, 4 (iy)
 	ld	-3 (ix), a
-;pocket_platformer.c:1194: load_level(0);
+;pocket_platformer.c:1198: load_level(0);
 	xor	a, a
 	call	_load_level
-;pocket_platformer.c:1196: while (1) {
+;pocket_platformer.c:1200: while (1) {
 00112$:
-;pocket_platformer.c:1197: SMS_waitForVBlank();
+;pocket_platformer.c:1201: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
-;pocket_platformer.c:1198: joy_prev    = joy;
+;pocket_platformer.c:1202: joy_prev    = joy;
 	pop	bc
 	push	bc
-;pocket_platformer.c:1199: joy         = SMS_getKeysStatus();
+;pocket_platformer.c:1203: joy         = SMS_getKeysStatus();
 	push	bc
 	call	_SMS_getKeysStatus
 	pop	bc
 	inc	sp
 	inc	sp
 	push	de
-;pocket_platformer.c:1200: joy_pressed = joy & ~joy_prev;
+;pocket_platformer.c:1204: joy_pressed = joy & ~joy_prev;
 	ld	a, c
 	cpl
 	ld	c, a
@@ -8701,7 +8743,7 @@ _gameplay_loop:
 	ld	a, -4 (ix)
 	and	a, b
 	ld	d, a
-;pocket_platformer.c:1202: prev_player_y = player.y;
+;pocket_platformer.c:1206: prev_player_y = player.y;
 	ld	hl, #_player + 4
 	ld	a, (hl)
 	inc	hl
@@ -8714,11 +8756,11 @@ _gameplay_loop:
 	ld	(_prev_player_y+2), a
 	ld	a, (hl)
 	ld	(_prev_player_y+3), a
-;pocket_platformer.c:1203: handle_input(joy, joy_pressed);
+;pocket_platformer.c:1207: handle_input(joy, joy_pressed);
 	pop	hl
 	push	hl
 	call	_handle_input
-;pocket_platformer.c:1205: if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
+;pocket_platformer.c:1209: if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
 	ld	bc, #_player + 16
 	ld	a, (bc)
 	or	a, a
@@ -8732,51 +8774,51 @@ _gameplay_loop:
 	ld	hl, #(_player + 17)
 	ld	(hl), #0x01
 00102$:
-;pocket_platformer.c:1206: player.on_ground = 0;
+;pocket_platformer.c:1210: player.on_ground = 0;
 	xor	a, a
 	ld	(bc), a
-;pocket_platformer.c:1207: apply_gravity();
+;pocket_platformer.c:1211: apply_gravity();
 	call	_apply_gravity
-;pocket_platformer.c:1208: apply_treadmill();
+;pocket_platformer.c:1212: apply_treadmill();
 	call	_apply_treadmill
-;pocket_platformer.c:1209: move_player_x();
+;pocket_platformer.c:1213: move_player_x();
 	call	_move_player_x
-;pocket_platformer.c:1210: move_player_y();
+;pocket_platformer.c:1214: move_player_y();
 	call	_move_player_y
-;pocket_platformer.c:1211: check_object_collisions();
+;pocket_platformer.c:1215: check_object_collisions();
 	call	_check_object_collisions
-;pocket_platformer.c:1212: check_rb_switch();
+;pocket_platformer.c:1216: check_rb_switch();
 	call	_check_rb_switch
-;pocket_platformer.c:1213: update_disappearing_blocks();
+;pocket_platformer.c:1217: update_disappearing_blocks();
 	call	_update_disappearing_blocks
-;pocket_platformer.c:1214: update_camera();
+;pocket_platformer.c:1218: update_camera();
 	call	_update_camera
-;pocket_platformer.c:1215: update_anim();
+;pocket_platformer.c:1219: update_anim();
 	call	_update_anim
-;pocket_platformer.c:1217: SMS_initSprites();
+;pocket_platformer.c:1221: SMS_initSprites();
 	call	_SMS_initSprites
-;pocket_platformer.c:1218: draw_objects();
+;pocket_platformer.c:1222: draw_objects();
 	call	_draw_objects
-;pocket_platformer.c:1219: draw_player();
+;pocket_platformer.c:1223: draw_player();
 	call	_draw_player
-;pocket_platformer.c:1220: SMS_finalizeSprites();
+;pocket_platformer.c:1224: SMS_finalizeSprites();
 	call	_SMS_finalizeSprites
-;pocket_platformer.c:1221: SMS_copySpritestoSAT();
+;pocket_platformer.c:1225: SMS_copySpritestoSAT();
 	call	_SMS_copySpritestoSAT
-;pocket_platformer.c:1223: if (player_died) {
+;pocket_platformer.c:1227: if (player_died) {
 	ld	a, (_player_died+0)
 	or	a, a
 	jr	Z, 00109$
-;pocket_platformer.c:1224: death_sequence(level_n);
+;pocket_platformer.c:1228: death_sequence(level_n);
 	ld	a, -1 (ix)
 	call	_death_sequence
 	jp	00112$
 00109$:
-;pocket_platformer.c:1225: } else if (level_complete) {
+;pocket_platformer.c:1229: } else if (level_complete) {
 	ld	a, (_level_complete+0)
 	or	a, a
 	jp	Z, 00112$
-;pocket_platformer.c:1227: for (i = 0; i < 60; i++) SMS_waitForVBlank();
+;pocket_platformer.c:1231: for (i = 0; i < 60; i++) SMS_waitForVBlank();
 	ld	c, #0x3c
 00116$:
 	push	bc
@@ -8784,7 +8826,7 @@ _gameplay_loop:
 	pop	bc
 	dec	c
 	jr	NZ, 00116$
-;pocket_platformer.c:1228: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
+;pocket_platformer.c:1232: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
 	ld	c, -1 (ix)
 	ld	b, #0x00
 	inc	bc
@@ -8811,38 +8853,38 @@ _gameplay_loop:
 	ld	-1 (ix), a
 00120$:
 	ld	a, -2 (ix)
-;pocket_platformer.c:1229: load_level(level_n);
+;pocket_platformer.c:1233: load_level(level_n);
 	ld	-1 (ix), a
 	call	_load_level
-;pocket_platformer.c:1232: }
+;pocket_platformer.c:1236: }
 	jp	00112$
-;pocket_platformer.c:1237: static void title_screen(void) {
+;pocket_platformer.c:1241: static void title_screen(void) {
 ;	---------------------------------
 ; Function title_screen
 ; ---------------------------------
 _title_screen:
-;pocket_platformer.c:1239: SMS_waitForVBlank();
+;pocket_platformer.c:1243: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
-;pocket_platformer.c:1240: SMS_displayOff();
+;pocket_platformer.c:1244: SMS_displayOff();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOffFeature
-;pocket_platformer.c:1241: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+;pocket_platformer.c:1245: SMS_VRAMmemsetW(0, 0, 16 * 1024);
 	ld	hl, #0x4000
 	push	hl
 	ld	de, #0x0000
 	ld	h, l
 	call	_SMS_VRAMmemsetW
-;pocket_platformer.c:1242: SMS_zeroBGPalette();
+;pocket_platformer.c:1246: SMS_zeroBGPalette();
 	call	_SMS_zeroBGPalette
-;pocket_platformer.c:1243: SMS_zeroSpritePalette();
+;pocket_platformer.c:1247: SMS_zeroSpritePalette();
 	call	_SMS_zeroSpritePalette
-;pocket_platformer.c:1244: SMS_setBGPaletteColor(1, 0x3F);
+;pocket_platformer.c:1248: SMS_setBGPaletteColor(1, 0x3F);
 	ld	l, #0x3f
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ld	a, #0x01
 	call	_SMS_setBGPaletteColor
-;pocket_platformer.c:1245: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
+;pocket_platformer.c:1249: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
 	ld	hl, #0x100
 	push	hl
 	ld	hl, (_font_1bpp_size)
@@ -8850,44 +8892,44 @@ _title_screen:
 	ld	de, #0x0160
 	ld	hl, #_font_1bpp
 	call	_SMS_load1bppTiles
-;pocket_platformer.c:1246: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
+;pocket_platformer.c:1250: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 	ld	hl, #0x0140
 	call	_SMS_configureTextRenderer
-;pocket_platformer.c:1247: SMS_displayOn();
+;pocket_platformer.c:1251: SMS_displayOn();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOnFeature
-;pocket_platformer.c:1248: SMS_printatXY(4,  8, "POCKET PLATFORMER");
+;pocket_platformer.c:1252: SMS_printatXY(4,  8, "POCKET PLATFORMER");
 	ld	hl, #0x7a08
 	rst	#0x08
 	ld	hl, #___str_0
 	call	_SMS_print
-;pocket_platformer.c:1249: SMS_printatXY(3, 10, "for Sega Master System");
+;pocket_platformer.c:1253: SMS_printatXY(3, 10, "for Sega Master System");
 	ld	hl, #0x7a86
 	rst	#0x08
 	ld	hl, #___str_1
 	call	_SMS_print
-;pocket_platformer.c:1250: SMS_printatXY(4, 14, "Press 1 to start");
+;pocket_platformer.c:1254: SMS_printatXY(4, 14, "Press 1 to start");
 	ld	hl, #0x7b88
 	rst	#0x08
 	ld	hl, #___str_2
 	call	_SMS_print
-;pocket_platformer.c:1251: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+;pocket_platformer.c:1255: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
 00110$:
 	call	_SMS_waitForVBlank
 	call	_SMS_getKeysStatus
 	ld	a, e
-;pocket_platformer.c:1252: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
+;pocket_platformer.c:1256: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
 	and	a, #0x30
 	jr	Z, 00110$
-;pocket_platformer.c:1253: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+;pocket_platformer.c:1257: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
 00113$:
 	call	_SMS_waitForVBlank
 	call	_SMS_getKeysStatus
 	ld	a, e
-;pocket_platformer.c:1254: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
+;pocket_platformer.c:1258: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
 	and	a, #0x30
 	jr	NZ, 00113$
-;pocket_platformer.c:1255: }
+;pocket_platformer.c:1259: }
 	ret
 ___str_0:
 	.ascii "POCKET PLATFORMER"
@@ -8898,55 +8940,55 @@ ___str_1:
 ___str_2:
 	.ascii "Press 1 to start"
 	.db 0x00
-;pocket_platformer.c:1260: void main(void) {
+;pocket_platformer.c:1264: void main(void) {
 ;	---------------------------------
 ; Function main
 ; ---------------------------------
 _main::
-;pocket_platformer.c:1262: SMS_useFirstHalfTilesforSprites(0);
+;pocket_platformer.c:1266: SMS_useFirstHalfTilesforSprites(0);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_useFirstHalfTilesforSprites
-;pocket_platformer.c:1263: SMS_setSpriteMode(SPRITEMODE_NORMAL);
+;pocket_platformer.c:1267: SMS_setSpriteMode(SPRITEMODE_NORMAL);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_setSpriteMode
-;pocket_platformer.c:1264: SMS_setBackdropColor(0);
+;pocket_platformer.c:1268: SMS_setBackdropColor(0);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_setBackdropColor
-;pocket_platformer.c:1266: while (1) {
+;pocket_platformer.c:1270: while (1) {
 00104$:
-;pocket_platformer.c:1267: title_screen();
+;pocket_platformer.c:1271: title_screen();
 	call	_title_screen
-;pocket_platformer.c:1268: if (!has_resource()) continue;
+;pocket_platformer.c:1272: if (!has_resource()) continue;
 	call	_has_resource
 	or	a, a
 	jr	Z, 00104$
-;pocket_platformer.c:1269: init_resources();
+;pocket_platformer.c:1273: init_resources();
 	call	_init_resources
-;pocket_platformer.c:1270: SMS_waitForVBlank();
+;pocket_platformer.c:1274: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
-;pocket_platformer.c:1271: SMS_displayOff();
+;pocket_platformer.c:1275: SMS_displayOff();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOffFeature
-;pocket_platformer.c:1272: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+;pocket_platformer.c:1276: SMS_VRAMmemsetW(0, 0, 16 * 1024);
 	ld	hl, #0x4000
 	push	hl
 	ld	de, #0x0000
 	ld	h, l
 	call	_SMS_VRAMmemsetW
-;pocket_platformer.c:1273: load_graphics();
+;pocket_platformer.c:1277: load_graphics();
 	call	_load_graphics
-;pocket_platformer.c:1274: SMS_displayOn();
+;pocket_platformer.c:1278: SMS_displayOn();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOnFeature
-;pocket_platformer.c:1275: gameplay_loop();
+;pocket_platformer.c:1279: gameplay_loop();
 	call	_gameplay_loop
-;pocket_platformer.c:1277: }
+;pocket_platformer.c:1281: }
 	jr	00104$
 	.area _CODE
 __str_3:
@@ -8961,6 +9003,8 @@ __str_5:
 	.area _INITIALIZER
 __xinit__treadmill_bonus:
 	.byte #0x00, #0x00, #0x00, #0x00	;  0
+__xinit__treadmill_active:
+	.db #0x00	; 0
 	.area _CABS (ABS)
 	.org 0x7FF0
 ___SMS__SEGA_signature:

@@ -43,33 +43,34 @@ Symbol Table
   D ___SMS__SDSC_signature                                         007FE0 GR
   9 ___SMS__SEGA_signature                                         007FF0 GR
     ___mulsint2slong                                               ****** GX
-  0 ___str_0                                                       003AE0 R
-  0 ___str_1                                                       003AF2 R
-  0 ___str_2                                                       003B09 R
+  0 ___str_0                                                       003B15 R
+  0 ___str_1                                                       003B27 R
+  0 ___str_2                                                       003B3E R
     __divslong                                                     ****** GX
     __mulint                                                       ****** GX
     __mullong                                                      ****** GX
-  0 __str_3                                                        003B57 R
-  0 __str_4                                                        003B6D R
-  0 __str_5                                                        003B8A R
+  0 __str_3                                                        003B8C R
+  0 __str_4                                                        003BA2 R
+  0 __str_5                                                        003BBF R
+  7 __xinit__treadmill_active                                      000004 R
   7 __xinit__treadmill_bonus                                       000000 R
-  0 _apply_gravity                                                 00121A R
+  0 _apply_gravity                                                 00124F R
   0 _apply_treadmill                                               000D72 R
   1 _camera_x                                                      00002C R
-  0 _check_disp_touch                                              002C74 R
-  0 _check_object_collisions                                       002559 R
+  0 _check_disp_touch                                              002CA9 R
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 2.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-  0 _check_rb_switch                                               002C53 R
+  0 _check_object_collisions                                       00258E R
+  0 _check_rb_switch                                               002C88 R
   1 _coin_collected                                                000030 R
   0 _coins_remaining                                               000AE8 R
   1 _cur_level                                                     00025C R
   1 _cur_map                                                       00025E R
   1 _cur_objects                                                   000260 R
-  0 _death_sequence                                                003945 R
+  0 _death_sequence                                                00397A R
   1 _disp_blocks                                                   0001EC R
   0 _disp_find                                                     000144 R
   0 _disp_is_gone                                                  000273 R
@@ -87,20 +88,20 @@ Symbol Table
   0 _fg_disp_touch_connected_dy_65536_191                          00035D R
     _font_1bpp                                                     ****** GX
     _font_1bpp_size                                                ****** GX
-  0 _gameplay_loop                                                 00396F R
+  0 _gameplay_loop                                                 0039A4 R
   0 _get_level                                                     00005D R
   0 _get_tile                                                      00011E R
-  0 _handle_input                                                  001255 R
+  0 _handle_input                                                  00128A R
   0 _has_resource                                                  000000 R
   0 _init_resources                                                000026 R
   0 _is_solid_falling_px                                           0006C0 R
   0 _is_solid_px                                                   0003A6 R
   1 _level_complete                                                0000B0 R
   0 _load_graphics                                                 0009C6 R
-  0 _load_level                                                    0035F3 R
-  0 _main                                                          003B1A GR
-  0 _move_player_x                                                 001BAA R
-  0 _move_player_y                                                 001E19 R
+  0 _load_level                                                    003628 R
+  0 _main                                                          003B4F GR
+  0 _move_player_x                                                 001BDF R
+  0 _move_player_y                                                 001E4E R
   0 _obj_sprite_tile                                               000B46 R
   1 _player                                                        00000C R
   1 _player_died                                                   0000B1 R
@@ -108,48 +109,50 @@ Symbol Table
   1 _prev_player_y                                                 0001E8 R
   1 _rb_block_count                                                0001E4 R
   1 _rb_blocks                                                     000144 R
-  0 _rb_is_passable                                                002B61 R
+  0 _rb_is_passable                                                002B96 R
   1 _rb_red_active                                                 0001E6 R
-  0 _rb_redraw_all                                                 002BE7 R
+  0 _rb_redraw_all                                                 002C1C R
   1 _rb_switch_count                                               0001E5 R
   1 _rb_switch_locked                                              0001E7 R
   1 _rb_switches                                                   0001D4 R
-  0 _rb_vram_for_block                                             002BB3 R
+  0 _rb_vram_for_block                                             002BE8 R
   1 _res_header                                                    000000 R
   1 _res_levels                                                    00000A R
-  1 _res_palette                                                   000004 R
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 3.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
+  1 _res_palette                                                   000004 R
   1 _res_physics                                                   000002 R
   1 _res_sprites                                                   000008 R
   1 _res_tileset                                                   000006 R
-  0 _title_screen                                                  003A6D R
+  0 _title_screen                                                  003AA2 R
+  2 _treadmill_active                                              000004 R
   2 _treadmill_bonus                                               000000 R
-  0 _update_anim                                                   0035DE R
-  0 _update_camera                                                 0035D3 R
-  0 _update_disappearing_blocks                                    003097 R
+  0 _update_anim                                                   003613 R
+  0 _update_camera                                                 003608 R
+  0 _update_disappearing_blocks                                    0030CC R
   1 _vp_block_count                                                000142 R
   1 _vp_blocks                                                     0000B2 R
-  0 _vp_is_passable                                                0028C4 R
-  0 _vp_toggle                                                     002916 R
+  0 _vp_is_passable                                                0028F9 R
+  0 _vp_toggle                                                     00294B R
   1 _vp_violet_active                                              000143 R
+
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 4.
 Hexadecimal [24-Bits]
 
 Area Table
 
-   0 _CODE                                      size   3BBE   flags    0
+   0 _CODE                                      size   3BF3   flags    0
    1 _DATA                                      size    262   flags    0
-   2 _INITIALIZED                               size      4   flags    0
+   2 _INITIALIZED                               size      5   flags    0
    3 _DABS                                      size      0   flags    8
    4 _HOME                                      size      0   flags    0
    5 _GSINIT                                    size      0   flags    0
    6 _GSFINAL                                   size      0   flags    0
-   7 _INITIALIZER                               size      4   flags    0
+   7 _INITIALIZER                               size      5   flags    0
    8 _CABS                                      size      0   flags    8
    9 _CABS0                                     size     10   flags    8
    A _CABS1                                     size     16   flags    8

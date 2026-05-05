@@ -540,6 +540,7 @@ static void draw_player(void) {
    Mirrors JS: while on treadmill set bonusSpeedX=±maxSpeed/1.90 (already scaled),
    off treadmill decay ×0.95 until |bonus| < FP(0.1). */
 static long treadmill_bonus = 0;    /* fixed-point bonus velocity */
+static unsigned char treadmill_active = 0; /* 1 = player currently on treadmill */
 
 static void apply_treadmill(void) {
     long bonus_target = 0;
@@ -573,11 +574,14 @@ static void apply_treadmill(void) {
     }
     if (bonus_target != 0) {
         treadmill_bonus = bonus_target;
+        treadmill_active = 1;
     } else {
+        treadmill_active = 0;
         /* Off treadmill: decay × 0.95 */
         treadmill_bonus = FP_MUL(treadmill_bonus, FP(0.95));
         if (treadmill_bonus > -FP(0.1) && treadmill_bonus < FP(0.1))
             treadmill_bonus = 0;
+    treadmill_active = 0;
     }
 }
 
@@ -721,7 +725,7 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 }
 
 static void move_player_x(void) {
-    long total_vx = player.vx + treadmill_bonus;
+    long total_vx = player.vx + (treadmill_active ? treadmill_bonus : 0);
     long new_x = player.x + total_vx;
     long px    = new_x >> 8;
     if (total_vx > 0) {
