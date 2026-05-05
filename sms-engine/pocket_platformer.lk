@@ -1,0 +1,15 @@
+-mjwx
+-i pocket_platformer.ihx
+-b _CODE = 0x0200
+-b _DATA = 0xc000
+-k /usr/bin/../share/sdcc/lib/z80
+-k /usr/share/sdcc/lib/z80
+-l lib/SMSlib.lib
+-l z80
+lib/crt0_sms.rel
+data.rel
+actor.rel
+pocket_platformer.rel
+lib/PSGlib.rel
+
+-e

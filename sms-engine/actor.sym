@@ -1,0 +1,56 @@
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 1.
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+    .__.$$$.                                                    =  002710 L
+    .__.ABS.                                                    =  000000 G
+    .__.CPU.                                                    =  000000 L
+    .__.H$L.                                                    =  000000 L
+    _ROM_bank_to_be_mapped_on_slot0                             =  00FFFD G
+    _ROM_bank_to_be_mapped_on_slot1                             =  00FFFE G
+    _ROM_bank_to_be_mapped_on_slot2                             =  00FFFF G
+    _SMS_SRAM                                                   =  008000 G
+    _SMS_VDPControlPort                                         =  0000BF 
+    _SMS_addSprite_f                                               ****** GX
+    _SMS_copySpritestoSAT                                          ****** GX
+    _SMS_finalizeSprites                                           ****** GX
+    _SMS_initSprites                                               ****** GX
+    _SMS_waitForVBlank                                             ****** GX
+    _SRAM_bank_to_be_mapped_on_slot2                            =  00FFFC G
+  0 _clear_sprites                                                 0005D1 GR
+  0 _draw_actor                                                    0004EC GR
+  1 _draw_actor__act_65536_188                                     000010 R
+  1 _draw_actor_frame_65536_188                                    000013 R
+  1 _draw_actor_frame_tile_65536_188                               000012 R
+  0 _draw_meta_sprite                                              000000 GR
+  1 _draw_meta_sprite_i_65536_170                                  000000 R
+  1 _draw_meta_sprite_j_65536_170                                  000001 R
+  1 _draw_meta_sprite_st_65536_170                                 000006 R
+  1 _draw_meta_sprite_sx_65536_170                                 000002 R
+  1 _draw_meta_sprite_sy_65536_170                                 000004 R
+  0 _init_actor                                                    0000B2 GR
+  1 _init_actor_sa_65536_178                                       000007 R
+  0 _move_actor                                                    00023B GR
+  1 _move_actor_act_65536_180                                      000009 R
+  1 _move_actor_curr_step_65536_180                                00000D R
+  1 _move_actor_path_flags_65536_180                               00000F R
+  1 _move_actor_step_65536_180                                     00000B R
+  0 _wait_frames                                                   0005C6 GR
+
+
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 2.
+Hexadecimal [24-Bits]
+
+Area Table
+
+   0 _CODE                                      size    5DA   flags    0
+   1 _DATA                                      size     14   flags    0
+   2 _INITIALIZED                               size      0   flags    0
+   3 _DABS                                      size      0   flags    8
+   4 _HOME                                      size      0   flags    0
+   5 _GSINIT                                    size      0   flags    0
+   6 _GSFINAL                                   size      0   flags    0
+   7 _INITIALIZER                               size      0   flags    0
+   8 _CABS                                      size      0   flags    8
+
