@@ -100,6 +100,8 @@ typedef struct {
     unsigned char pink_ghost_vram_idx;  /* pink block ghost    */
     unsigned char deko_vram_idx[18];    /* decorative tile VRAM indices (0=unused) */
     unsigned char fg_disp_vram_idx;     /* VRAM tile index of the disappearing foreground tile (0=none) */
+    unsigned char treadmill_right_vram_idx; /* VRAM tile index of treadmill (right) (0=none) */
+    unsigned char treadmill_left_vram_idx;  /* VRAM tile index of treadmill (left)  (0=none) */
 } resource_header;
 
 typedef struct {
@@ -136,6 +138,7 @@ typedef struct {
     unsigned char double_jump_used;
     unsigned char anim_frame;
     unsigned char anim_timer;
+    signed char   treadmill_dir;    /* -1=left, +1=right, 0=none */
     long          forced_jump_speed; /* 0=normal, >0=trampoline boost */
 } player_state;
 
@@ -533,6 +536,44 @@ static void draw_player(void) {
 /* ──────────────────────────────────────────────────────────
  * Physics
  * ──────────────────────────────────────────────────────────*/
+/* Apply treadmill bonus velocity. Called after move_player_y sets on_ground.
+   Mirrors JS: while on treadmill set bonusSpeedX=±maxSpeed/1.90 (already scaled),
+   off treadmill decay ×0.95 until |bonus| < FP(0.1). */
+static long treadmill_bonus = 0;    /* fixed-point bonus velocity */
+
+static void apply_treadmill(void) {
+    long bonus_target = 0;
+    if (player.on_ground && res_header->treadmill_right_vram_idx) {
+        /* Check the tile under the player's feet (left foot) */
+        unsigned char ftx = (unsigned char)((player.x >> 8) / TILE_SIZE);
+        unsigned char fty = (unsigned char)(((player.y >> 8) + PLAYER_H) / TILE_SIZE);
+        unsigned char ft  = get_tile(ftx, fty);
+        if (ft == res_header->treadmill_right_vram_idx)
+            bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+        else if (res_header->treadmill_left_vram_idx &&
+                 ft == res_header->treadmill_left_vram_idx)
+            bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+        else {
+            /* Also check right foot */
+            unsigned char ftx2 = (unsigned char)(((player.x >> 8) + PLAYER_W - 1) / TILE_SIZE);
+            unsigned char ft2  = get_tile(ftx2, fty);
+            if (ft2 == res_header->treadmill_right_vram_idx)
+                bonus_target = FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+            else if (res_header->treadmill_left_vram_idx &&
+                     ft2 == res_header->treadmill_left_vram_idx)
+                bonus_target = -FP_MUL((long)res_physics->max_speed, FP(1.0/1.90));
+        }
+    }
+    if (bonus_target != 0) {
+        treadmill_bonus = bonus_target;
+    } else {
+        /* Off treadmill: decay × 0.95 */
+        treadmill_bonus = FP_MUL(treadmill_bonus, FP(0.95));
+        if (treadmill_bonus > -FP(0.1) && treadmill_bonus < FP(0.1))
+            treadmill_bonus = 0;
+    }
+}
+
 static void apply_gravity(void) {
     /* Gravity only while falling (not during active jump ramp) */
     if (player.falling) {
@@ -1103,6 +1144,7 @@ static void load_level(unsigned char n) {
     player.y  = FP(4 * TILE_SIZE);
     player.vx = player.vy = 0;
     player.on_ground = player.jump_frames = player.double_jump_used = 0;
+    treadmill_bonus = 0;
     player.falling = 1; player.jumping = 0; player.wall_jumping = 0; player.wall_push_frames = 0;
     player.facing_left = player.anim_frame = player.anim_timer = 0;
 
@@ -1155,8 +1197,11 @@ static void gameplay_loop(void) {
         if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
         player.on_ground = 0;
         apply_gravity();
+        apply_treadmill();
+        player.vx += treadmill_bonus;
         move_player_x();
         move_player_y();
+        player.vx -= treadmill_bonus;
         check_object_collisions();
         check_rb_switch();
         update_disappearing_blocks();
