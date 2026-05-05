@@ -100,8 +100,6 @@ typedef struct {
     unsigned char pink_ghost_vram_idx;  /* pink block ghost    */
     unsigned char deko_vram_idx[18];    /* decorative tile VRAM indices (0=unused) */
     unsigned char fg_disp_vram_idx;     /* VRAM tile index of the disappearing foreground tile (0=none) */
-    unsigned char treadmill_right_vram_idx; /* VRAM tile index of treadmill (right) (0=none) */
-    unsigned char treadmill_left_vram_idx;  /* VRAM tile index of treadmill (left)  (0=none) */
 } resource_header;
 
 typedef struct {
@@ -138,7 +136,6 @@ typedef struct {
     unsigned char double_jump_used;
     unsigned char anim_frame;
     unsigned char anim_timer;
-    signed char   treadmill_dir;    /* -1=left, +1=right, 0=none */
     long          forced_jump_speed; /* 0=normal, >0=trampoline boost */
 } player_state;
 
@@ -536,9 +533,6 @@ static void draw_player(void) {
 /* ──────────────────────────────────────────────────────────
  * Physics
  * ──────────────────────────────────────────────────────────*/
-/* Apply treadmill bonus velocity. Called after move_player_y sets on_ground.
-   Mirrors JS: while on treadmill set bonusSpeedX=±maxSpeed/1.90 (already scaled),
-   off treadmill decay ×0.95 until |bonus| < FP(0.1). */
 
 
 static void apply_gravity(void) {
@@ -1111,7 +1105,6 @@ static void load_level(unsigned char n) {
     player.y  = FP(4 * TILE_SIZE);
     player.vx = player.vy = 0;
     player.on_ground = player.jump_frames = player.double_jump_used = 0;
-    treadmill_bonus = 0;
     player.falling = 1; player.jumping = 0; player.wall_jumping = 0; player.wall_push_frames = 0;
     player.facing_left = player.anim_frame = player.anim_timer = 0;
 
