@@ -526,15 +526,15 @@ const SmsExporter = (() => {
           buf[off++] = clampByte(indexMap.get(-10) || 0);
         } else if (switchPos.has(`${x},${y}`)) {
           buf[off++] = clampByte(indexMap.get(-6) || 0);
+        } else if (spikePos.has(`${x},${y}`)) {
+          // Spike as BG tile — must be checked before tileVal===0 since spikes sit on empty tiles
+          buf[off++] = clampByte(indexMap.get(-204) || 0);
         } else if (tileVal === 0) {
           buf[off++] = 0;
         } else if ((tileVal === 1 || tileVal === 2) && isEdgePos(x, y)) {
           buf[off++] = clampByte(edgeVramIdx || 0);
         } else if (tileVal === 11 && connectedPos.has(`${x},${y}`)) {
           buf[off++] = clampByte(indexMap.get(10) || indexMap.get(tileVal) || 0);
-        } else if (spikePos.has(`${x},${y}`)) {
-          // Spike as BG tile (passable — death detected via tile probe in C)
-          buf[off++] = clampByte(indexMap.get(-204) || 0);
         } else if (tileVal === 900) {
           // Treadmill right
           buf[off++] = clampByte(indexMap.get(-202) || 0);
