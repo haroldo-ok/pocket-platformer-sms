@@ -63,6 +63,7 @@
 #define OBJ_TRAMPOLINE  4
 #define OBJ_COIN             5
 #define OBJ_FINISH_FLAG_LOCKED 12
+#define OBJ_NPC          13
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
@@ -153,6 +154,20 @@ static player_state     player;
 static unsigned int     camera_x, prev_cam_x;
 static unsigned char    coin_collected[MAX_OBJECTS];
 static unsigned char    level_complete, player_died;
+static unsigned char    level_n_global; /* current level number, set by load_level */
+
+/* ── NPC Dialogue ─────────────────────────────────────── */
+#define DIALOGUE_BOX_ROW   18      /* top row of dialogue box (0-based) */
+#define DIALOGUE_ROWS       5      /* rows 18-22 */
+#define DIALOGUE_TEXT_W    28      /* chars per line */
+#define DIALOGUE_MAX_LINES 32      /* max total lines per NPC */
+static unsigned char  dialogue_active;   /* 1 = dialogue open */
+static unsigned char  dialogue_line;     /* current first visible line */
+static unsigned char  dialogue_total;    /* total lines for this NPC */
+static unsigned char  dialogue_buf[DIALOGUE_MAX_LINES][DIALOGUE_TEXT_W + 1];
+static unsigned int   saved_nametable[DIALOGUE_ROWS * 32]; /* saved BG rows */
+static unsigned char  dialogue_btn_prev; /* previous button state */
+
 
 /* ── Violet/Pink block system (jump-toggle) ─────────────── */
 #define MAX_VP_BLOCKS   48
@@ -216,7 +231,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 10u * 32u);
+    res_levels  = (level_header *)(res_sprites + 11u * 32u); /* +1 for NPC sprite */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -507,6 +522,7 @@ static void draw_objects(void) {
         int sx, sy;
         if (obj->type == OBJ_START_FLAG) continue;
         if (obj->type == OBJ_SPIKE) continue;  /* spike is a BG tile */
+        if (obj->type == OBJ_NPC) continue;    /* NPC sprite handled separately */
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
         /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
@@ -517,6 +533,27 @@ static void draw_objects(void) {
         if (sy < 0  || sy > SCREEN_PX_H) continue;
         SMS_addSprite((unsigned char)sx, (unsigned char)sy,
                       (unsigned char)obj_sprite_tile(obj->type));
+    }
+}
+
+
+/* Draw all NPC objects as sprites (using NPC_SPRITE tile) */
+#define VRAM_SPR_NPC  266   /* tile 266, just after the 10 standard sprite sheet tiles */
+
+static void draw_npcs(void) {
+    unsigned char i;
+    unsigned char n = cur_level->obj_count < MAX_OBJECTS
+                    ? cur_level->obj_count : MAX_OBJECTS;
+    for (i = 0; i < n; i++) {
+        level_object *obj = &cur_objects[i];
+        int sx, sy;
+        if (obj->type != OBJ_NPC) continue;
+        sx = (int)obj->x * TILE_SIZE - (int)camera_x;
+        sy = (int)obj->y * TILE_SIZE;
+        if (sx < -8 || sx > SCREEN_PX_W) continue;
+        if (sy < 0  || sy > SCREEN_PX_H) continue;
+        SMS_addSprite((unsigned char)sx, (unsigned char)sy,
+                      (unsigned char)(VRAM_SPR_NPC & 0xFF));
     }
 }
 
@@ -532,6 +569,163 @@ static void draw_player(void) {
     else
         tile = VRAM_SPR_PLAYER_IDLE;
     SMS_addSprite((unsigned char)sx, (unsigned char)sy, (unsigned char)tile);
+}
+
+
+/* ──────────────────────────────────────────────────────────
+ * NPC Dialogue system
+ * ──────────────────────────────────────────────────────────*/
+
+/* Find pointer to the NPC string table (after all level data) */
+static unsigned char *get_npc_table(void) {
+    level_header *lh = res_levels;
+    unsigned char i;
+    for (i = 0; i < res_header->level_count; i++) {
+        unsigned int sz = sizeof(level_header)
+            + (unsigned int)lh->map_w * lh->map_h
+            + (unsigned int)lh->obj_count * 3u;
+        lh = (level_header *)((unsigned char *)lh + sz);
+    }
+    return (unsigned char *)lh;
+}
+
+/* Load dialogue lines for a given NPC (npc_idx in current level) into dialogue_buf */
+static void load_npc_dialogue(unsigned char level_n, unsigned char npc_idx) {
+    unsigned char *p = get_npc_table();
+    unsigned char li, ni, ch;
+    /* skip to current level's NPC block */
+    for (li = 0; li < level_n; li++) {
+        unsigned char cnt = *p++;
+        for (ni = 0; ni < cnt; ni++) {
+            unsigned char lines, ll, k;
+            p++;            /* play_automatically */
+            lines = *p++;
+            for (ll = 0; ll < lines; ll++) {
+                unsigned char ln = *p++;
+                p += ln;
+            }
+        }
+    }
+    /* skip to this npc */
+    {
+        unsigned char cnt = *p++;
+        for (ni = 0; ni < cnt && ni < npc_idx; ni++) {
+            unsigned char lines, ll;
+            p++;
+            lines = *p++;
+            for (ll = 0; ll < lines; ll++) {
+                unsigned char ln = *p++;
+                p += ln;
+            }
+        }
+    }
+    /* now p points to this NPC's entry: play_auto, line_count, lines... */
+    p++; /* skip play_automatically (already used to decide when to trigger) */
+    {
+        unsigned char line_count = *p++;
+        unsigned char ll;
+        if (line_count > DIALOGUE_MAX_LINES) line_count = DIALOGUE_MAX_LINES;
+        dialogue_total = line_count;
+        for (ll = 0; ll < line_count; ll++) {
+            unsigned char ln = *p++;
+            unsigned char cc;
+            if (ln > DIALOGUE_TEXT_W) ln = DIALOGUE_TEXT_W;
+            for (cc = 0; cc < ln; cc++)
+                dialogue_buf[ll][cc] = *p++;
+            dialogue_buf[ll][ln] = '\0';
+            if (ln < *p && ll < line_count - 1) {} /* already advanced */
+        }
+    }
+}
+
+/* Save nametable rows 18-22 to buffer */
+static void save_dialogue_rows(void) {
+    unsigned int vram_addr;
+    unsigned char row, col;
+    unsigned int idx = 0;
+    for (row = DIALOGUE_BOX_ROW; row < DIALOGUE_BOX_ROW + DIALOGUE_ROWS; row++) {
+        for (col = 0; col < 32; col++) {
+            /* SMSlib nametable: row*32 + col, each entry 2 bytes at VRAM 0x3800 */
+            /* We read via SMS_getNextTile by positioning cursor */
+            saved_nametable[idx++] = 0; /* can't easily read back; we'll redraw instead */
+        }
+    }
+}
+
+/* Redraw dialogue box rows from level map data */
+static void restore_dialogue_rows(void) {
+    unsigned char row, col;
+    map_res_bank();
+    for (row = DIALOGUE_BOX_ROW; row < DIALOGUE_BOX_ROW + DIALOGUE_ROWS; row++) {
+        SMS_setNextTileatXY(0, row);
+        for (col = 0; col < 32; col++) {
+            unsigned char map_x = (unsigned char)(camera_x / TILE_SIZE + col);
+            unsigned char map_y = row;
+            unsigned char t = get_tile(map_x, map_y);
+            if (t & 0x80)
+                SMS_setTile((unsigned int)(VRAM_BG_BASE + (t & 0x7F) - 1) | TILE_PRIORITY);
+            else
+                SMS_setTile(t ? (unsigned int)(VRAM_BG_BASE + t - 1) : 0u);
+        }
+    }
+}
+
+/* Draw the dialogue box on-screen (without using the font's BG palette) */
+static void draw_dialogue_box(void) {
+    unsigned char col;
+    unsigned int blank = 0; /* tile 0 = blank */
+
+    /* rows 18-22: clear to blank BG tile */
+    for (unsigned char row = DIALOGUE_BOX_ROW; row < DIALOGUE_BOX_ROW + DIALOGUE_ROWS; row++) {
+        SMS_setNextTileatXY(0, row);
+        for (col = 0; col < 32; col++) SMS_setTile(blank);
+    }
+}
+
+/* Open dialogue for a specific NPC */
+static void open_dialogue(unsigned char level_n, unsigned char npc_idx) {
+    map_res_bank();
+    load_npc_dialogue(level_n, npc_idx);
+    dialogue_active = 1;
+    dialogue_line   = 0;
+    dialogue_btn_prev = 0xFF; /* force release required first */
+
+    /* Setup font palette (color 1 = white text on black) */
+    SMS_setBGPaletteColor(1, 0x3F);
+    draw_dialogue_box();
+    render_dialogue();
+}
+
+/* Render current dialogue page (2 lines at rows 19-20, prompt at row 21) */
+static void render_dialogue(void) {
+    unsigned char l;
+    /* Clear text rows */
+    for (l = 0; l < 3; l++) {
+        unsigned char row = DIALOGUE_BOX_ROW + 1 + l;
+        SMS_setNextTileatXY(0, row);
+        unsigned char c;
+        for (c = 0; c < 32; c++) SMS_setTile(0);
+    }
+    /* Print up to 2 lines */
+    for (l = 0; l < 2; l++) {
+        unsigned char li = dialogue_line + l;
+        if (li < dialogue_total)
+            SMS_printatXY(2, DIALOGUE_BOX_ROW + 1 + l, dialogue_buf[li]);
+    }
+    /* Prompt on row 21 */
+    if (dialogue_line + 2 < dialogue_total)
+        SMS_printatXY(2, DIALOGUE_BOX_ROW + 3, "1: next page");
+    else
+        SMS_printatXY(2, DIALOGUE_BOX_ROW + 3, "1: close");
+}
+
+/* Close dialogue and restore the level tilemap rows */
+static void close_dialogue(void) {
+    dialogue_active = 0;
+    restore_dialogue_rows();
+    /* Restore tile palette */
+    map_res_bank();
+    SMS_loadBGPalette(res_palette);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -812,6 +1006,15 @@ static void check_object_collisions(void) {
                 if (!coins_remaining()) level_complete = 1;
                 break;
             case OBJ_SPIKE: /* handled via tile probe below */ break;
+            case OBJ_NPC:
+                if (!dialogue_active) {
+                    /* Count NPC index in this level up to obj i */
+                    unsigned char ni = 0, k;
+                    for (k = 0; k < i; k++)
+                        if (cur_objects[k].type == OBJ_NPC) ni++;
+                    open_dialogue(level_n_global, ni);
+                }
+                break;
             case OBJ_TRAMPOLINE:
                 if (player.vy >= 0) {
                     long tramp_mid = (long)obj->y * TILE_SIZE + TILE_SIZE / 2;
@@ -1064,12 +1267,14 @@ static void update_anim(void) {
 static void load_level(unsigned char n) {
     unsigned char i;
     map_res_bank();
+    level_n_global = n;
     cur_level   = get_level(n);
     cur_map     = (unsigned char *)cur_level + sizeof(level_header);
     cur_objects = (level_object *)(cur_map +
                   (unsigned int)cur_level->map_w * cur_level->map_h);
 
     for (i = 0; i < MAX_OBJECTS; i++) coin_collected[i] = 0;
+    dialogue_active = 0;
     for (i = 0; i < MAX_DISP; i++) disp_blocks[i].frame = 0;
 
     /* Build red/blue block tables from levelObjects */
@@ -1155,6 +1360,31 @@ static void gameplay_loop(void) {
         joy         = SMS_getKeysStatus();
         joy_pressed = joy & ~joy_prev;
 
+        /* ── NPC Dialogue: handle input & render, skip physics ── */
+        if (dialogue_active) {
+            unsigned char btn = (unsigned char)(joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
+            if (!dialogue_btn_prev && btn) {
+                /* button pressed: advance or close */
+                if (dialogue_line + 2 < dialogue_total) {
+                    dialogue_line += 2;
+                    render_dialogue();
+                } else {
+                    close_dialogue();
+                }
+            }
+            dialogue_btn_prev = btn;
+            SMS_waitForVBlank();
+            SMS_initSprites();
+            draw_objects();
+            draw_player();
+            SMS_finalizeSprites();
+            SMS_copySpritestoSAT();
+            joy_prev = joy;
+            joy      = SMS_getKeysStatus();
+            joy_pressed = joy & ~joy_prev;
+            continue;
+        }
+
         prev_player_y = player.y;
         handle_input(joy, joy_pressed);
         /* Mark falling before move — landing in move_player_y clears it */
@@ -1182,6 +1412,7 @@ static void gameplay_loop(void) {
 
         SMS_initSprites();
         draw_objects();
+        draw_npcs();
         draw_player();
         SMS_finalizeSprites();
         SMS_copySpritestoSAT();
