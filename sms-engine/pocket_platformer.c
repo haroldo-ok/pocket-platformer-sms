@@ -47,7 +47,6 @@
 #define VRAM_BG_BASE          1    /* BG tiles start at VRAM tile 1 */
 #define VRAM_SPR_START_FLAG 256
 #define VRAM_SPR_FINISH_FLAG 257
-#define VRAM_SPR_SPIKE       258
 #define VRAM_SPR_TRAMPOLINE  259
 #define VRAM_SPR_COIN         260
 #define VRAM_SPR_PLAYER_IDLE  261
@@ -100,6 +99,7 @@ typedef struct {
     unsigned char pink_ghost_vram_idx;  /* pink block ghost    */
     unsigned char deko_vram_idx[18];    /* decorative tile VRAM indices (0=unused) */
     unsigned char fg_disp_vram_idx;     /* VRAM tile index of the disappearing foreground tile (0=none) */
+    unsigned char spike_vram_idx;        /* VRAM tile index of spike BG tile (0=none) */
 } resource_header;
 
 typedef struct {
@@ -383,6 +383,8 @@ static unsigned char is_solid_px(long fpx, long fpy) {
             (res_header->conn_vram_idx && t == res_header->conn_vram_idx &&
              disp_is_gone(dtx, dty))) return 0;
     }
+    /* Spike tile: passable (death via tile probe) */
+    if (res_header->spike_vram_idx && t == res_header->spike_vram_idx) return 0;
     return 1;
 }
 
@@ -424,6 +426,8 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
             (res_header->conn_vram_idx && t == res_header->conn_vram_idx &&
              disp_is_gone(dtx, dty))) return 0;
     }
+    /* Spike tile: passable (death via tile probe) */
+    if (res_header->spike_vram_idx && t == res_header->spike_vram_idx) return 0;
     return 1;
 }
 
@@ -489,7 +493,6 @@ static unsigned int obj_sprite_tile(unsigned char type) {
     switch (type) {
         case OBJ_FINISH_FLAG:        return VRAM_SPR_FINISH_FLAG;
         case OBJ_FINISH_FLAG_LOCKED: return coins_remaining() ? VRAM_SPR_FLAG_CLOSED : VRAM_SPR_FINISH_FLAG;
-        case OBJ_SPIKE:              return VRAM_SPR_SPIKE;
         case OBJ_TRAMPOLINE:         return VRAM_SPR_TRAMPOLINE;
         case OBJ_COIN:               return VRAM_SPR_COIN;
         default:                     return VRAM_SPR_FINISH_FLAG;
@@ -503,6 +506,7 @@ static void draw_objects(void) {
         level_object *obj = &cur_objects[i];
         int sx, sy;
         if (obj->type == OBJ_START_FLAG) continue;
+        if (obj->type == OBJ_SPIKE) continue;  /* spike is a BG tile */
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
         /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
@@ -807,7 +811,7 @@ static void check_object_collisions(void) {
             case OBJ_FINISH_FLAG_LOCKED:
                 if (!coins_remaining()) level_complete = 1;
                 break;
-            case OBJ_SPIKE: player_died = 1; break;
+            case OBJ_SPIKE: /* handled via tile probe below */ break;
             case OBJ_TRAMPOLINE:
                 if (player.vy >= 0) {
                     long tramp_mid = (long)obj->y * TILE_SIZE + TILE_SIZE / 2;
@@ -1160,6 +1164,17 @@ static void gameplay_loop(void) {
         move_player_x();
         move_player_y();
         check_object_collisions();
+        /* Spike tile probe: check all four player corners */
+        if (!player_died && res_header->spike_vram_idx) {
+            unsigned char sv = res_header->spike_vram_idx;
+            long px = player.x >> 8, py = player.y >> 8;
+            map_res_bank();
+            if (get_tile((unsigned char)((px+1)/TILE_SIZE),             (unsigned char)(py/TILE_SIZE))           == sv ||
+                get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)(py/TILE_SIZE))           == sv ||
+                get_tile((unsigned char)((px+1)/TILE_SIZE),             (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv ||
+                get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv)
+                player_died = 1;
+        }
         check_rb_switch();
         update_disappearing_blocks();
         update_camera();
