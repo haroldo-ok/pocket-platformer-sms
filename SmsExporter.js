@@ -246,9 +246,9 @@ const SmsExporter = (() => {
       // If the level has any, ensure tileData value 10 gets a VRAM slot anyway.
       if (level.levelObjects) {
         const hasConnected = level.levelObjects.some(o => o.type === 'connectedDisappearingBlock');
-        if (hasConnected && !tileCache.has(10)) {
-          tileCache.set(10, null);
-          tileOrder.push(10);
+        if (hasConnected && !tileCache.has(-205)) {
+          tileCache.set(-205, null);
+          tileOrder.push(-205);
         }
       }
     }
@@ -258,7 +258,7 @@ const SmsExporter = (() => {
     if (sprites['DISAPPEARING_BLOCK_SPRITE'])
       specialTilePixels.set(11, sprites['DISAPPEARING_BLOCK_SPRITE'].animation[0].sprite);
     if (sprites['CONNECTED_DISAPPEARING_BLOCK_SPRITE'])
-      specialTilePixels.set(10, sprites['CONNECTED_DISAPPEARING_BLOCK_SPRITE'].animation[0].sprite);
+      specialTilePixels.set(-205, sprites['CONNECTED_DISAPPEARING_BLOCK_SPRITE'].animation[0].sprite);
     // Red/blue blocks: tileData 12 = active block, 13 = switch.
     // We add four special tile encodings keyed with negative sentinels to avoid
     // colliding with the numeric tileData values used by the map scan.
@@ -534,7 +534,7 @@ const SmsExporter = (() => {
         } else if ((tileVal === 1 || tileVal === 2) && isEdgePos(x, y)) {
           buf[off++] = clampByte(edgeVramIdx || 0);
         } else if (tileVal === 11 && connectedPos.has(`${x},${y}`)) {
-          buf[off++] = clampByte(indexMap.get(10) || indexMap.get(tileVal) || 0);
+          buf[off++] = clampByte(indexMap.get(-205) || indexMap.get(tileVal) || 0);
         } else if (tileVal === 900) {
           // Treadmill right
           buf[off++] = clampByte(indexMap.get(-202) || 0);
@@ -639,8 +639,8 @@ const SmsExporter = (() => {
     header[6] = indexMap.has(5) ? Math.min(indexMap.get(5), 255) : 0;
     // disp_vram_idx: VRAM index of tile value 11 (disappearing block), or 0 if absent
     header[7] = indexMap.has(11) ? Math.min(indexMap.get(11), 255) : 0;
-    // conn_vram_idx: VRAM index of tile value 10 (connected disappearing block), or 0 if absent
-    header[8] = indexMap.has(10) ? Math.min(indexMap.get(10), 255) : 0;
+    // conn_vram_idx: VRAM index of connected disappearing block sprite (sentinel -205)
+    header[8] = indexMap.has(-205) ? Math.min(indexMap.get(-205), 255) : 0;
     // red/blue block VRAM indices (0 if not present in this level)
     header[9]  = indexMap.has(-2) ? Math.min(indexMap.get(-2), 255) : 0; // red solid
     header[10] = indexMap.has(-3) ? Math.min(indexMap.get(-3), 255) : 0; // red ghost
