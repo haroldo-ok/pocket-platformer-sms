@@ -542,7 +542,9 @@ static void draw_objects(void) {
 
 static void draw_npcs(void) {
     unsigned char i;
-    unsigned char n = cur_level->obj_count < MAX_OBJECTS
+    unsigned char n;
+    map_res_bank();
+    n = cur_level->obj_count < MAX_OBJECTS
                     ? cur_level->obj_count : MAX_OBJECTS;
     for (i = 0; i < n; i++) {
         level_object *obj = &cur_objects[i];
