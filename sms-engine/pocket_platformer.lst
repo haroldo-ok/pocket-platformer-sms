@@ -1821,9 +1821,9 @@
       000A3C E5               [11] 1821 	push	hl
       000A3D 21 20 00         [10] 1822 	ld	hl, #0x0020
       000A40 CDr00r00         [17] 1823 	call	_SMS_VRAMmemcpy
-                                   1824 ;pocket_platformer.c:463: SMS_loadTiles(res_sprites, 256u, 10u * 32u);
+                                   1824 ;pocket_platformer.c:463: SMS_loadTiles(res_sprites, 256u, 11u * 32u);
       000A43 ED 5Br08r00      [20] 1825 	ld	de, (_res_sprites)
-      000A47 21 40 01         [10] 1826 	ld	hl, #0x0140
+      000A47 21 60 01         [10] 1826 	ld	hl, #0x0160
       000A4A E5               [11] 1827 	push	hl
       000A4B 21 00 20         [10] 1828 	ld	hl, #0x2000
       000A4E CDr00r00         [17] 1829 	call	_SMS_VRAMmemcpy
