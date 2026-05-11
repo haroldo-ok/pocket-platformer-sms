@@ -167,6 +167,9 @@ static unsigned char  dialogue_total;    /* total lines for this NPC */
 static unsigned char  dialogue_buf[DIALOGUE_MAX_LINES][DIALOGUE_TEXT_W + 1];
 static unsigned int   saved_nametable[DIALOGUE_ROWS * 32]; /* saved BG rows */
 static unsigned char  dialogue_btn_prev; /* previous button state */
+static unsigned char  npc_contact_idx;   /* 0xFF = no NPC contact this frame */
+static unsigned char  npc_contact_level; /* level of contacted NPC */
+static unsigned char  npc_contact_auto;  /* play_automatically flag */
 
 
 /* ── Violet/Pink block system (jump-toggle) ─────────────── */
@@ -724,6 +727,7 @@ static void render_dialogue(void) {
 /* Close dialogue and restore the level tilemap rows */
 static void close_dialogue(void) {
     dialogue_active = 0;
+    npc_contact_idx = 0xFF;
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
@@ -1010,11 +1014,38 @@ static void check_object_collisions(void) {
             case OBJ_SPIKE: /* handled via tile probe below */ break;
             case OBJ_NPC:
                 if (!dialogue_active) {
-                    /* Count NPC index in this level up to obj i */
+                    /* Record contact; dialogue opens on button press (or auto) */
                     unsigned char ni = 0, k;
+                    unsigned char *p;
                     for (k = 0; k < i; k++)
                         if (cur_objects[k].type == OBJ_NPC) ni++;
-                    open_dialogue(level_n_global, ni);
+                    npc_contact_idx   = ni;
+                    npc_contact_level = level_n_global;
+                    /* Read play_automatically from string table */
+                    p = get_npc_table();
+                    /* skip to current level */
+                    { unsigned char li;
+                      for (li = 0; li < level_n_global; li++) {
+                          unsigned char cnt = *p++;
+                          unsigned char nj;
+                          for (nj = 0; nj < cnt; nj++) {
+                              unsigned char lines, ll;
+                              p++;
+                              lines = *p++;
+                              for (ll = 0; ll < lines; ll++) { unsigned char ln = *p++; p += ln; }
+                          }
+                      }
+                    }
+                    { unsigned char cnt = *p++;
+                      unsigned char nj;
+                      for (nj = 0; nj < cnt && nj < ni; nj++) {
+                          unsigned char lines, ll;
+                          p++;
+                          lines = *p++;
+                          for (ll = 0; ll < lines; ll++) { unsigned char ln = *p++; p += ln; }
+                      }
+                    }
+                    npc_contact_auto = *p; /* play_automatically byte */
                 }
                 break;
             case OBJ_TRAMPOLINE:
@@ -1395,7 +1426,16 @@ static void gameplay_loop(void) {
         apply_gravity();
         move_player_x();
         move_player_y();
+        npc_contact_idx = 0xFF; /* reset each frame */
         check_object_collisions();
+        /* NPC dialogue trigger */
+        if (!dialogue_active && npc_contact_idx != 0xFF) {
+            if (npc_contact_auto) {
+                open_dialogue(npc_contact_level, npc_contact_idx);
+            } else if (joy_pressed & PORT_A_KEY_1) {
+                open_dialogue(npc_contact_level, npc_contact_idx);
+            }
+        }
         /* Spike tile probe: check all four player corners */
         if (!player_died && res_header->spike_vram_idx) {
             unsigned char sv = res_header->spike_vram_idx;
