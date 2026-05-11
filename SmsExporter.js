@@ -70,6 +70,7 @@ const SmsExporter = (() => {
     'redblueblockswitch': OBJ_TYPE.redBlueSwitch,
     'violetBlock':        10,
     'pinkBlock':          11,
+    'npc':                13,
   };
 
   // ─── Fixed-point helpers ─────────────────────────────────────────────────────
