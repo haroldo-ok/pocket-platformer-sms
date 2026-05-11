@@ -203,6 +203,9 @@ const SmsExporter = (() => {
     pWalk      ? encodeSprite8(pWalk,      1) : encodeBlank();
     pJump      ? encodeSprite8(pJump,      0) : encodeBlank();
     flagClosed ? encodeSprite8(flagClosed, 0) : encodeBlank(); /* tile 265 */
+    // NPC sprite = tile 266 (VRAM_SPR_NPC in C)
+    const npcS = get('NPC_SPRITE');
+    npcS ? encodeSprite8(npcS, 0) : encodeBlank();
 
     const out = new Uint8Array(tiles.length * BYTES_PER_TILE);
     let offset = 0;
