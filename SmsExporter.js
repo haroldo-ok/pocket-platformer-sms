@@ -213,14 +213,14 @@ const SmsExporter = (() => {
       const barrelSObj = get('BARREL_CANNON');
       const bPx = barrelSObj ? (barrelSObj.animation[0].sprite) : null;
       if (bPx) {
-        // right = base
-        tiles.push(encodeTile4bpp(bPx, palette));
-        // left = H-flip
+        // BARREL_DIR_RIGHT (0) = H-flipped (base sprite opens left)
         tiles.push(encodeTile4bpp(bPx.map(row => [...row].reverse()), palette));
-        // top = rotate 90° CW (dir=1)
+        // BARREL_DIR_LEFT (2→slot1) = base sprite
+        tiles.push(encodeTile4bpp(bPx, palette));
+        // BARREL_DIR_TOP (1→slot2) = rotate 90° CW
         tiles.push(encodeTile4bpp(
           Array.from({length:8}, (_,r) => Array.from({length:8}, (_,c) => bPx[7-c][r])), palette));
-        // bottom = rotate 90° CCW (dir=3)
+        // BARREL_DIR_BOTTOM (3→slot3) = rotate 90° CCW
         tiles.push(encodeTile4bpp(
           Array.from({length:8}, (_,r) => Array.from({length:8}, (_,c) => bPx[c][7-r])), palette));
       } else {

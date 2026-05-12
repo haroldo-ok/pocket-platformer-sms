@@ -993,6 +993,7 @@ static void move_player_x(void) {
             long tile_r = (px + PLAYER_W) / TILE_SIZE;
             new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
+            barrel_launched = 0;
         }
     } else if (player.vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
@@ -1000,6 +1001,7 @@ static void move_player_x(void) {
             long tile_l = px / TILE_SIZE + 1;
             new_x = tile_l * TILE_SIZE * FP_ONE;
             player.vx = 0;
+            barrel_launched = 0;
         }
     }
     player.x = new_x;
@@ -1038,6 +1040,7 @@ static void move_player_y(void) {
             player.jumping = 0;
             player.wall_jumping = 0;
             player.double_jump_used = 0;
+            barrel_launched = 0;
             skip_land:;
         }
     } else {
