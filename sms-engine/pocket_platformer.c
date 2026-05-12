@@ -836,6 +836,7 @@ static void barrel_update(unsigned char joy) {
                 player.falling = 1;
                 break;
         }
+        barrel_launched = 1;
     }
 }
 
@@ -867,7 +868,7 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         player.vx += accel;
         if (player.vx > max_spd) player.vx = max_spd;
         player.facing_left = 0;
-    } else {
+    } else if (!barrel_launched) {
         player.vx = FP_MUL(player.vx, fric);
         if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
     }
