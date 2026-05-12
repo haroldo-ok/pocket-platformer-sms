@@ -187,6 +187,7 @@ static unsigned char  barrel_dir;        /* BARREL_DIR_* */
 static long           barrel_cx;         /* barrel center x (FP) */
 static long           barrel_cy;         /* barrel center y (FP) */
 static unsigned char  barrel_btn_released; /* 1 = jump released since entry */
+static unsigned char  barrel_launched;     /* 1 = suppress friction until landing */
 
 
 /* ── Violet/Pink block system (jump-toggle) ─────────────── */
@@ -836,6 +837,7 @@ static void barrel_update(unsigned char joy) {
                 player.falling = 1;
                 break;
         }
+        barrel_launched = 1;
     }
 }
 
@@ -867,7 +869,7 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         player.vx += accel;
         if (player.vx > max_spd) player.vx = max_spd;
         player.facing_left = 0;
-    } else {
+    } else if (!barrel_launched) {
         player.vx = FP_MUL(player.vx, fric);
         if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
     }
