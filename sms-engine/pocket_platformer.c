@@ -64,6 +64,16 @@
 #define OBJ_COIN             5
 #define OBJ_FINISH_FLAG_LOCKED 12
 #define OBJ_NPC          13
+#define OBJ_BARREL       14
+#define VRAM_SPR_BARREL_RIGHT  267
+#define VRAM_SPR_BARREL_LEFT   268
+#define VRAM_SPR_BARREL_TOP    269
+#define VRAM_SPR_BARREL_BOTTOM 270
+#define BARREL_DIR_RIGHT 0
+#define BARREL_DIR_TOP   1
+#define BARREL_DIR_LEFT  2
+#define BARREL_DIR_BOTTOM 3
+#define BARREL_LAUNCH_SPEED FP(2.0) /* 6 JS px/frame * 8/24 */
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
@@ -171,6 +181,13 @@ static unsigned char  npc_contact_idx;   /* 0xFF = no NPC contact this frame */
 static unsigned char  npc_contact_level; /* level of contacted NPC */
 static unsigned char  npc_contact_auto;  /* play_automatically flag */
 
+/* ── Barrel Cannon state ───────────────────────────────── */
+static unsigned char  barrel_active;     /* 1 = player inside a barrel */
+static unsigned char  barrel_dir;        /* BARREL_DIR_* */
+static long           barrel_cx;         /* barrel center x (FP) */
+static long           barrel_cy;         /* barrel center y (FP) */
+static unsigned char  barrel_btn_released; /* 1 = jump released since entry */
+
 
 /* ── Violet/Pink block system (jump-toggle) ─────────────── */
 #define MAX_VP_BLOCKS   48
@@ -234,7 +251,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 11u * 32u); /* +1 for NPC sprite */
+    res_levels  = (level_header *)(res_sprites + 15u * 32u); /* 10 std + NPC + 4 barrel */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -462,8 +479,8 @@ static void load_graphics(void) {
     /* BG tiles at VRAM 1..N */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
-    /* Sprite sheet at VRAM 256..266 (11 × 8x8 tiles, last = NPC) */
-    SMS_loadTiles(res_sprites, 256u, 11u * 32u);
+    /* Sprite sheet at VRAM 256..270 (15 × 8x8 tiles: 10 standard + NPC + 4 barrel) */
+    SMS_loadTiles(res_sprites, 256u, 15u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
@@ -526,6 +543,7 @@ static void draw_objects(void) {
         if (obj->type == OBJ_START_FLAG) continue;
         if (obj->type == OBJ_SPIKE) continue;  /* spike is a BG tile */
         if (obj->type == OBJ_NPC) continue;    /* NPC sprite handled separately */
+        if (obj->type == OBJ_BARREL) continue; /* drawn by draw_barrels() */
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
         /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
@@ -542,6 +560,37 @@ static void draw_objects(void) {
 
 /* Draw all NPC objects as sprites (using NPC_SPRITE tile) */
 #define VRAM_SPR_NPC  266   /* tile 266, just after the 10 standard sprite sheet tiles */
+
+
+static void draw_barrels(void) {
+    unsigned char i;
+    unsigned char n;
+    map_res_bank();
+    n = cur_level->obj_count < MAX_OBJECTS ? cur_level->obj_count : MAX_OBJECTS;
+    for (i = 0; i < n; i++) {
+        level_object *obj = &cur_objects[i];
+        int sx, sy;
+        unsigned char raw_y;
+        if (obj->type != OBJ_BARREL) continue;
+        raw_y = obj->y & 0x3F;
+        sx = (int)obj->x * TILE_SIZE - (int)camera_x;
+        sy = (int)raw_y  * TILE_SIZE;
+        if (sx < -8 || sx > SCREEN_PX_W) continue;
+        if (sy < 0  || sy > SCREEN_PX_H) continue;
+        {
+            unsigned char dir = obj->y >> 6;
+            unsigned int btile;
+            switch (dir) {
+                case BARREL_DIR_LEFT:   btile = VRAM_SPR_BARREL_LEFT;   break;
+                case BARREL_DIR_TOP:    btile = VRAM_SPR_BARREL_TOP;    break;
+                case BARREL_DIR_BOTTOM: btile = VRAM_SPR_BARREL_BOTTOM; break;
+                default:                btile = VRAM_SPR_BARREL_RIGHT;  break;
+            }
+            SMS_addSprite((unsigned char)sx, (unsigned char)sy,
+                          (unsigned char)(btile & 0xFF));
+        }
+    }
+}
 
 static void draw_npcs(void) {
     unsigned char i;
@@ -728,10 +777,66 @@ static void render_dialogue(void) {
 static void close_dialogue(void) {
     dialogue_active = 0;
     npc_contact_idx = 0xFF;
+    barrel_active = 0;
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
     SMS_loadBGPalette(res_palette);
+}
+
+
+/* ──────────────────────────────────────────────────────────
+ * Barrel Cannon
+ * ──────────────────────────────────────────────────────────*/
+static void barrel_enter(level_object *obj) {
+    unsigned char raw_y = obj->y & 0x3F;
+    barrel_dir  = obj->y >> 6;
+    barrel_cx   = (long)obj->x * TILE_SIZE * FP_ONE + FP(TILE_SIZE / 2) - FP(PLAYER_W / 2);
+    barrel_cy   = (long)raw_y  * TILE_SIZE * FP_ONE + FP(TILE_SIZE / 2) - FP(PLAYER_H / 2);
+    barrel_active        = 1;
+    barrel_btn_released  = 0;
+    player.vx = player.vy = 0;
+    player.jumping = player.falling = player.on_ground = 0;
+    player.wall_jumping = 0;
+}
+
+static void barrel_update(unsigned char joy) {
+    /* Keep player centered in barrel */
+    player.x  = barrel_cx;
+    player.y  = barrel_cy;
+    player.vx = player.vy = 0;
+    player.jumping = player.falling = 0;
+
+    if (!(joy & PORT_A_KEY_1))
+        barrel_btn_released = 1;
+
+    if (barrel_btn_released && (joy & PORT_A_KEY_1)) {
+        /* Launch! */
+        barrel_active = 0;
+        switch (barrel_dir) {
+            case BARREL_DIR_RIGHT:
+                player.x  = barrel_cx + FP(TILE_SIZE);
+                player.vx = BARREL_LAUNCH_SPEED;
+                player.falling = 1;
+                break;
+            case BARREL_DIR_LEFT:
+                player.x  = barrel_cx - FP(TILE_SIZE);
+                player.vx = -BARREL_LAUNCH_SPEED;
+                player.falling = 1;
+                break;
+            case BARREL_DIR_TOP:
+                player.y    = barrel_cy - FP(TILE_SIZE);
+                player.vy   = -BARREL_LAUNCH_SPEED;
+                player.jumping = 0;
+                player.falling = 1;
+                break;
+            case BARREL_DIR_BOTTOM:
+                player.y    = barrel_cy + FP(TILE_SIZE);
+                player.vy   = BARREL_LAUNCH_SPEED;
+                player.falling = 1;
+                break;
+        }
+    }
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -888,6 +993,7 @@ static void move_player_x(void) {
             long tile_r = (px + PLAYER_W) / TILE_SIZE;
             new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
+            barrel_launched = 0;
         }
     } else if (player.vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
@@ -895,6 +1001,7 @@ static void move_player_x(void) {
             long tile_l = px / TILE_SIZE + 1;
             new_x = tile_l * TILE_SIZE * FP_ONE;
             player.vx = 0;
+            barrel_launched = 0;
         }
     }
     player.x = new_x;
@@ -933,6 +1040,7 @@ static void move_player_y(void) {
             player.jumping = 0;
             player.wall_jumping = 0;
             player.double_jump_used = 0;
+            barrel_launched = 0;
             skip_land:;
         }
     } else {
@@ -1003,7 +1111,8 @@ static void check_object_collisions(void) {
     map_res_bank();
     for (i = 0; i < obj_count; i++) {
         level_object *obj = &cur_objects[i];
-        long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
+        long ox = (long)obj->x * TILE_SIZE;
+        long oy = (long)(obj->type == OBJ_BARREL ? (obj->y & 0x3F) : obj->y) * TILE_SIZE;
         if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
         if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
         switch (obj->type) {
@@ -1012,6 +1121,9 @@ static void check_object_collisions(void) {
                 if (!coins_remaining()) level_complete = 1;
                 break;
             case OBJ_SPIKE: /* handled via tile probe below */ break;
+            case OBJ_BARREL:
+                if (!barrel_active) barrel_enter(obj);
+                break;
             case OBJ_NPC:
                 if (!dialogue_active) {
                     /* Record contact; dialogue opens on button press (or auto) */
@@ -1426,7 +1538,19 @@ static void gameplay_loop(void) {
         apply_gravity();
         move_player_x();
         move_player_y();
-        npc_contact_idx = 0xFF; /* reset each frame */
+        /* Barrel cannon: override physics when player is inside */
+        if (barrel_active) {
+            barrel_update(joy);
+            SMS_initSprites();
+            draw_objects();
+            draw_npcs();
+            draw_player();
+            SMS_finalizeSprites();
+            SMS_copySpritestoSAT();
+            continue;
+        }
+        npc_contact_idx = 0xFF;
+    barrel_active = 0; /* reset each frame */
         check_object_collisions();
         /* NPC dialogue trigger */
         if (!dialogue_active && npc_contact_idx != 0xFF) {
@@ -1454,6 +1578,7 @@ static void gameplay_loop(void) {
 
         SMS_initSprites();
         draw_objects();
+        draw_barrels();
         draw_npcs();
         draw_player();
         SMS_finalizeSprites();
