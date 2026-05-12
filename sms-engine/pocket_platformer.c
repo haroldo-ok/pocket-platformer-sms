@@ -65,7 +65,10 @@
 #define OBJ_FINISH_FLAG_LOCKED 12
 #define OBJ_NPC          13
 #define OBJ_BARREL       14
-#define VRAM_SPR_BARREL  267
+#define VRAM_SPR_BARREL_RIGHT  267
+#define VRAM_SPR_BARREL_LEFT   268
+#define VRAM_SPR_BARREL_TOP    269
+#define VRAM_SPR_BARREL_BOTTOM 270
 #define BARREL_DIR_RIGHT 0
 #define BARREL_DIR_TOP   1
 #define BARREL_DIR_LEFT  2
@@ -248,7 +251,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 12u * 32u); /* +NPC +barrel sprites */
+    res_levels  = (level_header *)(res_sprites + 15u * 32u); /* 10 std + NPC + 4 barrel */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -476,8 +479,8 @@ static void load_graphics(void) {
     /* BG tiles at VRAM 1..N */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
-    /* Sprite sheet at VRAM 256..267 (12 × 8x8 tiles) */
-    SMS_loadTiles(res_sprites, 256u, 12u * 32u);
+    /* Sprite sheet at VRAM 256..270 (15 × 8x8 tiles: 10 standard + NPC + 4 barrel) */
+    SMS_loadTiles(res_sprites, 256u, 15u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
@@ -574,8 +577,18 @@ static void draw_barrels(void) {
         sy = (int)raw_y  * TILE_SIZE;
         if (sx < -8 || sx > SCREEN_PX_W) continue;
         if (sy < 0  || sy > SCREEN_PX_H) continue;
-        SMS_addSprite((unsigned char)sx, (unsigned char)sy,
-                      (unsigned char)(VRAM_SPR_BARREL & 0xFF));
+        {
+            unsigned char dir = obj->y >> 6;
+            unsigned int btile;
+            switch (dir) {
+                case BARREL_DIR_LEFT:   btile = VRAM_SPR_BARREL_LEFT;   break;
+                case BARREL_DIR_TOP:    btile = VRAM_SPR_BARREL_TOP;    break;
+                case BARREL_DIR_BOTTOM: btile = VRAM_SPR_BARREL_BOTTOM; break;
+                default:                btile = VRAM_SPR_BARREL_RIGHT;  break;
+            }
+            SMS_addSprite((unsigned char)sx, (unsigned char)sy,
+                          (unsigned char)(btile & 0xFF));
+        }
     }
 }
 
@@ -1095,7 +1108,8 @@ static void check_object_collisions(void) {
     map_res_bank();
     for (i = 0; i < obj_count; i++) {
         level_object *obj = &cur_objects[i];
-        long ox = (long)obj->x * TILE_SIZE, oy = (long)obj->y * TILE_SIZE;
+        long ox = (long)obj->x * TILE_SIZE;
+        long oy = (long)(obj->type == OBJ_BARREL ? (obj->y & 0x3F) : obj->y) * TILE_SIZE;
         if (px + PLAYER_W <= ox || px >= ox + TILE_SIZE) continue;
         if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
         switch (obj->type) {
