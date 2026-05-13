@@ -187,7 +187,8 @@ static unsigned char  barrel_dir;        /* BARREL_DIR_* */
 static long           barrel_cx;         /* barrel center x (FP) */
 static long           barrel_cy;         /* barrel center y (FP) */
 static unsigned char  barrel_btn_released; /* 1 = jump released since entry */
-static unsigned char  barrel_launched;     /* 1 = suppress friction until landing */
+static unsigned char  barrel_launched;     /* 1 = in flight (suppress friction) */
+static unsigned char  barrel_launched_h;   /* 1 = horizontal launch (suppress gravity too) */
 
 
 /* ── Violet/Pink block system (jump-toggle) ─────────────── */
@@ -818,22 +819,28 @@ static void barrel_update(unsigned char joy) {
             case BARREL_DIR_RIGHT:
                 player.x  = barrel_cx + FP(TILE_SIZE);
                 player.vx = BARREL_LAUNCH_SPEED;
+                player.vy = 0;
                 player.falling = 1;
+                barrel_launched_h = 1;
                 break;
             case BARREL_DIR_LEFT:
                 player.x  = barrel_cx - FP(TILE_SIZE);
                 player.vx = -BARREL_LAUNCH_SPEED;
+                player.vy = 0;
                 player.falling = 1;
+                barrel_launched_h = 1;
                 break;
             case BARREL_DIR_TOP:
                 player.y    = barrel_cy - FP(TILE_SIZE);
                 player.vy   = -BARREL_LAUNCH_SPEED;
+                player.vx   = 0;
                 player.jumping = 0;
                 player.falling = 1;
                 break;
             case BARREL_DIR_BOTTOM:
                 player.y    = barrel_cy + FP(TILE_SIZE);
                 player.vy   = BARREL_LAUNCH_SPEED;
+                player.vx   = 0;
                 player.falling = 1;
                 break;
         }
@@ -848,7 +855,7 @@ static void barrel_update(unsigned char joy) {
 
 static void apply_gravity(void) {
     /* Gravity only while falling (not during active jump ramp or barrel launch) */
-    if (player.falling && !barrel_launched) {
+    if (player.falling && !barrel_launched_h) {
         player.vy += GRAVITY;
         if (player.vy > MAX_VY)
             player.vy = MAX_VY;
@@ -996,6 +1003,7 @@ static void move_player_x(void) {
             new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
             barrel_launched = 0;
+            barrel_launched_h = 0;
         }
     } else if (player.vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
@@ -1004,6 +1012,7 @@ static void move_player_x(void) {
             new_x = tile_l * TILE_SIZE * FP_ONE;
             player.vx = 0;
             barrel_launched = 0;
+            barrel_launched_h = 0;
         }
     }
     player.x = new_x;
@@ -1043,6 +1052,7 @@ static void move_player_y(void) {
             player.wall_jumping = 0;
             player.double_jump_used = 0;
             barrel_launched = 0;
+            barrel_launched_h = 0;
             skip_land:;
         }
     } else {
