@@ -44,16 +44,16 @@ Symbol Table
   9 ___SMS__SEGA_signature                                         007FF0 GR
   0 ___str_0                                                       0012A3 R
   0 ___str_1                                                       0012B0 R
-  0 ___str_2                                                       00443D R
-  0 ___str_3                                                       00444F R
-  0 ___str_4                                                       004466 R
+  0 ___str_2                                                       004433 R
+  0 ___str_3                                                       004445 R
+  0 ___str_4                                                       00445C R
     __divslong                                                     ****** GX
     __mulint                                                       ****** GX
     __mullong                                                      ****** GX
-  0 __str_5                                                        0044B4 R
-  0 __str_6                                                        0044CA R
-  0 __str_7                                                        0044E7 R
-  0 _apply_gravity                                                 001508 R
+  0 __str_5                                                        0044AA R
+  0 __str_6                                                        0044C0 R
+  0 __str_7                                                        0044DD R
+  0 _apply_gravity                                                 001503 R
   1 _barrel_active                                                 000599 R
   1 _barrel_btn_released                                           0005A3 R
   1 _barrel_cx                                                     00059B R
@@ -64,21 +64,21 @@ Hexadecimal [24-Bits]
 Symbol Table
 
   1 _barrel_dir                                                    00059A R
-  0 _barrel_enter                                                  0012D9 R
+  0 _barrel_enter                                                  0012D4 R
   1 _barrel_launched                                               0005A4 R
   1 _barrel_launched_h                                             0005A5 R
-  0 _barrel_update                                                 00136D R
+  0 _barrel_update                                                 001368 R
   1 _camera_x                                                      00002B R
-  0 _check_disp_touch                                              0031BB R
-  0 _check_object_collisions                                       0028A6 R
-  0 _check_rb_switch                                               00319A R
+  0 _check_disp_touch                                              0031B6 R
+  0 _check_object_collisions                                       0028A1 R
+  0 _check_rb_switch                                               003195 R
   0 _close_dialogue                                                0012B9 R
   1 _coin_collected                                                00002F R
   0 _coins_remaining                                               000B26 R
   1 _cur_level                                                     000750 R
   1 _cur_map                                                       000752 R
   1 _cur_objects                                                   000754 R
-  0 _death_sequence                                                003E88 R
+  0 _death_sequence                                                003E83 R
   1 _dialogue_active                                               0000B2 R
   1 _dialogue_btn_prev                                             000595 R
   1 _dialogue_buf                                                  0000B5 R
@@ -104,11 +104,11 @@ Symbol Table
   0 _fg_disp_touch_connected_dy_65536_191                          00035D R
     _font_1bpp                                                     ****** GX
     _font_1bpp_size                                                ****** GX
-  0 _gameplay_loop                                                 003EB2 R
+  0 _gameplay_loop                                                 003EAD R
   0 _get_level                                                     00005D R
   0 _get_npc_table                                                 000F24 R
   0 _get_tile                                                      00011E R
-  0 _handle_input                                                  001548 R
+  0 _handle_input                                                  001543 R
   0 _has_resource                                                  000000 R
   0 _init_resources                                                000026 R
   0 _is_solid_falling_px                                           0006DF R
@@ -116,16 +116,16 @@ Symbol Table
   1 _level_complete                                                0000AF R
   1 _level_n_global                                                0000B1 R
   0 _load_graphics                                                 000A04 R
-  0 _load_level                                                    003B3A R
+  0 _load_level                                                    003B35 R
   0 _load_npc_dialogue                                             000FD7 R
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 3.
 Hexadecimal [24-Bits]
 
 Symbol Table
 
-  0 _main                                                          004477 GR
-  0 _move_player_x                                                 001EF2 R
-  0 _move_player_y                                                 00215C R
+  0 _main                                                          00446D GR
+  0 _move_player_x                                                 001EED R
+  0 _move_player_y                                                 002157 R
   1 _npc_contact_auto                                              000598 R
   1 _npc_contact_idx                                               000596 R
   1 _npc_contact_level                                             000597 R
@@ -137,13 +137,13 @@ Symbol Table
   1 _prev_player_y                                                 0006DC R
   1 _rb_block_count                                                0006D8 R
   1 _rb_blocks                                                     000638 R
-  0 _rb_is_passable                                                0030A8 R
+  0 _rb_is_passable                                                0030A3 R
   1 _rb_red_active                                                 0006DA R
-  0 _rb_redraw_all                                                 00312E R
+  0 _rb_redraw_all                                                 003129 R
   1 _rb_switch_count                                               0006D9 R
   1 _rb_switch_locked                                              0006DB R
   1 _rb_switches                                                   0006C8 R
-  0 _rb_vram_for_block                                             0030FA R
+  0 _rb_vram_for_block                                             0030F5 R
   0 _render_dialogue                                               001210 R
   1 _res_header                                                    000000 R
   1 _res_levels                                                    00000A R
@@ -154,14 +154,14 @@ Symbol Table
   0 _restore_dialogue_rows                                         001150 R
   0 _save_dialogue_rows                                            001131 R
   1 _saved_nametable                                               000455 R
-  0 _title_screen                                                  0043CA R
-  0 _update_anim                                                   003B25 R
-  0 _update_camera                                                 003B1A R
-  0 _update_disappearing_blocks                                    0035DE R
+  0 _title_screen                                                  0043C0 R
+  0 _update_anim                                                   003B20 R
+  0 _update_camera                                                 003B15 R
+  0 _update_disappearing_blocks                                    0035D9 R
   1 _vp_block_count                                                000636 R
   1 _vp_blocks                                                     0005A6 R
-  0 _vp_is_passable                                                002E0B R
-  0 _vp_toggle                                                     002E5D R
+  0 _vp_is_passable                                                002E06 R
+  0 _vp_toggle                                                     002E58 R
   1 _vp_violet_active                                              000637 R
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80), page 4.
@@ -169,7 +169,7 @@ Hexadecimal [24-Bits]
 
 Area Table
 
-   0 _CODE                                      size   451B   flags    0
+   0 _CODE                                      size   4511   flags    0
    1 _DATA                                      size    756   flags    0
    2 _INITIALIZED                               size      0   flags    0
    3 _DABS                                      size      0   flags    8

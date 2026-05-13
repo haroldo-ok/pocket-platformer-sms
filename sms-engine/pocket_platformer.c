@@ -780,7 +780,6 @@ static void render_dialogue(void) {
 static void close_dialogue(void) {
     dialogue_active = 0;
     npc_contact_idx = 0xFF;
-    barrel_active = 0;
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
@@ -1562,8 +1561,7 @@ static void gameplay_loop(void) {
             SMS_copySpritestoSAT();
             continue;
         }
-        npc_contact_idx = 0xFF;
-    barrel_active = 0; /* reset each frame */
+        npc_contact_idx = 0xFF; /* reset each frame */
         check_object_collisions();
         /* NPC dialogue trigger */
         if (!dialogue_active && npc_contact_idx != 0xFF) {
