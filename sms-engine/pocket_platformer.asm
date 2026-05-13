@@ -3787,10 +3787,13 @@ _barrel_update:
 ; Function apply_gravity
 ; ---------------------------------
 _apply_gravity:
-;pocket_platformer.c:851: if (player.falling) {
+;pocket_platformer.c:851: if (player.falling && !barrel_launched) {
 	ld	a, (#_player + 17)
 	or	a, a
 	ret	Z
+	ld	a, (_barrel_launched+0)
+	or	a, a
+	ret	NZ
 ;pocket_platformer.c:852: player.vy += GRAVITY;
 	ld	hl, (#(_player + 12) + 0)
 	ld	de, (#(_player + 12) + 2)
@@ -3800,9 +3803,9 @@ _apply_gravity:
 	ld	a, h
 	adc	a, #0x00
 	ld	b, a
-	jr	NC, 00117$
+	jr	NC, 00123$
 	inc	de
-00117$:
+00123$:
 	ld	((_player + 12)), bc
 	ld	((_player + 12)+2), de
 ;pocket_platformer.c:853: if (player.vy > MAX_VY)
@@ -3814,9 +3817,9 @@ _apply_gravity:
 	sbc	a, e
 	ld	a, #0x00
 	sbc	a, d
-	jp	PO, 00118$
+	jp	PO, 00124$
 	xor	a, #0x80
-00118$:
+00124$:
 	ret	P
 ;pocket_platformer.c:854: player.vy = MAX_VY;
 	ld	hl, #0x0700

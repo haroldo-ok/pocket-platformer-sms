@@ -847,8 +847,8 @@ static void barrel_update(unsigned char joy) {
 
 
 static void apply_gravity(void) {
-    /* Gravity only while falling (not during active jump ramp) */
-    if (player.falling) {
+    /* Gravity only while falling (not during active jump ramp or barrel launch) */
+    if (player.falling && !barrel_launched) {
         player.vy += GRAVITY;
         if (player.vy > MAX_VY)
             player.vy = MAX_VY;
