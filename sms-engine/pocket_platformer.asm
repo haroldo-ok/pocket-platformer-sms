@@ -3748,7 +3748,7 @@ _barrel_update:
 	ld	((_player + 4)), bc
 	ld	((_player + 4)+2), de
 ;pocket_platformer.c:835: player.vy   = -BARREL_LAUNCH_SPEED_V;
-	ld	hl, #0xfc00
+	ld	hl, #0xfa00
 	ld	((_player + 12)), hl
 	ld	hl, #0xffff
 	ld	((_player + 12)+2), hl
@@ -3781,7 +3781,7 @@ _barrel_update:
 	ld	((_player + 4)), bc
 	ld	((_player + 4)+2), de
 ;pocket_platformer.c:842: player.vy   = BARREL_LAUNCH_SPEED_V;
-	ld	hl, #0x0400
+	ld	hl, #0x0600
 	ld	((_player + 12)), hl
 	ld	h, l
 	ld	((_player + 12)+2), hl

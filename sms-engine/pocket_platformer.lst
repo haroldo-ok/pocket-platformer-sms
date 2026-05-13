@@ -3750,7 +3750,7 @@
       00149D ED 43r10r00      [20] 3748 	ld	((_player + 4)), bc
       0014A1 ED 53r12r00      [20] 3749 	ld	((_player + 4)+2), de
                                    3750 ;pocket_platformer.c:835: player.vy   = -BARREL_LAUNCH_SPEED_V;
-      0014A5 21 00 FC         [10] 3751 	ld	hl, #0xfc00
+      0014A5 21 00 FA         [10] 3751 	ld	hl, #0xfa00
       0014A8 22r18r00         [16] 3752 	ld	((_player + 12)), hl
       0014AB 21 FF FF         [10] 3753 	ld	hl, #0xffff
       0014AE 22r1Ar00         [16] 3754 	ld	((_player + 12)+2), hl
@@ -3783,7 +3783,7 @@
       0014DC ED 43r10r00      [20] 3781 	ld	((_player + 4)), bc
       0014E0 ED 53r12r00      [20] 3782 	ld	((_player + 4)+2), de
                                    3783 ;pocket_platformer.c:842: player.vy   = BARREL_LAUNCH_SPEED_V;
-      0014E4 21 00 04         [10] 3784 	ld	hl, #0x0400
+      0014E4 21 00 06         [10] 3784 	ld	hl, #0x0600
       0014E7 22r18r00         [16] 3785 	ld	((_player + 12)), hl
       0014EA 65               [ 4] 3786 	ld	h, l
       0014EB 22r1Ar00         [16] 3787 	ld	((_player + 12)+2), hl

@@ -74,7 +74,7 @@
 #define BARREL_DIR_LEFT  2
 #define BARREL_DIR_BOTTOM 3
 #define BARREL_LAUNCH_SPEED_H FP(2.0) /* horizontal: constant until wall */
-#define BARREL_LAUNCH_SPEED_V FP(4.0) /* vertical: ~6 tile peak height */
+#define BARREL_LAUNCH_SPEED_V FP(6.0) /* vertical: strong cannon launch */
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
