@@ -6593,12 +6593,12 @@ _check_object_collisions:
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
-00389$:
+00396$:
 	sra	h
 	rr	l
 	rr	d
 	rr	e
-	djnz	00389$
+	djnz	00396$
 	ld	-27 (ix), e
 	ld	-26 (ix), d
 	ld	-25 (ix), l
@@ -6606,12 +6606,12 @@ _check_object_collisions:
 	ld	de, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	b, #0x08
-00391$:
+00398$:
 	sra	h
 	rr	l
 	rr	d
 	rr	e
-	djnz	00391$
+	djnz	00398$
 	ld	-23 (ix), e
 	ld	-22 (ix), d
 	ld	-21 (ix), l
@@ -6622,9 +6622,9 @@ _check_object_collisions:
 	inc	hl
 	ld	a, (hl)
 	cp	a, #0x80
-	jr	C, 00163$
+	jr	C, 00164$
 	ld	a, #0x80
-00163$:
+00164$:
 	ld	-19 (ix), a
 ;pocket_platformer.c:1123: map_res_bank();
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
@@ -6655,10 +6655,10 @@ _check_object_collisions:
 	adc	a, #0x00
 	ld	-11 (ix), a
 	ld	-3 (ix), #0x00
-00159$:
+00160$:
 	ld	a, -3 (ix)
 	sub	a, -19 (ix)
-	jp	NC, 00160$
+	jp	NC, 00161$
 ;pocket_platformer.c:1125: level_object *obj = &cur_objects[i];
 	ld	c, -3 (ix)
 	ld	b, #0x00
@@ -6680,11 +6680,11 @@ _check_object_collisions:
 	ld	h, a
 	ld	c, a
 	ld	b, #0x03
-00393$:
+00400$:
 	add	hl, hl
 	adc	a, a
 	rl	c
-	djnz	00393$
+	djnz	00400$
 	ld	-31 (ix), l
 	ld	-30 (ix), h
 	ld	-29 (ix), a
@@ -6704,38 +6704,38 @@ _check_object_collisions:
 	ld	a, -8 (ix)
 	sub	a, #0x0e
 	ld	a, #0x01
-	jr	Z, 00396$
+	jr	Z, 00403$
 	xor	a, a
-00396$:
+00403$:
 	ld	-6 (ix), a
 	ld	a, -7 (ix)
 	ld	-5 (ix), a
 	ld	-4 (ix), #0x00
 	ld	a, -6 (ix)
 	or	a, a
-	jr	Z, 00164$
+	jr	Z, 00165$
 	ld	a, -5 (ix)
 	and	a, #0x3f
 	ld	-2 (ix), a
 	ld	-1 (ix), #0x00
-	jr	00165$
-00164$:
+	jr	00166$
+00165$:
 	ld	a, -5 (ix)
 	ld	-2 (ix), a
 	ld	a, -4 (ix)
 	ld	-1 (ix), a
-00165$:
+00166$:
 	ld	e, -2 (ix)
 	ld	a, -1 (ix)
 	ld	d, a
 	rlca
 	sbc	hl, hl
 	ld	b, #0x03
-00397$:
+00404$:
 	sla	e
 	rl	d
 	adc	hl, hl
-	djnz	00397$
+	djnz	00404$
 	inc	sp
 	inc	sp
 	push	de
@@ -6750,10 +6750,10 @@ _check_object_collisions:
 	sbc	a, -12 (ix)
 	ld	a, -28 (ix)
 	sbc	a, -11 (ix)
-	jp	PO, 00399$
+	jp	PO, 00406$
 	xor	a, #0x80
-00399$:
-	jp	P, 00137$
+00406$:
+	jp	P, 00138$
 	ld	a, -31 (ix)
 	add	a, #0x08
 	ld	c, a
@@ -6774,10 +6774,10 @@ _check_object_collisions:
 	sbc	a, e
 	ld	a, -24 (ix)
 	sbc	a, d
-	jp	PO, 00400$
+	jp	PO, 00407$
 	xor	a, #0x80
-00400$:
-	jp	P, 00137$
+00407$:
+	jp	P, 00138$
 ;pocket_platformer.c:1129: if (py + PLAYER_H <= oy || py >= oy + TILE_SIZE) continue;
 	ld	a, -35 (ix)
 	sub	a, -18 (ix)
@@ -6787,10 +6787,10 @@ _check_object_collisions:
 	sbc	a, -16 (ix)
 	ld	a, -32 (ix)
 	sbc	a, -15 (ix)
-	jp	PO, 00401$
+	jp	PO, 00408$
 	xor	a, #0x80
-00401$:
-	jp	P, 00137$
+00408$:
+	jp	P, 00138$
 	ld	a, -35 (ix)
 	add	a, #0x08
 	ld	c, a
@@ -6811,54 +6811,57 @@ _check_object_collisions:
 	sbc	a, e
 	ld	a, -20 (ix)
 	sbc	a, d
-	jp	PO, 00402$
+	jp	PO, 00409$
 	xor	a, #0x80
-00402$:
-	jp	P, 00137$
+00409$:
+	jp	P, 00138$
 ;pocket_platformer.c:1130: switch (obj->type) {
 	ld	a, -8 (ix)
 	sub	a, #0x02
 	jr	Z, 00107$
 	ld	a, -8 (ix)
 	sub	a, #0x03
-	jp	Z,00137$
+	jp	Z,00138$
 	ld	a, -8 (ix)
 	sub	a, #0x04
-	jp	Z,00126$
+	jp	Z,00127$
 	ld	a, -8 (ix)
 	sub	a, #0x05
-	jp	Z,00133$
+	jp	Z,00134$
 	ld	a, -8 (ix)
 	sub	a, #0x0c
 	jr	Z, 00108$
 	ld	a, -8 (ix)
 	sub	a, #0x0d
-	jr	Z, 00115$
+	jr	Z, 00116$
 	ld	a, -6 (ix)
 	or	a, a
 	jr	NZ, 00112$
-	jp	00137$
+	jp	00138$
 ;pocket_platformer.c:1131: case OBJ_FINISH_FLAG: level_complete = 1; break;
 00107$:
 	ld	hl, #_level_complete
 	ld	(hl), #0x01
-	jp	00137$
+	jp	00138$
 ;pocket_platformer.c:1132: case OBJ_FINISH_FLAG_LOCKED:
 00108$:
 ;pocket_platformer.c:1133: if (!coins_remaining()) level_complete = 1;
 	call	_coins_remaining
 	or	a, a
-	jp	NZ, 00137$
+	jp	NZ, 00138$
 	ld	hl, #_level_complete
 	ld	(hl), #0x01
 ;pocket_platformer.c:1134: break;
-	jp	00137$
+	jp	00138$
 ;pocket_platformer.c:1136: case OBJ_BARREL:
 00112$:
-;pocket_platformer.c:1137: if (!barrel_active) barrel_enter(obj);
+;pocket_platformer.c:1137: if (!barrel_active && !barrel_launched) barrel_enter(obj);
 	ld	a, (_barrel_active+0)
 	or	a, a
-	jp	NZ, 00137$
+	jp	NZ, 00138$
+	ld	a, (_barrel_launched+0)
+	or	a, a
+	jp	NZ, 00138$
 	ld	l, -10 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -6867,20 +6870,20 @@ _check_object_collisions:
 ;	spillPairReg hl
 	call	_barrel_enter
 ;pocket_platformer.c:1138: break;
-	jp	00137$
+	jp	00138$
 ;pocket_platformer.c:1139: case OBJ_NPC:
-00115$:
+00116$:
 ;pocket_platformer.c:1140: if (!dialogue_active) {
 	ld	a, (_dialogue_active+0)
 	or	a, a
-	jp	NZ, 00137$
+	jp	NZ, 00138$
 ;pocket_platformer.c:1144: for (k = 0; k < i; k++)
 	ld	-1 (ix), #0x00
 	ld	-2 (ix), #0x00
-00140$:
+00141$:
 	ld	a, -2 (ix)
 	sub	a, -3 (ix)
-	jr	NC, 00202$
+	jr	NC, 00204$
 ;pocket_platformer.c:1145: if (cur_objects[k].type == OBJ_NPC) ni++;
 	ld	c, -2 (ix)
 	ld	b, #0x00
@@ -6904,13 +6907,13 @@ _check_object_collisions:
 	inc	hl
 	ld	a, (hl)
 	sub	a, #0x0d
-	jr	NZ, 00141$
+	jr	NZ, 00142$
 	inc	-1 (ix)
-00141$:
+00142$:
 ;pocket_platformer.c:1144: for (k = 0; k < i; k++)
 	inc	-2 (ix)
-	jr	00140$
-00202$:
+	jr	00141$
+00204$:
 	ld	a, -1 (ix)
 	ld	-10 (ix), a
 ;pocket_platformer.c:1146: npc_contact_idx   = ni;
@@ -6925,7 +6928,7 @@ _check_object_collisions:
 	ld	-8 (ix), d
 ;pocket_platformer.c:1152: for (li = 0; li < level_n_global; li++) {
 	ld	-2 (ix), #0x00
-00149$:
+00150$:
 ;pocket_platformer.c:1153: unsigned char cnt = *p++;
 	ld	c, -9 (ix)
 	ld	b, -8 (ix)
@@ -6938,17 +6941,17 @@ _check_object_collisions:
 	ld	hl, #_level_n_global
 	ld	a, -2 (ix)
 	sub	a, (hl)
-	jr	NC, 00121$
+	jr	NC, 00122$
 ;pocket_platformer.c:1153: unsigned char cnt = *p++;
 	ld	-9 (ix), c
 	ld	-8 (ix), b
 	ld	c, -1 (ix)
 ;pocket_platformer.c:1155: for (nj = 0; nj < cnt; nj++) {
 	ld	-1 (ix), #0x00
-00146$:
+00147$:
 	ld	a, -1 (ix)
 	sub	a, c
-	jr	NC, 00150$
+	jr	NC, 00151$
 ;pocket_platformer.c:1157: p++;
 	ld	e, -9 (ix)
 	ld	d, -8 (ix)
@@ -6961,10 +6964,10 @@ _check_object_collisions:
 	ld	-8 (ix), d
 ;pocket_platformer.c:1159: for (ll = 0; ll < lines; ll++) { unsigned char ln = *p++; p += ln; }
 	ld	e, #0x00
-00143$:
+00144$:
 	ld	a, e
 	sub	a, -7 (ix)
-	jr	NC, 00147$
+	jr	NC, 00148$
 	ld	l, -9 (ix)
 	ld	h, -8 (ix)
 	ld	a, (hl)
@@ -6982,16 +6985,16 @@ _check_object_collisions:
 	adc	a, #0x00
 	ld	-8 (ix), a
 	inc	e
-	jr	00143$
-00147$:
+	jr	00144$
+00148$:
 ;pocket_platformer.c:1155: for (nj = 0; nj < cnt; nj++) {
 	inc	-1 (ix)
-	jr	00146$
-00150$:
+	jr	00147$
+00151$:
 ;pocket_platformer.c:1152: for (li = 0; li < level_n_global; li++) {
 	inc	-2 (ix)
-	jp	00149$
-00121$:
+	jp	00150$
+00122$:
 ;pocket_platformer.c:1163: { unsigned char cnt = *p++;
 	ld	-6 (ix), c
 	ld	-5 (ix), b
@@ -6999,13 +7002,13 @@ _check_object_collisions:
 	ld	-4 (ix), a
 ;pocket_platformer.c:1165: for (nj = 0; nj < cnt && nj < ni; nj++) {
 	ld	-1 (ix), #0x00
-00156$:
+00157$:
 	ld	a, -1 (ix)
 	sub	a, -4 (ix)
-	jr	NC, 00123$
+	jr	NC, 00124$
 	ld	a, -1 (ix)
 	sub	a, -10 (ix)
-	jr	NC, 00123$
+	jr	NC, 00124$
 ;pocket_platformer.c:1167: p++;
 	ld	e, -6 (ix)
 	ld	d, -5 (ix)
@@ -7018,10 +7021,10 @@ _check_object_collisions:
 	ld	-5 (ix), d
 ;pocket_platformer.c:1169: for (ll = 0; ll < lines; ll++) { unsigned char ln = *p++; p += ln; }
 	ld	e, #0x00
-00152$:
+00153$:
 	ld	a, e
 	sub	a, c
-	jr	NC, 00157$
+	jr	NC, 00158$
 	ld	l, -6 (ix)
 	ld	h, -5 (ix)
 	ld	a, (hl)
@@ -7038,26 +7041,26 @@ _check_object_collisions:
 	adc	a, h
 	ld	-5 (ix), a
 	inc	e
-	jr	00152$
-00157$:
+	jr	00153$
+00158$:
 ;pocket_platformer.c:1165: for (nj = 0; nj < cnt && nj < ni; nj++) {
 	inc	-1 (ix)
-	jr	00156$
-00123$:
+	jr	00157$
+00124$:
 ;pocket_platformer.c:1172: npc_contact_auto = *p; /* play_automatically byte */
 	ld	l, -6 (ix)
 	ld	h, -5 (ix)
 	ld	a, (hl)
 	ld	(_npc_contact_auto+0), a
 ;pocket_platformer.c:1174: break;
-	jp	00137$
+	jp	00138$
 ;pocket_platformer.c:1175: case OBJ_TRAMPOLINE:
-00126$:
+00127$:
 ;pocket_platformer.c:1176: if (player.vy >= 0) {
 	ld	bc, (#_player + 12)
 	ld	hl, (#_player + 14)
 	bit	7, h
-	jp	NZ, 00137$
+	jp	NZ, 00138$
 ;pocket_platformer.c:1177: long tramp_mid = (long)obj->y * TILE_SIZE + TILE_SIZE / 2;
 	ld	a, -7 (ix)
 	ld	-31 (ix), a
@@ -7074,12 +7077,12 @@ _check_object_collisions:
 	ld	a, -28 (ix)
 	ld	-4 (ix), a
 	ld	b, #0x03
-00411$:
+00418$:
 	sla	-7 (ix)
 	rl	-6 (ix)
 	rl	-5 (ix)
 	rl	-4 (ix)
-	djnz	00411$
+	djnz	00418$
 	ld	a, -7 (ix)
 	add	a, #0x04
 	ld	-35 (ix), a
@@ -7100,12 +7103,12 @@ _check_object_collisions:
 	ld	bc, #0x0004
 	ldir
 	ld	b, #0x08
-00413$:
+00420$:
 	sra	-4 (ix)
 	rr	-5 (ix)
 	rr	-6 (ix)
 	rr	-7 (ix)
-	djnz	00413$
+	djnz	00420$
 	ld	a, -7 (ix)
 	add	a, #0x08
 	ld	-31 (ix), a
@@ -7138,10 +7141,10 @@ _check_object_collisions:
 	sbc	a, -29 (ix)
 	ld	a, -4 (ix)
 	sbc	a, -28 (ix)
-	jp	PO, 00415$
+	jp	PO, 00422$
 	xor	a, #0x80
-00415$:
-	jp	M, 00137$
+00422$:
+	jp	M, 00138$
 ;pocket_platformer.c:1179: long base = (long)res_physics->jump_speed;
 	ld	hl, (_res_physics)
 	ld	-2 (ix), l
@@ -7171,12 +7174,12 @@ _check_object_collisions:
 	ld	a, -32 (ix)
 	ld	-4 (ix), a
 	ld	b, #0x02
-00416$:
+00423$:
 	sla	-7 (ix)
 	rl	-6 (ix)
 	rl	-5 (ix)
 	rl	-4 (ix)
-	djnz	00416$
+	djnz	00423$
 	ld	hl, #0x0000
 	push	hl
 	ld	l, #0x0f
@@ -7231,12 +7234,12 @@ _check_object_collisions:
 ;pocket_platformer.c:1186: if (vp_block_count) vp_toggle();
 	ld	a, (_vp_block_count+0)
 	or	a, a
-	jr	Z, 00137$
+	jr	Z, 00138$
 	call	_vp_toggle
 ;pocket_platformer.c:1189: break;
-	jr	00137$
+	jr	00138$
 ;pocket_platformer.c:1190: case OBJ_COIN:
-00133$:
+00134$:
 ;pocket_platformer.c:1191: if (!coin_collected[i]) coin_collected[i] = 1; break;
 	ld	a, #<(_coin_collected)
 	add	a, -3 (ix)
@@ -7250,14 +7253,14 @@ _check_object_collisions:
 ;	spillPairReg hl
 	ld	a, (hl)
 	or	a, a
-	jr	NZ, 00137$
+	jr	NZ, 00138$
 	ld	(hl), #0x01
 ;pocket_platformer.c:1192: }
-00137$:
+00138$:
 ;pocket_platformer.c:1124: for (i = 0; i < obj_count; i++) {
 	inc	-3 (ix)
-	jp	00159$
-00160$:
+	jp	00160$
+00161$:
 ;pocket_platformer.c:1194: }
 	ld	sp, ix
 	pop	ix
