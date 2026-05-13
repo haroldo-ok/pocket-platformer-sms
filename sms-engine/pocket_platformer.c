@@ -73,7 +73,8 @@
 #define BARREL_DIR_TOP   1
 #define BARREL_DIR_LEFT  2
 #define BARREL_DIR_BOTTOM 3
-#define BARREL_LAUNCH_SPEED FP(2.0) /* 6 JS px/frame * 8/24 */
+#define BARREL_LAUNCH_SPEED_H FP(2.0) /* horizontal: constant until wall */
+#define BARREL_LAUNCH_SPEED_V FP(4.0) /* vertical: ~6 tile peak height */
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
@@ -818,28 +819,28 @@ static void barrel_update(unsigned char joy) {
         switch (barrel_dir) {
             case BARREL_DIR_RIGHT:
                 player.x  = barrel_cx + FP(TILE_SIZE);
-                player.vx = BARREL_LAUNCH_SPEED;
+                player.vx = BARREL_LAUNCH_SPEED_H;
                 player.vy = 0;
                 player.falling = 1;
                 barrel_launched_h = 1;
                 break;
             case BARREL_DIR_LEFT:
                 player.x  = barrel_cx - FP(TILE_SIZE);
-                player.vx = -BARREL_LAUNCH_SPEED;
+                player.vx = -BARREL_LAUNCH_SPEED_H;
                 player.vy = 0;
                 player.falling = 1;
                 barrel_launched_h = 1;
                 break;
             case BARREL_DIR_TOP:
                 player.y    = barrel_cy - FP(TILE_SIZE);
-                player.vy   = -BARREL_LAUNCH_SPEED;
+                player.vy   = -BARREL_LAUNCH_SPEED_V;
                 player.vx   = 0;
                 player.jumping = 0;
                 player.falling = 1;
                 break;
             case BARREL_DIR_BOTTOM:
                 player.y    = barrel_cy + FP(TILE_SIZE);
-                player.vy   = BARREL_LAUNCH_SPEED;
+                player.vy   = BARREL_LAUNCH_SPEED_V;
                 player.vx   = 0;
                 player.falling = 1;
                 break;
