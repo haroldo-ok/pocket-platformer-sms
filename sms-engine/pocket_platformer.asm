@@ -144,6 +144,8 @@ _cur_map:
 	.ds 2
 _cur_objects:
 	.ds 2
+_gameplay_loop_dbuf_196608_463:
+	.ds 16
 ;--------------------------------------------------------
 ; ram data
 ;--------------------------------------------------------
@@ -9763,54 +9765,48 @@ _gameplay_loop:
 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
 	ld	(hl), #0x02
 ;pocket_platformer.c:1511: total = res_header->level_count;
-	ld	hl, (_res_header)
-	ld	-2 (ix), l
-	ld	-1 (ix), h
-	ld	de, #0x0004
-	add	hl, de
-	ld	a, (hl)
+	ld	iy, (_res_header)
+	ld	a, 4 (iy)
 	ld	-25 (ix), a
 ;pocket_platformer.c:1512: load_level(0);
 	xor	a, a
 	call	_load_level
 ;pocket_platformer.c:1514: while (1) {
-00138$:
+00143$:
 ;pocket_platformer.c:1515: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
 ;pocket_platformer.c:1516: joy_prev    = joy;
-	ld	a, -28 (ix)
-	ld	-2 (ix), a
-	ld	a, -27 (ix)
-	ld	-1 (ix), a
+	pop	bc
+	push	bc
 ;pocket_platformer.c:1517: joy         = SMS_getKeysStatus();
+	push	bc
 	call	_SMS_getKeysStatus
-	ld	-4 (ix), e
-	ld	-3 (ix), d
-	ld	a, -4 (ix)
-	ld	-28 (ix), a
-	ld	a, -3 (ix)
-	ld	-27 (ix), a
+	pop	bc
+	inc	sp
+	inc	sp
+	push	de
 ;pocket_platformer.c:1518: joy_pressed = joy & ~joy_prev;
-	ld	a, -2 (ix)
+	ld	a, c
 	cpl
-	ld	-4 (ix), a
-	ld	a, -1 (ix)
+	push	af
+	ld	a, b
 	cpl
-	ld	-3 (ix), a
-	ld	a, -28 (ix)
-	and	a, -4 (ix)
-	ld	-2 (ix), a
-	ld	a, -27 (ix)
-	and	a, -3 (ix)
-	ld	-1 (ix), a
+	ld	b, a
+	pop	af
+	and	a, -28 (ix)
+	ld	c, a
+	ld	a, b
+	and	a, -27 (ix)
+	ld	b, a
 ;pocket_platformer.c:1522: unsigned char btn = (unsigned char)(joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
-	ld	c, -28 (ix)
+	ld	a, -28 (ix)
+	ld	-1 (ix), a
 ;pocket_platformer.c:1521: if (dialogue_active) {
 	ld	a, (_dialogue_active+0)
 	or	a, a
 	jr	Z, 00108$
 ;pocket_platformer.c:1522: unsigned char btn = (unsigned char)(joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
-	ld	a, c
+	ld	a, -1 (ix)
 	and	a, #0x30
 	ld	-1 (ix), a
 ;pocket_platformer.c:1523: if (!dialogue_btn_prev && btn) {
@@ -9833,9 +9829,9 @@ _gameplay_loop:
 	sub	a, e
 	ld	a, b
 	sbc	a, d
-	jp	PO, 00311$
+	jp	PO, 00328$
 	xor	a, #0x80
-00311$:
+00328$:
 	jp	P, 00102$
 ;pocket_platformer.c:1526: dialogue_line += 2;
 	ld	a, (_dialogue_line+0)
@@ -9869,7 +9865,7 @@ _gameplay_loop:
 	inc	sp
 	push	de
 ;pocket_platformer.c:1542: continue;
-	jp	00138$
+	jp	00143$
 00108$:
 ;pocket_platformer.c:1545: prev_player_y = player.y;
 	ld	hl, #(_player + 4)
@@ -9886,8 +9882,8 @@ _gameplay_loop:
 	ld	(_prev_player_y+3), a
 ;pocket_platformer.c:1546: handle_input(joy, joy_pressed);
 	push	bc
-	ld	e, -2 (ix)
-	ld	d, -1 (ix)
+	ld	e, c
+	ld	d, b
 	ld	l, -28 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -9923,7 +9919,7 @@ _gameplay_loop:
 	or	a, a
 	jr	Z, 00114$
 ;pocket_platformer.c:1555: barrel_update(joy);
-	ld	a, c
+	ld	a, -1 (ix)
 	call	_barrel_update
 ;pocket_platformer.c:1556: SMS_initSprites();
 	call	_SMS_initSprites
@@ -9938,13 +9934,15 @@ _gameplay_loop:
 ;pocket_platformer.c:1561: SMS_copySpritestoSAT();
 	call	_SMS_copySpritestoSAT
 ;pocket_platformer.c:1562: continue;
-	jp	00138$
+	jp	00143$
 00114$:
 ;pocket_platformer.c:1564: npc_contact_idx = 0xFF; /* reset each frame */
 	ld	hl, #_npc_contact_idx
 	ld	(hl), #0xff
 ;pocket_platformer.c:1565: check_object_collisions();
+	push	bc
 	call	_check_object_collisions
+	pop	bc
 ;pocket_platformer.c:1567: if (!dialogue_active && npc_contact_idx != 0xFF) {
 	ld	a, (_dialogue_active+0)
 	or	a, a
@@ -9966,7 +9964,7 @@ _gameplay_loop:
 	jr	00121$
 00118$:
 ;pocket_platformer.c:1570: } else if (joy_pressed & PORT_A_KEY_1) {
-	bit	4, -2 (ix)
+	bit	4, c
 	jr	Z, 00121$
 ;pocket_platformer.c:1571: open_dialogue(npc_contact_level, npc_contact_idx);
 	ld	a, (_npc_contact_idx+0)
@@ -9994,12 +9992,12 @@ _gameplay_loop:
 	ld	de, (#_player + 0)
 	ld	hl, (#_player + 2)
 	ld	b, #0x08
-00314$:
+00331$:
 	sra	h
 	rr	l
 	rr	d
 	rr	e
-	djnz	00314$
+	djnz	00331$
 	ld	-4 (ix), e
 	ld	-3 (ix), d
 	ld	-2 (ix), l
@@ -10007,12 +10005,12 @@ _gameplay_loop:
 	ld	de, (#(_player + 4) + 0)
 	ld	hl, (#(_player + 4) + 2)
 	ld	b, #0x08
-00316$:
+00333$:
 	sra	h
 	rr	l
 	rr	d
 	rr	e
-	djnz	00316$
+	djnz	00333$
 	ld	-14 (ix), e
 	ld	-13 (ix), d
 	ld	-12 (ix), l
@@ -10046,7 +10044,7 @@ _gameplay_loop:
 	ld	-20 (ix), a
 	ld	a, -10 (ix)
 	or	a, a
-	jr	Z, 00145$
+	jr	Z, 00150$
 	ld	hl, #20
 	add	hl, sp
 	ex	de, hl
@@ -10054,7 +10052,7 @@ _gameplay_loop:
 	add	hl, sp
 	ld	bc, #4
 	ldir
-00145$:
+00150$:
 	ld	c, -8 (ix)
 	ld	b, -7 (ix)
 	srl	b
@@ -10098,7 +10096,7 @@ _gameplay_loop:
 	ld	-15 (ix), a
 	ld	a, -19 (ix)
 	or	a, a
-	jr	Z, 00146$
+	jr	Z, 00151$
 	ld	a, -18 (ix)
 	ld	-8 (ix), a
 	ld	a, -17 (ix)
@@ -10107,7 +10105,7 @@ _gameplay_loop:
 	ld	-6 (ix), a
 	ld	a, -15 (ix)
 	ld	-5 (ix), a
-00146$:
+00151$:
 	ld	h, -8 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -10146,7 +10144,7 @@ _gameplay_loop:
 	ld	-5 (ix), a
 	ld	a, -10 (ix)
 	or	a, a
-	jr	Z, 00147$
+	jr	Z, 00152$
 	ld	a, -23 (ix)
 	ld	-8 (ix), a
 	ld	a, -22 (ix)
@@ -10155,7 +10153,7 @@ _gameplay_loop:
 	ld	-6 (ix), a
 	ld	a, -20 (ix)
 	ld	-5 (ix), a
-00147$:
+00152$:
 	ld	l, -8 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -10207,7 +10205,7 @@ _gameplay_loop:
 	ld	-6 (ix), a
 	ld	a, -10 (ix)
 	or	a, a
-	jr	Z, 00148$
+	jr	Z, 00153$
 	ld	a, -9 (ix)
 	ld	-4 (ix), a
 	ld	a, -8 (ix)
@@ -10216,7 +10214,7 @@ _gameplay_loop:
 	ld	-2 (ix), a
 	ld	a, -6 (ix)
 	ld	-1 (ix), a
-00148$:
+00153$:
 	ld	h, -4 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -10281,7 +10279,7 @@ _gameplay_loop:
 	ld	-1 (ix), a
 	ld	a, -5 (ix)
 	or	a, a
-	jr	Z, 00149$
+	jr	Z, 00154$
 	ld	l, -4 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -10300,7 +10298,7 @@ _gameplay_loop:
 ;	spillPairReg hl
 	ex	(sp), hl
 	pop	iy
-00149$:
+00154$:
 	srl	h
 	rr	l
 	srl	h
@@ -10309,10 +10307,10 @@ _gameplay_loop:
 	rr	l
 	ld	a, -19 (ix)
 	or	a, a
-	jr	Z, 00150$
+	jr	Z, 00155$
 	ld	c, -18 (ix)
 	ld	b, -17 (ix)
-00150$:
+00155$:
 	srl	b
 	rr	c
 	srl	b
@@ -10335,7 +10333,7 @@ _gameplay_loop:
 	ldir
 	ld	a, -5 (ix)
 	or	a, a
-	jr	Z, 00151$
+	jr	Z, 00156$
 	ld	hl, #10
 	add	hl, sp
 	ex	de, hl
@@ -10343,7 +10341,7 @@ _gameplay_loop:
 	add	hl, sp
 	ld	bc, #4
 	ldir
-00151$:
+00156$:
 	ld	l, -18 (ix)
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -10360,10 +10358,10 @@ _gameplay_loop:
 	ld	b, -13 (ix)
 	ld	a, -10 (ix)
 	or	a, a
-	jr	Z, 00152$
+	jr	Z, 00157$
 	ld	c, -9 (ix)
 	ld	b, -8 (ix)
-00152$:
+00157$:
 	srl	b
 	rr	c
 	srl	b
@@ -10403,28 +10401,138 @@ _gameplay_loop:
 	call	_SMS_finalizeSprites
 ;pocket_platformer.c:1596: SMS_copySpritestoSAT();
 	call	_SMS_copySpritestoSAT
-;pocket_platformer.c:1598: if (player_died) {
+;pocket_platformer.c:1601: int dvy = (int)(player.vy >> 8);
+	ld	bc, (#_player + 12)
+	ld	hl, (#_player + 14)
+	ld	-2 (ix), b
+	ld	-1 (ix), l
+;pocket_platformer.c:1602: dbuf[0] = 'v'; dbuf[1] = 'y'; dbuf[2] = '=';
+	ld	hl, #_gameplay_loop_dbuf_196608_463
+	ld	(hl), #0x76
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 1)
+	ld	(hl), #0x79
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 2)
+	ld	(hl), #0x3d
+;pocket_platformer.c:1603: dbuf[3] = (dvy < 0) ? '-' : '+';
+	ld	a, -1 (ix)
+	rlca
+	and	a,#0x01
+	ld	-5 (ix), a
+	or	a, a
+	jr	Z, 00158$
+	ld	-4 (ix), #0x2d
+	ld	-3 (ix), #0
+	jr	00159$
+00158$:
+	ld	-4 (ix), #0x2b
+	ld	-3 (ix), #0
+00159$:
+	ld	a, -4 (ix)
+	ld	(#(_gameplay_loop_dbuf_196608_463 + 3)),a
+;pocket_platformer.c:1604: if (dvy < 0) dvy = -dvy;
+	ld	a, -5 (ix)
+	or	a, a
+	jr	Z, 00132$
+	xor	a, a
+	sub	a, -2 (ix)
+	ld	-2 (ix), a
+	sbc	a, a
+	sub	a, -1 (ix)
+	ld	-1 (ix), a
+00132$:
+;pocket_platformer.c:1605: dbuf[4] = '0' + (dvy / 100) % 10;
+	ld	de, #0x0064
+	ld	l, -2 (ix)
+;	spillPairReg hl
+;	spillPairReg hl
+	ld	h, -1 (ix)
+;	spillPairReg hl
+;	spillPairReg hl
+	call	__divsint
+	ex	de, hl
+	ld	de, #0x000a
+	call	__modsint
+	ld	a, e
+	add	a, #0x30
+	ld	(#(_gameplay_loop_dbuf_196608_463 + 4)),a
+;pocket_platformer.c:1606: dbuf[5] = '0' + (dvy / 10) % 10;
+	ld	de, #0x000a
+	ld	l, -2 (ix)
+;	spillPairReg hl
+;	spillPairReg hl
+	ld	h, -1 (ix)
+;	spillPairReg hl
+;	spillPairReg hl
+	call	__divsint
+	ex	de, hl
+	ld	de, #0x000a
+	call	__modsint
+	ld	a, e
+	add	a, #0x30
+	ld	(#(_gameplay_loop_dbuf_196608_463 + 5)),a
+;pocket_platformer.c:1607: dbuf[6] = '0' + dvy % 10;
+	ld	de, #0x000a
+	ld	l, -2 (ix)
+;	spillPairReg hl
+;	spillPairReg hl
+	ld	h, -1 (ix)
+;	spillPairReg hl
+;	spillPairReg hl
+	call	__modsint
+	ld	a, e
+	add	a, #0x30
+	ld	(#(_gameplay_loop_dbuf_196608_463 + 6)),a
+;pocket_platformer.c:1608: dbuf[7] = ' '; dbuf[8] = 'b'; dbuf[9] = 'l';
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 7)
+	ld	(hl), #0x20
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 8)
+	ld	(hl), #0x62
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 9)
+	ld	(hl), #0x6c
+;pocket_platformer.c:1609: dbuf[10] = '='; dbuf[11] = '0' + barrel_launched;
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 10)
+	ld	(hl), #0x3d
+	ld	a, (_barrel_launched+0)
+	add	a, #0x30
+	ld	(#(_gameplay_loop_dbuf_196608_463 + 11)),a
+;pocket_platformer.c:1610: dbuf[12] = 'h'; dbuf[13] = '='; dbuf[14] = '0' + barrel_launched_h;
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 12)
+	ld	(hl), #0x68
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 13)
+	ld	(hl), #0x3d
+	ld	a, (_barrel_launched_h+0)
+	add	a, #0x30
+	ld	(#(_gameplay_loop_dbuf_196608_463 + 14)),a
+;pocket_platformer.c:1611: dbuf[15] = 0;
+	ld	hl, #(_gameplay_loop_dbuf_196608_463 + 15)
+	ld	(hl), #0x00
+;pocket_platformer.c:1612: SMS_printatXY(0, 0, dbuf);
+	ld	hl, #0x7800
+	rst	#0x08
+	ld	hl, #_gameplay_loop_dbuf_196608_463
+	call	_SMS_print
+;pocket_platformer.c:1614: if (player_died) {
 	ld	a, (_player_died+0)
 	or	a, a
-	jr	Z, 00135$
-;pocket_platformer.c:1599: death_sequence(level_n);
+	jr	Z, 00140$
+;pocket_platformer.c:1615: death_sequence(level_n);
 	ld	a, -26 (ix)
 	call	_death_sequence
-	jp	00138$
-00135$:
-;pocket_platformer.c:1600: } else if (level_complete) {
+	jp	00143$
+00140$:
+;pocket_platformer.c:1616: } else if (level_complete) {
 	ld	a, (_level_complete+0)
 	or	a, a
-	jp	Z, 00138$
-;pocket_platformer.c:1602: for (i = 0; i < 60; i++) SMS_waitForVBlank();
+	jp	Z, 00143$
+;pocket_platformer.c:1618: for (i = 0; i < 60; i++) SMS_waitForVBlank();
 	ld	c, #0x3c
-00142$:
+00147$:
 	push	bc
 	call	_SMS_waitForVBlank
 	pop	bc
 	dec	c
-	jr	NZ, 00142$
-;pocket_platformer.c:1603: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
+	jr	NZ, 00147$
+;pocket_platformer.c:1619: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
 	ld	c, -26 (ix)
 	ld	b, #0x00
 	inc	bc
@@ -10434,10 +10542,10 @@ _gameplay_loop:
 	sub	a, e
 	ld	a, b
 	sbc	a, d
-	jp	PO, 00323$
+	jp	PO, 00340$
 	xor	a, #0x80
-00323$:
-	jp	P, 00153$
+00340$:
+	jp	P, 00160$
 	ld	a, -26 (ix)
 	ld	-1 (ix), a
 	inc	-1 (ix)
@@ -10446,45 +10554,45 @@ _gameplay_loop:
 	rlca
 	sbc	a, a
 	ld	-1 (ix), a
-	jr	00154$
-00153$:
+	jr	00161$
+00160$:
 	xor	a, a
 	ld	-2 (ix), a
 	ld	-1 (ix), a
-00154$:
+00161$:
 	ld	a, -2 (ix)
-;pocket_platformer.c:1604: load_level(level_n);
+;pocket_platformer.c:1620: load_level(level_n);
 	ld	-26 (ix), a
 	call	_load_level
-;pocket_platformer.c:1607: }
-	jp	00138$
-;pocket_platformer.c:1612: static void title_screen(void) {
+;pocket_platformer.c:1623: }
+	jp	00143$
+;pocket_platformer.c:1628: static void title_screen(void) {
 ;	---------------------------------
 ; Function title_screen
 ; ---------------------------------
 _title_screen:
-;pocket_platformer.c:1614: SMS_waitForVBlank();
+;pocket_platformer.c:1630: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
-;pocket_platformer.c:1615: SMS_displayOff();
+;pocket_platformer.c:1631: SMS_displayOff();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOffFeature
-;pocket_platformer.c:1616: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+;pocket_platformer.c:1632: SMS_VRAMmemsetW(0, 0, 16 * 1024);
 	ld	hl, #0x4000
 	push	hl
 	ld	de, #0x0000
 	ld	h, l
 	call	_SMS_VRAMmemsetW
-;pocket_platformer.c:1617: SMS_zeroBGPalette();
+;pocket_platformer.c:1633: SMS_zeroBGPalette();
 	call	_SMS_zeroBGPalette
-;pocket_platformer.c:1618: SMS_zeroSpritePalette();
+;pocket_platformer.c:1634: SMS_zeroSpritePalette();
 	call	_SMS_zeroSpritePalette
-;pocket_platformer.c:1619: SMS_setBGPaletteColor(1, 0x3F);
+;pocket_platformer.c:1635: SMS_setBGPaletteColor(1, 0x3F);
 	ld	l, #0x3f
 ;	spillPairReg hl
 ;	spillPairReg hl
 	ld	a, #0x01
 	call	_SMS_setBGPaletteColor
-;pocket_platformer.c:1620: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
+;pocket_platformer.c:1636: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
 	ld	hl, #0x100
 	push	hl
 	ld	hl, (_font_1bpp_size)
@@ -10492,44 +10600,44 @@ _title_screen:
 	ld	de, #0x0160
 	ld	hl, #_font_1bpp
 	call	_SMS_load1bppTiles
-;pocket_platformer.c:1621: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
+;pocket_platformer.c:1637: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 	ld	hl, #0x0140
 	call	_SMS_configureTextRenderer
-;pocket_platformer.c:1622: SMS_displayOn();
+;pocket_platformer.c:1638: SMS_displayOn();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOnFeature
-;pocket_platformer.c:1623: SMS_printatXY(4,  8, "POCKET PLATFORMER");
+;pocket_platformer.c:1639: SMS_printatXY(4,  8, "POCKET PLATFORMER");
 	ld	hl, #0x7a08
 	rst	#0x08
 	ld	hl, #___str_2
 	call	_SMS_print
-;pocket_platformer.c:1624: SMS_printatXY(3, 10, "for Sega Master System");
+;pocket_platformer.c:1640: SMS_printatXY(3, 10, "for Sega Master System");
 	ld	hl, #0x7a86
 	rst	#0x08
 	ld	hl, #___str_3
 	call	_SMS_print
-;pocket_platformer.c:1625: SMS_printatXY(4, 14, "Press 1 to start");
+;pocket_platformer.c:1641: SMS_printatXY(4, 14, "Press 1 to start");
 	ld	hl, #0x7b88
 	rst	#0x08
 	ld	hl, #___str_4
 	call	_SMS_print
-;pocket_platformer.c:1626: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+;pocket_platformer.c:1642: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
 00110$:
 	call	_SMS_waitForVBlank
 	call	_SMS_getKeysStatus
 	ld	a, e
-;pocket_platformer.c:1627: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
+;pocket_platformer.c:1643: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
 	and	a, #0x30
 	jr	Z, 00110$
-;pocket_platformer.c:1628: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+;pocket_platformer.c:1644: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
 00113$:
 	call	_SMS_waitForVBlank
 	call	_SMS_getKeysStatus
 	ld	a, e
-;pocket_platformer.c:1629: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
+;pocket_platformer.c:1645: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
 	and	a, #0x30
 	jr	NZ, 00113$
-;pocket_platformer.c:1630: }
+;pocket_platformer.c:1646: }
 	ret
 ___str_2:
 	.ascii "POCKET PLATFORMER"
@@ -10540,55 +10648,55 @@ ___str_3:
 ___str_4:
 	.ascii "Press 1 to start"
 	.db 0x00
-;pocket_platformer.c:1635: void main(void) {
+;pocket_platformer.c:1651: void main(void) {
 ;	---------------------------------
 ; Function main
 ; ---------------------------------
 _main::
-;pocket_platformer.c:1637: SMS_useFirstHalfTilesforSprites(0);
+;pocket_platformer.c:1653: SMS_useFirstHalfTilesforSprites(0);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_useFirstHalfTilesforSprites
-;pocket_platformer.c:1638: SMS_setSpriteMode(SPRITEMODE_NORMAL);
+;pocket_platformer.c:1654: SMS_setSpriteMode(SPRITEMODE_NORMAL);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_setSpriteMode
-;pocket_platformer.c:1639: SMS_setBackdropColor(0);
+;pocket_platformer.c:1655: SMS_setBackdropColor(0);
 	ld	l, #0x00
 ;	spillPairReg hl
 ;	spillPairReg hl
 	call	_SMS_setBackdropColor
-;pocket_platformer.c:1641: while (1) {
+;pocket_platformer.c:1657: while (1) {
 00104$:
-;pocket_platformer.c:1642: title_screen();
+;pocket_platformer.c:1658: title_screen();
 	call	_title_screen
-;pocket_platformer.c:1643: if (!has_resource()) continue;
+;pocket_platformer.c:1659: if (!has_resource()) continue;
 	call	_has_resource
 	or	a, a
 	jr	Z, 00104$
-;pocket_platformer.c:1644: init_resources();
+;pocket_platformer.c:1660: init_resources();
 	call	_init_resources
-;pocket_platformer.c:1645: SMS_waitForVBlank();
+;pocket_platformer.c:1661: SMS_waitForVBlank();
 	call	_SMS_waitForVBlank
-;pocket_platformer.c:1646: SMS_displayOff();
+;pocket_platformer.c:1662: SMS_displayOff();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOffFeature
-;pocket_platformer.c:1647: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+;pocket_platformer.c:1663: SMS_VRAMmemsetW(0, 0, 16 * 1024);
 	ld	hl, #0x4000
 	push	hl
 	ld	de, #0x0000
 	ld	h, l
 	call	_SMS_VRAMmemsetW
-;pocket_platformer.c:1648: load_graphics();
+;pocket_platformer.c:1664: load_graphics();
 	call	_load_graphics
-;pocket_platformer.c:1649: SMS_displayOn();
+;pocket_platformer.c:1665: SMS_displayOn();
 	ld	hl, #0x0140
 	call	_SMS_VDPturnOnFeature
-;pocket_platformer.c:1650: gameplay_loop();
+;pocket_platformer.c:1666: gameplay_loop();
 	call	_gameplay_loop
-;pocket_platformer.c:1652: }
+;pocket_platformer.c:1668: }
 	jr	00104$
 	.area _CODE
 __str_5:

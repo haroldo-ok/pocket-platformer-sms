@@ -1595,6 +1595,22 @@ static void gameplay_loop(void) {
         SMS_finalizeSprites();
         SMS_copySpritestoSAT();
 
+        /* DEBUG: show vy and barrel state */
+        {
+            static char dbuf[16];
+            int dvy = (int)(player.vy >> 8);
+            dbuf[0] = 'v'; dbuf[1] = 'y'; dbuf[2] = '=';
+            dbuf[3] = (dvy < 0) ? '-' : '+';
+            if (dvy < 0) dvy = -dvy;
+            dbuf[4] = '0' + (dvy / 100) % 10;
+            dbuf[5] = '0' + (dvy / 10) % 10;
+            dbuf[6] = '0' + dvy % 10;
+            dbuf[7] = ' '; dbuf[8] = 'b'; dbuf[9] = 'l';
+            dbuf[10] = '='; dbuf[11] = '0' + barrel_launched;
+            dbuf[12] = 'h'; dbuf[13] = '='; dbuf[14] = '0' + barrel_launched_h;
+            dbuf[15] = 0;
+            SMS_printatXY(0, 0, dbuf);
+        }
         if (player_died) {
             death_sequence(level_n);
         } else if (level_complete) {
