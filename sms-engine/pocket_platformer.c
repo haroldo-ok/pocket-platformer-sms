@@ -1135,7 +1135,7 @@ static void check_object_collisions(void) {
                 break;
             case OBJ_SPIKE: /* handled via tile probe below */ break;
             case OBJ_BARREL:
-                if (!barrel_active && !barrel_launched) barrel_enter(obj);
+                if (!barrel_active) barrel_enter(obj);
                 break;
             case OBJ_NPC:
                 if (!dialogue_active) {
@@ -1556,6 +1556,7 @@ static void gameplay_loop(void) {
             barrel_update(joy);
             SMS_initSprites();
             draw_objects();
+            draw_barrels();
             draw_npcs();
             draw_player();
             SMS_finalizeSprites();
