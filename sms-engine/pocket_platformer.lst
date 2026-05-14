@@ -9926,7 +9926,7 @@
                                    9924 ;pocket_platformer.c:1555: if (barrel_active) {
       003FE2 3Ar99r05         [13] 9925 	ld	a, (_barrel_active+0)
       003FE5 B7               [ 4] 9926 	or	a, a
-      003FE6 28 19            [12] 9927 	jr	Z, 00114$
+      003FE6 28 1C            [12] 9927 	jr	Z, 00114$
                                    9928 ;pocket_platformer.c:1556: barrel_update(joy);
       003FE8 79               [ 4] 9929 	ld	a, c
       003FE9 CDr68r13         [17] 9930 	call	_barrel_update
@@ -9934,688 +9934,690 @@
       003FEC CDr00r00         [17] 9932 	call	_SMS_initSprites
                                    9933 ;pocket_platformer.c:1558: draw_objects();
       003FEF CDrB6r0B         [17] 9934 	call	_draw_objects
-                                   9935 ;pocket_platformer.c:1559: draw_npcs();
-      003FF2 CDr9Br0D         [17] 9936 	call	_draw_npcs
-                                   9937 ;pocket_platformer.c:1560: draw_player();
-      003FF5 CDr20r0E         [17] 9938 	call	_draw_player
-                                   9939 ;pocket_platformer.c:1561: SMS_finalizeSprites();
-      003FF8 CDr00r00         [17] 9940 	call	_SMS_finalizeSprites
-                                   9941 ;pocket_platformer.c:1562: SMS_copySpritestoSAT();
-      003FFB CDr00r00         [17] 9942 	call	_SMS_copySpritestoSAT
-                                   9943 ;pocket_platformer.c:1563: continue;
-      003FFE C3rEAr3E         [10] 9944 	jp	00138$
-      004001                       9945 00114$:
-                                   9946 ;pocket_platformer.c:1565: npc_contact_idx = 0xFF; /* reset each frame */
-      004001 21r96r05         [10] 9947 	ld	hl, #_npc_contact_idx
-      004004 36 FF            [10] 9948 	ld	(hl), #0xff
-                                   9949 ;pocket_platformer.c:1566: check_object_collisions();
-      004006 CDrA8r28         [17] 9950 	call	_check_object_collisions
-                                   9951 ;pocket_platformer.c:1568: if (!dialogue_active && npc_contact_idx != 0xFF) {
-      004009 3ArB2r00         [13] 9952 	ld	a, (_dialogue_active+0)
-      00400C B7               [ 4] 9953 	or	a, a
-      00400D 20 28            [12] 9954 	jr	NZ, 00121$
-      00400F 3Ar96r05         [13] 9955 	ld	a, (_npc_contact_idx+0)
-      004012 3C               [ 4] 9956 	inc	a
-      004013 28 22            [12] 9957 	jr	Z, 00121$
-                                   9958 ;pocket_platformer.c:1569: if (npc_contact_auto) {
-      004015 3Ar98r05         [13] 9959 	ld	a, (_npc_contact_auto+0)
-      004018 B7               [ 4] 9960 	or	a, a
-      004019 28 0C            [12] 9961 	jr	Z, 00118$
-                                   9962 ;pocket_platformer.c:1570: open_dialogue(npc_contact_level, npc_contact_idx);
-      00401B 3Ar96r05         [13] 9963 	ld	a, (_npc_contact_idx+0)
-      00401E 6F               [ 4] 9964 	ld	l, a
-                                   9965 ;	spillPairReg hl
-                                   9966 ;	spillPairReg hl
-      00401F 3Ar97r05         [13] 9967 	ld	a, (_npc_contact_level+0)
-      004022 CDrEAr11         [17] 9968 	call	_open_dialogue
-      004025 18 10            [12] 9969 	jr	00121$
-      004027                       9970 00118$:
-                                   9971 ;pocket_platformer.c:1571: } else if (joy_pressed & PORT_A_KEY_1) {
-      004027 DD CB FE 66      [20] 9972 	bit	4, -2 (ix)
-      00402B 28 0A            [12] 9973 	jr	Z, 00121$
-                                   9974 ;pocket_platformer.c:1572: open_dialogue(npc_contact_level, npc_contact_idx);
-      00402D 3Ar96r05         [13] 9975 	ld	a, (_npc_contact_idx+0)
-      004030 6F               [ 4] 9976 	ld	l, a
-                                   9977 ;	spillPairReg hl
-                                   9978 ;	spillPairReg hl
-      004031 3Ar97r05         [13] 9979 	ld	a, (_npc_contact_level+0)
-      004034 CDrEAr11         [17] 9980 	call	_open_dialogue
-      004037                       9981 00121$:
-                                   9982 ;pocket_platformer.c:1576: if (!player_died && res_header->spike_vram_idx) {
-      004037 3ArB0r00         [13] 9983 	ld	a, (_player_died+0)
-      00403A B7               [ 4] 9984 	or	a, a
-      00403B C2r4Dr43         [10] 9985 	jp	NZ, 00129$
-                                   9986 ;pocket_platformer.c:1512: total = res_header->level_count;
-      00403E 2Ar00r00         [16] 9987 	ld	hl, (_res_header)
-                                   9988 ;pocket_platformer.c:1576: if (!player_died && res_header->spike_vram_idx) {
-      004041 11 26 00         [10] 9989 	ld	de, #0x0026
-      004044 19               [11] 9990 	add	hl, de
-      004045 7E               [ 7] 9991 	ld	a, (hl)
-      004046 B7               [ 4] 9992 	or	a, a
-      004047 CAr4Dr43         [10] 9993 	jp	Z, 00129$
-                                   9994 ;pocket_platformer.c:1577: unsigned char sv = res_header->spike_vram_idx;
-      00404A DD 77 E8         [19] 9995 	ld	-24 (ix), a
-                                   9996 ;pocket_platformer.c:1578: long px = player.x >> 8, py = player.y >> 8;
-      00404D ED 5Br0Cr00      [20] 9997 	ld	de, (#_player + 0)
-      004051 2Ar0Er00         [16] 9998 	ld	hl, (#_player + 2)
-      004054 06 08            [ 7] 9999 	ld	b, #0x08
-      004056                      10000 00314$:
-      004056 CB 2C            [ 8]10001 	sra	h
-      004058 CB 1D            [ 8]10002 	rr	l
-      00405A CB 1A            [ 8]10003 	rr	d
-      00405C CB 1B            [ 8]10004 	rr	e
-      00405E 10 F6            [13]10005 	djnz	00314$
-      004060 DD 73 FC         [19]10006 	ld	-4 (ix), e
-      004063 DD 72 FD         [19]10007 	ld	-3 (ix), d
-      004066 DD 75 FE         [19]10008 	ld	-2 (ix), l
-      004069 DD 74 FF         [19]10009 	ld	-1 (ix), h
-      00406C ED 5Br10r00      [20]10010 	ld	de, (#(_player + 4) + 0)
-      004070 2Ar12r00         [16]10011 	ld	hl, (#(_player + 4) + 2)
-      004073 06 08            [ 7]10012 	ld	b, #0x08
-      004075                      10013 00316$:
-      004075 CB 2C            [ 8]10014 	sra	h
-      004077 CB 1D            [ 8]10015 	rr	l
-      004079 CB 1A            [ 8]10016 	rr	d
-      00407B CB 1B            [ 8]10017 	rr	e
-      00407D 10 F6            [13]10018 	djnz	00316$
-      00407F DD 73 F2         [19]10019 	ld	-14 (ix), e
-      004082 DD 72 F3         [19]10020 	ld	-13 (ix), d
-      004085 DD 75 F4         [19]10021 	ld	-12 (ix), l
-      004088 DD 74 F5         [19]10022 	ld	-11 (ix), h
-                                  10023 ;pocket_platformer.c:1579: map_res_bank();
-      00408B 21 FF FF         [10]10024 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
-      00408E 36 02            [10]10025 	ld	(hl), #0x02
-                                  10026 ;pocket_platformer.c:1580: if (get_tile((unsigned char)((px+1)/TILE_SIZE),             (unsigned char)(py/TILE_SIZE))           == sv ||
-      004090 21 14 00         [10]10027 	ld	hl, #20
-      004093 39               [11]10028 	add	hl, sp
-      004094 EB               [ 4]10029 	ex	de, hl
-      004095 21 0E 00         [10]10030 	ld	hl, #14
-      004098 39               [11]10031 	add	hl, sp
-      004099 01 04 00         [10]10032 	ld	bc, #4
-      00409C ED B0            [21]10033 	ldir
-      00409E DD 7E F5         [19]10034 	ld	a, -11 (ix)
-      0040A1 07               [ 4]10035 	rlca
-      0040A2 E6 01            [ 7]10036 	and	a,#0x01
-      0040A4 DD 77 F6         [19]10037 	ld	-10 (ix), a
-      0040A7 DD 7E F2         [19]10038 	ld	a, -14 (ix)
-      0040AA C6 07            [ 7]10039 	add	a, #0x07
-      0040AC DD 77 E9         [19]10040 	ld	-23 (ix), a
-      0040AF DD 7E F3         [19]10041 	ld	a, -13 (ix)
-      0040B2 CE 00            [ 7]10042 	adc	a, #0x00
-      0040B4 DD 77 EA         [19]10043 	ld	-22 (ix), a
-      0040B7 DD 7E F4         [19]10044 	ld	a, -12 (ix)
-      0040BA CE 00            [ 7]10045 	adc	a, #0x00
-      0040BC DD 77 EB         [19]10046 	ld	-21 (ix), a
-      0040BF DD 7E F5         [19]10047 	ld	a, -11 (ix)
-      0040C2 CE 00            [ 7]10048 	adc	a, #0x00
-      0040C4 DD 77 EC         [19]10049 	ld	-20 (ix), a
-      0040C7 DD 7E F6         [19]10050 	ld	a, -10 (ix)
-      0040CA B7               [ 4]10051 	or	a, a
-      0040CB 28 0E            [12]10052 	jr	Z, 00145$
-      0040CD 21 14 00         [10]10053 	ld	hl, #20
-      0040D0 39               [11]10054 	add	hl, sp
-      0040D1 EB               [ 4]10055 	ex	de, hl
-      0040D2 21 05 00         [10]10056 	ld	hl, #5
-      0040D5 39               [11]10057 	add	hl, sp
-      0040D6 01 04 00         [10]10058 	ld	bc, #4
-      0040D9 ED B0            [21]10059 	ldir
-      0040DB                      10060 00145$:
-      0040DB DD 4E F8         [19]10061 	ld	c, -8 (ix)
-      0040DE DD 46 F9         [19]10062 	ld	b, -7 (ix)
-      0040E1 CB 38            [ 8]10063 	srl	b
-      0040E3 CB 19            [ 8]10064 	rr	c
-      0040E5 CB 38            [ 8]10065 	srl	b
-      0040E7 CB 19            [ 8]10066 	rr	c
-      0040E9 CB 38            [ 8]10067 	srl	b
-      0040EB CB 19            [ 8]10068 	rr	c
-      0040ED DD 71 F7         [19]10069 	ld	-9 (ix), c
-      0040F0 DD 7E FC         [19]10070 	ld	a, -4 (ix)
-      0040F3 C6 01            [ 7]10071 	add	a, #0x01
-      0040F5 4F               [ 4]10072 	ld	c, a
-      0040F6 DD 7E FD         [19]10073 	ld	a, -3 (ix)
-      0040F9 CE 00            [ 7]10074 	adc	a, #0x00
-      0040FB 47               [ 4]10075 	ld	b, a
-      0040FC DD 7E FE         [19]10076 	ld	a, -2 (ix)
-      0040FF CE 00            [ 7]10077 	adc	a, #0x00
-      004101 5F               [ 4]10078 	ld	e, a
-      004102 DD 7E FF         [19]10079 	ld	a, -1 (ix)
-      004105 CE 00            [ 7]10080 	adc	a, #0x00
-      004107 57               [ 4]10081 	ld	d, a
-      004108 DD 71 F8         [19]10082 	ld	-8 (ix), c
-      00410B DD 70 F9         [19]10083 	ld	-7 (ix), b
-      00410E DD 73 FA         [19]10084 	ld	-6 (ix), e
-      004111 DD 72 FB         [19]10085 	ld	-5 (ix), d
-      004114 7A               [ 4]10086 	ld	a, d
-      004115 07               [ 4]10087 	rlca
-      004116 E6 01            [ 7]10088 	and	a,#0x01
-      004118 DD 77 ED         [19]10089 	ld	-19 (ix), a
-      00411B 79               [ 4]10090 	ld	a, c
-      00411C C6 07            [ 7]10091 	add	a, #0x07
-      00411E DD 77 EE         [19]10092 	ld	-18 (ix), a
-      004121 78               [ 4]10093 	ld	a, b
-      004122 CE 00            [ 7]10094 	adc	a, #0x00
-      004124 DD 77 EF         [19]10095 	ld	-17 (ix), a
-      004127 7B               [ 4]10096 	ld	a, e
-      004128 CE 00            [ 7]10097 	adc	a, #0x00
-      00412A DD 77 F0         [19]10098 	ld	-16 (ix), a
-      00412D 7A               [ 4]10099 	ld	a, d
-      00412E CE 00            [ 7]10100 	adc	a, #0x00
-      004130 DD 77 F1         [19]10101 	ld	-15 (ix), a
-      004133 DD 7E ED         [19]10102 	ld	a, -19 (ix)
-      004136 B7               [ 4]10103 	or	a, a
-      004137 28 18            [12]10104 	jr	Z, 00146$
-      004139 DD 7E EE         [19]10105 	ld	a, -18 (ix)
-      00413C DD 77 F8         [19]10106 	ld	-8 (ix), a
-      00413F DD 7E EF         [19]10107 	ld	a, -17 (ix)
-      004142 DD 77 F9         [19]10108 	ld	-7 (ix), a
-      004145 DD 7E F0         [19]10109 	ld	a, -16 (ix)
-      004148 DD 77 FA         [19]10110 	ld	-6 (ix), a
-      00414B DD 7E F1         [19]10111 	ld	a, -15 (ix)
-      00414E DD 77 FB         [19]10112 	ld	-5 (ix), a
-      004151                      10113 00146$:
-      004151 DD 66 F8         [19]10114 	ld	h, -8 (ix)
-                                  10115 ;	spillPairReg hl
-                                  10116 ;	spillPairReg hl
-      004154 DD 6E F9         [19]10117 	ld	l, -7 (ix)
+                                   9935 ;pocket_platformer.c:1559: draw_barrels();
+      003FF2 CDrBCr0C         [17] 9936 	call	_draw_barrels
+                                   9937 ;pocket_platformer.c:1560: draw_npcs();
+      003FF5 CDr9Br0D         [17] 9938 	call	_draw_npcs
+                                   9939 ;pocket_platformer.c:1561: draw_player();
+      003FF8 CDr20r0E         [17] 9940 	call	_draw_player
+                                   9941 ;pocket_platformer.c:1562: SMS_finalizeSprites();
+      003FFB CDr00r00         [17] 9942 	call	_SMS_finalizeSprites
+                                   9943 ;pocket_platformer.c:1563: SMS_copySpritestoSAT();
+      003FFE CDr00r00         [17] 9944 	call	_SMS_copySpritestoSAT
+                                   9945 ;pocket_platformer.c:1564: continue;
+      004001 C3rEAr3E         [10] 9946 	jp	00138$
+      004004                       9947 00114$:
+                                   9948 ;pocket_platformer.c:1566: npc_contact_idx = 0xFF; /* reset each frame */
+      004004 21r96r05         [10] 9949 	ld	hl, #_npc_contact_idx
+      004007 36 FF            [10] 9950 	ld	(hl), #0xff
+                                   9951 ;pocket_platformer.c:1567: check_object_collisions();
+      004009 CDrA8r28         [17] 9952 	call	_check_object_collisions
+                                   9953 ;pocket_platformer.c:1569: if (!dialogue_active && npc_contact_idx != 0xFF) {
+      00400C 3ArB2r00         [13] 9954 	ld	a, (_dialogue_active+0)
+      00400F B7               [ 4] 9955 	or	a, a
+      004010 20 28            [12] 9956 	jr	NZ, 00121$
+      004012 3Ar96r05         [13] 9957 	ld	a, (_npc_contact_idx+0)
+      004015 3C               [ 4] 9958 	inc	a
+      004016 28 22            [12] 9959 	jr	Z, 00121$
+                                   9960 ;pocket_platformer.c:1570: if (npc_contact_auto) {
+      004018 3Ar98r05         [13] 9961 	ld	a, (_npc_contact_auto+0)
+      00401B B7               [ 4] 9962 	or	a, a
+      00401C 28 0C            [12] 9963 	jr	Z, 00118$
+                                   9964 ;pocket_platformer.c:1571: open_dialogue(npc_contact_level, npc_contact_idx);
+      00401E 3Ar96r05         [13] 9965 	ld	a, (_npc_contact_idx+0)
+      004021 6F               [ 4] 9966 	ld	l, a
+                                   9967 ;	spillPairReg hl
+                                   9968 ;	spillPairReg hl
+      004022 3Ar97r05         [13] 9969 	ld	a, (_npc_contact_level+0)
+      004025 CDrEAr11         [17] 9970 	call	_open_dialogue
+      004028 18 10            [12] 9971 	jr	00121$
+      00402A                       9972 00118$:
+                                   9973 ;pocket_platformer.c:1572: } else if (joy_pressed & PORT_A_KEY_1) {
+      00402A DD CB FE 66      [20] 9974 	bit	4, -2 (ix)
+      00402E 28 0A            [12] 9975 	jr	Z, 00121$
+                                   9976 ;pocket_platformer.c:1573: open_dialogue(npc_contact_level, npc_contact_idx);
+      004030 3Ar96r05         [13] 9977 	ld	a, (_npc_contact_idx+0)
+      004033 6F               [ 4] 9978 	ld	l, a
+                                   9979 ;	spillPairReg hl
+                                   9980 ;	spillPairReg hl
+      004034 3Ar97r05         [13] 9981 	ld	a, (_npc_contact_level+0)
+      004037 CDrEAr11         [17] 9982 	call	_open_dialogue
+      00403A                       9983 00121$:
+                                   9984 ;pocket_platformer.c:1577: if (!player_died && res_header->spike_vram_idx) {
+      00403A 3ArB0r00         [13] 9985 	ld	a, (_player_died+0)
+      00403D B7               [ 4] 9986 	or	a, a
+      00403E C2r50r43         [10] 9987 	jp	NZ, 00129$
+                                   9988 ;pocket_platformer.c:1512: total = res_header->level_count;
+      004041 2Ar00r00         [16] 9989 	ld	hl, (_res_header)
+                                   9990 ;pocket_platformer.c:1577: if (!player_died && res_header->spike_vram_idx) {
+      004044 11 26 00         [10] 9991 	ld	de, #0x0026
+      004047 19               [11] 9992 	add	hl, de
+      004048 7E               [ 7] 9993 	ld	a, (hl)
+      004049 B7               [ 4] 9994 	or	a, a
+      00404A CAr50r43         [10] 9995 	jp	Z, 00129$
+                                   9996 ;pocket_platformer.c:1578: unsigned char sv = res_header->spike_vram_idx;
+      00404D DD 77 E8         [19] 9997 	ld	-24 (ix), a
+                                   9998 ;pocket_platformer.c:1579: long px = player.x >> 8, py = player.y >> 8;
+      004050 ED 5Br0Cr00      [20] 9999 	ld	de, (#_player + 0)
+      004054 2Ar0Er00         [16]10000 	ld	hl, (#_player + 2)
+      004057 06 08            [ 7]10001 	ld	b, #0x08
+      004059                      10002 00314$:
+      004059 CB 2C            [ 8]10003 	sra	h
+      00405B CB 1D            [ 8]10004 	rr	l
+      00405D CB 1A            [ 8]10005 	rr	d
+      00405F CB 1B            [ 8]10006 	rr	e
+      004061 10 F6            [13]10007 	djnz	00314$
+      004063 DD 73 FC         [19]10008 	ld	-4 (ix), e
+      004066 DD 72 FD         [19]10009 	ld	-3 (ix), d
+      004069 DD 75 FE         [19]10010 	ld	-2 (ix), l
+      00406C DD 74 FF         [19]10011 	ld	-1 (ix), h
+      00406F ED 5Br10r00      [20]10012 	ld	de, (#(_player + 4) + 0)
+      004073 2Ar12r00         [16]10013 	ld	hl, (#(_player + 4) + 2)
+      004076 06 08            [ 7]10014 	ld	b, #0x08
+      004078                      10015 00316$:
+      004078 CB 2C            [ 8]10016 	sra	h
+      00407A CB 1D            [ 8]10017 	rr	l
+      00407C CB 1A            [ 8]10018 	rr	d
+      00407E CB 1B            [ 8]10019 	rr	e
+      004080 10 F6            [13]10020 	djnz	00316$
+      004082 DD 73 F2         [19]10021 	ld	-14 (ix), e
+      004085 DD 72 F3         [19]10022 	ld	-13 (ix), d
+      004088 DD 75 F4         [19]10023 	ld	-12 (ix), l
+      00408B DD 74 F5         [19]10024 	ld	-11 (ix), h
+                                  10025 ;pocket_platformer.c:1580: map_res_bank();
+      00408E 21 FF FF         [10]10026 	ld	hl, #_ROM_bank_to_be_mapped_on_slot2
+      004091 36 02            [10]10027 	ld	(hl), #0x02
+                                  10028 ;pocket_platformer.c:1581: if (get_tile((unsigned char)((px+1)/TILE_SIZE),             (unsigned char)(py/TILE_SIZE))           == sv ||
+      004093 21 14 00         [10]10029 	ld	hl, #20
+      004096 39               [11]10030 	add	hl, sp
+      004097 EB               [ 4]10031 	ex	de, hl
+      004098 21 0E 00         [10]10032 	ld	hl, #14
+      00409B 39               [11]10033 	add	hl, sp
+      00409C 01 04 00         [10]10034 	ld	bc, #4
+      00409F ED B0            [21]10035 	ldir
+      0040A1 DD 7E F5         [19]10036 	ld	a, -11 (ix)
+      0040A4 07               [ 4]10037 	rlca
+      0040A5 E6 01            [ 7]10038 	and	a,#0x01
+      0040A7 DD 77 F6         [19]10039 	ld	-10 (ix), a
+      0040AA DD 7E F2         [19]10040 	ld	a, -14 (ix)
+      0040AD C6 07            [ 7]10041 	add	a, #0x07
+      0040AF DD 77 E9         [19]10042 	ld	-23 (ix), a
+      0040B2 DD 7E F3         [19]10043 	ld	a, -13 (ix)
+      0040B5 CE 00            [ 7]10044 	adc	a, #0x00
+      0040B7 DD 77 EA         [19]10045 	ld	-22 (ix), a
+      0040BA DD 7E F4         [19]10046 	ld	a, -12 (ix)
+      0040BD CE 00            [ 7]10047 	adc	a, #0x00
+      0040BF DD 77 EB         [19]10048 	ld	-21 (ix), a
+      0040C2 DD 7E F5         [19]10049 	ld	a, -11 (ix)
+      0040C5 CE 00            [ 7]10050 	adc	a, #0x00
+      0040C7 DD 77 EC         [19]10051 	ld	-20 (ix), a
+      0040CA DD 7E F6         [19]10052 	ld	a, -10 (ix)
+      0040CD B7               [ 4]10053 	or	a, a
+      0040CE 28 0E            [12]10054 	jr	Z, 00145$
+      0040D0 21 14 00         [10]10055 	ld	hl, #20
+      0040D3 39               [11]10056 	add	hl, sp
+      0040D4 EB               [ 4]10057 	ex	de, hl
+      0040D5 21 05 00         [10]10058 	ld	hl, #5
+      0040D8 39               [11]10059 	add	hl, sp
+      0040D9 01 04 00         [10]10060 	ld	bc, #4
+      0040DC ED B0            [21]10061 	ldir
+      0040DE                      10062 00145$:
+      0040DE DD 4E F8         [19]10063 	ld	c, -8 (ix)
+      0040E1 DD 46 F9         [19]10064 	ld	b, -7 (ix)
+      0040E4 CB 38            [ 8]10065 	srl	b
+      0040E6 CB 19            [ 8]10066 	rr	c
+      0040E8 CB 38            [ 8]10067 	srl	b
+      0040EA CB 19            [ 8]10068 	rr	c
+      0040EC CB 38            [ 8]10069 	srl	b
+      0040EE CB 19            [ 8]10070 	rr	c
+      0040F0 DD 71 F7         [19]10071 	ld	-9 (ix), c
+      0040F3 DD 7E FC         [19]10072 	ld	a, -4 (ix)
+      0040F6 C6 01            [ 7]10073 	add	a, #0x01
+      0040F8 4F               [ 4]10074 	ld	c, a
+      0040F9 DD 7E FD         [19]10075 	ld	a, -3 (ix)
+      0040FC CE 00            [ 7]10076 	adc	a, #0x00
+      0040FE 47               [ 4]10077 	ld	b, a
+      0040FF DD 7E FE         [19]10078 	ld	a, -2 (ix)
+      004102 CE 00            [ 7]10079 	adc	a, #0x00
+      004104 5F               [ 4]10080 	ld	e, a
+      004105 DD 7E FF         [19]10081 	ld	a, -1 (ix)
+      004108 CE 00            [ 7]10082 	adc	a, #0x00
+      00410A 57               [ 4]10083 	ld	d, a
+      00410B DD 71 F8         [19]10084 	ld	-8 (ix), c
+      00410E DD 70 F9         [19]10085 	ld	-7 (ix), b
+      004111 DD 73 FA         [19]10086 	ld	-6 (ix), e
+      004114 DD 72 FB         [19]10087 	ld	-5 (ix), d
+      004117 7A               [ 4]10088 	ld	a, d
+      004118 07               [ 4]10089 	rlca
+      004119 E6 01            [ 7]10090 	and	a,#0x01
+      00411B DD 77 ED         [19]10091 	ld	-19 (ix), a
+      00411E 79               [ 4]10092 	ld	a, c
+      00411F C6 07            [ 7]10093 	add	a, #0x07
+      004121 DD 77 EE         [19]10094 	ld	-18 (ix), a
+      004124 78               [ 4]10095 	ld	a, b
+      004125 CE 00            [ 7]10096 	adc	a, #0x00
+      004127 DD 77 EF         [19]10097 	ld	-17 (ix), a
+      00412A 7B               [ 4]10098 	ld	a, e
+      00412B CE 00            [ 7]10099 	adc	a, #0x00
+      00412D DD 77 F0         [19]10100 	ld	-16 (ix), a
+      004130 7A               [ 4]10101 	ld	a, d
+      004131 CE 00            [ 7]10102 	adc	a, #0x00
+      004133 DD 77 F1         [19]10103 	ld	-15 (ix), a
+      004136 DD 7E ED         [19]10104 	ld	a, -19 (ix)
+      004139 B7               [ 4]10105 	or	a, a
+      00413A 28 18            [12]10106 	jr	Z, 00146$
+      00413C DD 7E EE         [19]10107 	ld	a, -18 (ix)
+      00413F DD 77 F8         [19]10108 	ld	-8 (ix), a
+      004142 DD 7E EF         [19]10109 	ld	a, -17 (ix)
+      004145 DD 77 F9         [19]10110 	ld	-7 (ix), a
+      004148 DD 7E F0         [19]10111 	ld	a, -16 (ix)
+      00414B DD 77 FA         [19]10112 	ld	-6 (ix), a
+      00414E DD 7E F1         [19]10113 	ld	a, -15 (ix)
+      004151 DD 77 FB         [19]10114 	ld	-5 (ix), a
+      004154                      10115 00146$:
+      004154 DD 66 F8         [19]10116 	ld	h, -8 (ix)
+                                  10117 ;	spillPairReg hl
                                   10118 ;	spillPairReg hl
-                                  10119 ;	spillPairReg hl
-      004157 CB 3D            [ 8]10120 	srl	l
-      004159 CB 1C            [ 8]10121 	rr	h
-      00415B CB 3D            [ 8]10122 	srl	l
-      00415D CB 1C            [ 8]10123 	rr	h
-      00415F CB 3D            [ 8]10124 	srl	l
-      004161 CB 1C            [ 8]10125 	rr	h
-      004163 C5               [11]10126 	push	bc
-      004164 D5               [11]10127 	push	de
-      004165 DD 6E F7         [19]10128 	ld	l, -9 (ix)
-                                  10129 ;	spillPairReg hl
-                                  10130 ;	spillPairReg hl
-      004168 7C               [ 4]10131 	ld	a, h
-      004169 CDr1Er01         [17]10132 	call	_get_tile
-      00416C 6F               [ 4]10133 	ld	l, a
-                                  10134 ;	spillPairReg hl
-                                  10135 ;	spillPairReg hl
-      00416D D1               [10]10136 	pop	de
-      00416E C1               [10]10137 	pop	bc
-      00416F DD 7E E8         [19]10138 	ld	a, -24 (ix)
-      004172 95               [ 4]10139 	sub	a, l
-      004173 CAr48r43         [10]10140 	jp	Z,00123$
-                                  10141 ;pocket_platformer.c:1581: get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)(py/TILE_SIZE))           == sv ||
-      004176 DD 7E F2         [19]10142 	ld	a, -14 (ix)
-      004179 DD 77 F8         [19]10143 	ld	-8 (ix), a
-      00417C DD 7E F3         [19]10144 	ld	a, -13 (ix)
-      00417F DD 77 F9         [19]10145 	ld	-7 (ix), a
-      004182 DD 7E F4         [19]10146 	ld	a, -12 (ix)
-      004185 DD 77 FA         [19]10147 	ld	-6 (ix), a
-      004188 DD 7E F5         [19]10148 	ld	a, -11 (ix)
-      00418B DD 77 FB         [19]10149 	ld	-5 (ix), a
-      00418E DD 7E F6         [19]10150 	ld	a, -10 (ix)
-      004191 B7               [ 4]10151 	or	a, a
-      004192 28 18            [12]10152 	jr	Z, 00147$
-      004194 DD 7E E9         [19]10153 	ld	a, -23 (ix)
-      004197 DD 77 F8         [19]10154 	ld	-8 (ix), a
-      00419A DD 7E EA         [19]10155 	ld	a, -22 (ix)
-      00419D DD 77 F9         [19]10156 	ld	-7 (ix), a
-      0041A0 DD 7E EB         [19]10157 	ld	a, -21 (ix)
-      0041A3 DD 77 FA         [19]10158 	ld	-6 (ix), a
-      0041A6 DD 7E EC         [19]10159 	ld	a, -20 (ix)
-      0041A9 DD 77 FB         [19]10160 	ld	-5 (ix), a
-      0041AC                      10161 00147$:
-      0041AC DD 6E F8         [19]10162 	ld	l, -8 (ix)
-                                  10163 ;	spillPairReg hl
-                                  10164 ;	spillPairReg hl
-      0041AF DD 66 F9         [19]10165 	ld	h, -7 (ix)
+      004157 DD 6E F9         [19]10119 	ld	l, -7 (ix)
+                                  10120 ;	spillPairReg hl
+                                  10121 ;	spillPairReg hl
+      00415A CB 3D            [ 8]10122 	srl	l
+      00415C CB 1C            [ 8]10123 	rr	h
+      00415E CB 3D            [ 8]10124 	srl	l
+      004160 CB 1C            [ 8]10125 	rr	h
+      004162 CB 3D            [ 8]10126 	srl	l
+      004164 CB 1C            [ 8]10127 	rr	h
+      004166 C5               [11]10128 	push	bc
+      004167 D5               [11]10129 	push	de
+      004168 DD 6E F7         [19]10130 	ld	l, -9 (ix)
+                                  10131 ;	spillPairReg hl
+                                  10132 ;	spillPairReg hl
+      00416B 7C               [ 4]10133 	ld	a, h
+      00416C CDr1Er01         [17]10134 	call	_get_tile
+      00416F 6F               [ 4]10135 	ld	l, a
+                                  10136 ;	spillPairReg hl
+                                  10137 ;	spillPairReg hl
+      004170 D1               [10]10138 	pop	de
+      004171 C1               [10]10139 	pop	bc
+      004172 DD 7E E8         [19]10140 	ld	a, -24 (ix)
+      004175 95               [ 4]10141 	sub	a, l
+      004176 CAr4Br43         [10]10142 	jp	Z,00123$
+                                  10143 ;pocket_platformer.c:1582: get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)(py/TILE_SIZE))           == sv ||
+      004179 DD 7E F2         [19]10144 	ld	a, -14 (ix)
+      00417C DD 77 F8         [19]10145 	ld	-8 (ix), a
+      00417F DD 7E F3         [19]10146 	ld	a, -13 (ix)
+      004182 DD 77 F9         [19]10147 	ld	-7 (ix), a
+      004185 DD 7E F4         [19]10148 	ld	a, -12 (ix)
+      004188 DD 77 FA         [19]10149 	ld	-6 (ix), a
+      00418B DD 7E F5         [19]10150 	ld	a, -11 (ix)
+      00418E DD 77 FB         [19]10151 	ld	-5 (ix), a
+      004191 DD 7E F6         [19]10152 	ld	a, -10 (ix)
+      004194 B7               [ 4]10153 	or	a, a
+      004195 28 18            [12]10154 	jr	Z, 00147$
+      004197 DD 7E E9         [19]10155 	ld	a, -23 (ix)
+      00419A DD 77 F8         [19]10156 	ld	-8 (ix), a
+      00419D DD 7E EA         [19]10157 	ld	a, -22 (ix)
+      0041A0 DD 77 F9         [19]10158 	ld	-7 (ix), a
+      0041A3 DD 7E EB         [19]10159 	ld	a, -21 (ix)
+      0041A6 DD 77 FA         [19]10160 	ld	-6 (ix), a
+      0041A9 DD 7E EC         [19]10161 	ld	a, -20 (ix)
+      0041AC DD 77 FB         [19]10162 	ld	-5 (ix), a
+      0041AF                      10163 00147$:
+      0041AF DD 6E F8         [19]10164 	ld	l, -8 (ix)
+                                  10165 ;	spillPairReg hl
                                   10166 ;	spillPairReg hl
-                                  10167 ;	spillPairReg hl
-      0041B2 CB 3C            [ 8]10168 	srl	h
-      0041B4 CB 1D            [ 8]10169 	rr	l
-      0041B6 CB 3C            [ 8]10170 	srl	h
-      0041B8 CB 1D            [ 8]10171 	rr	l
-      0041BA CB 3C            [ 8]10172 	srl	h
-      0041BC CB 1D            [ 8]10173 	rr	l
-      0041BE DD 75 FB         [19]10174 	ld	-5 (ix), l
-      0041C1 DD 7E FC         [19]10175 	ld	a, -4 (ix)
-      0041C4 C6 04            [ 7]10176 	add	a, #0x04
-      0041C6 DD 77 F2         [19]10177 	ld	-14 (ix), a
-      0041C9 DD 7E FD         [19]10178 	ld	a, -3 (ix)
-      0041CC CE 00            [ 7]10179 	adc	a, #0x00
-      0041CE DD 77 F3         [19]10180 	ld	-13 (ix), a
-      0041D1 DD 7E FE         [19]10181 	ld	a, -2 (ix)
-      0041D4 CE 00            [ 7]10182 	adc	a, #0x00
-      0041D6 DD 77 F4         [19]10183 	ld	-12 (ix), a
-      0041D9 DD 7E FF         [19]10184 	ld	a, -1 (ix)
-      0041DC CE 00            [ 7]10185 	adc	a, #0x00
-      0041DE DD 77 F5         [19]10186 	ld	-11 (ix), a
-      0041E1 DD 7E F2         [19]10187 	ld	a, -14 (ix)
-      0041E4 DD 77 FC         [19]10188 	ld	-4 (ix), a
-      0041E7 DD 7E F3         [19]10189 	ld	a, -13 (ix)
-      0041EA DD 77 FD         [19]10190 	ld	-3 (ix), a
-      0041ED DD 7E F4         [19]10191 	ld	a, -12 (ix)
-      0041F0 DD 77 FE         [19]10192 	ld	-2 (ix), a
-      0041F3 DD 7E F5         [19]10193 	ld	a, -11 (ix)
-      0041F6 DD 77 FF         [19]10194 	ld	-1 (ix), a
-      0041F9 DD 7E F5         [19]10195 	ld	a, -11 (ix)
-      0041FC 07               [ 4]10196 	rlca
-      0041FD E6 01            [ 7]10197 	and	a,#0x01
-      0041FF DD 77 F6         [19]10198 	ld	-10 (ix), a
-      004202 DD 7E F2         [19]10199 	ld	a, -14 (ix)
-      004205 C6 07            [ 7]10200 	add	a, #0x07
-      004207 DD 77 F7         [19]10201 	ld	-9 (ix), a
-      00420A DD 7E F3         [19]10202 	ld	a, -13 (ix)
-      00420D CE 00            [ 7]10203 	adc	a, #0x00
-      00420F DD 77 F8         [19]10204 	ld	-8 (ix), a
-      004212 DD 7E F4         [19]10205 	ld	a, -12 (ix)
-      004215 CE 00            [ 7]10206 	adc	a, #0x00
-      004217 DD 77 F9         [19]10207 	ld	-7 (ix), a
-      00421A DD 7E F5         [19]10208 	ld	a, -11 (ix)
-      00421D CE 00            [ 7]10209 	adc	a, #0x00
-      00421F DD 77 FA         [19]10210 	ld	-6 (ix), a
-      004222 DD 7E F6         [19]10211 	ld	a, -10 (ix)
-      004225 B7               [ 4]10212 	or	a, a
-      004226 28 18            [12]10213 	jr	Z, 00148$
-      004228 DD 7E F7         [19]10214 	ld	a, -9 (ix)
-      00422B DD 77 FC         [19]10215 	ld	-4 (ix), a
-      00422E DD 7E F8         [19]10216 	ld	a, -8 (ix)
-      004231 DD 77 FD         [19]10217 	ld	-3 (ix), a
-      004234 DD 7E F9         [19]10218 	ld	a, -7 (ix)
-      004237 DD 77 FE         [19]10219 	ld	-2 (ix), a
-      00423A DD 7E FA         [19]10220 	ld	a, -6 (ix)
-      00423D DD 77 FF         [19]10221 	ld	-1 (ix), a
-      004240                      10222 00148$:
-      004240 DD 66 FC         [19]10223 	ld	h, -4 (ix)
-                                  10224 ;	spillPairReg hl
-                                  10225 ;	spillPairReg hl
-      004243 DD 6E FD         [19]10226 	ld	l, -3 (ix)
+      0041B2 DD 66 F9         [19]10167 	ld	h, -7 (ix)
+                                  10168 ;	spillPairReg hl
+                                  10169 ;	spillPairReg hl
+      0041B5 CB 3C            [ 8]10170 	srl	h
+      0041B7 CB 1D            [ 8]10171 	rr	l
+      0041B9 CB 3C            [ 8]10172 	srl	h
+      0041BB CB 1D            [ 8]10173 	rr	l
+      0041BD CB 3C            [ 8]10174 	srl	h
+      0041BF CB 1D            [ 8]10175 	rr	l
+      0041C1 DD 75 FB         [19]10176 	ld	-5 (ix), l
+      0041C4 DD 7E FC         [19]10177 	ld	a, -4 (ix)
+      0041C7 C6 04            [ 7]10178 	add	a, #0x04
+      0041C9 DD 77 F2         [19]10179 	ld	-14 (ix), a
+      0041CC DD 7E FD         [19]10180 	ld	a, -3 (ix)
+      0041CF CE 00            [ 7]10181 	adc	a, #0x00
+      0041D1 DD 77 F3         [19]10182 	ld	-13 (ix), a
+      0041D4 DD 7E FE         [19]10183 	ld	a, -2 (ix)
+      0041D7 CE 00            [ 7]10184 	adc	a, #0x00
+      0041D9 DD 77 F4         [19]10185 	ld	-12 (ix), a
+      0041DC DD 7E FF         [19]10186 	ld	a, -1 (ix)
+      0041DF CE 00            [ 7]10187 	adc	a, #0x00
+      0041E1 DD 77 F5         [19]10188 	ld	-11 (ix), a
+      0041E4 DD 7E F2         [19]10189 	ld	a, -14 (ix)
+      0041E7 DD 77 FC         [19]10190 	ld	-4 (ix), a
+      0041EA DD 7E F3         [19]10191 	ld	a, -13 (ix)
+      0041ED DD 77 FD         [19]10192 	ld	-3 (ix), a
+      0041F0 DD 7E F4         [19]10193 	ld	a, -12 (ix)
+      0041F3 DD 77 FE         [19]10194 	ld	-2 (ix), a
+      0041F6 DD 7E F5         [19]10195 	ld	a, -11 (ix)
+      0041F9 DD 77 FF         [19]10196 	ld	-1 (ix), a
+      0041FC DD 7E F5         [19]10197 	ld	a, -11 (ix)
+      0041FF 07               [ 4]10198 	rlca
+      004200 E6 01            [ 7]10199 	and	a,#0x01
+      004202 DD 77 F6         [19]10200 	ld	-10 (ix), a
+      004205 DD 7E F2         [19]10201 	ld	a, -14 (ix)
+      004208 C6 07            [ 7]10202 	add	a, #0x07
+      00420A DD 77 F7         [19]10203 	ld	-9 (ix), a
+      00420D DD 7E F3         [19]10204 	ld	a, -13 (ix)
+      004210 CE 00            [ 7]10205 	adc	a, #0x00
+      004212 DD 77 F8         [19]10206 	ld	-8 (ix), a
+      004215 DD 7E F4         [19]10207 	ld	a, -12 (ix)
+      004218 CE 00            [ 7]10208 	adc	a, #0x00
+      00421A DD 77 F9         [19]10209 	ld	-7 (ix), a
+      00421D DD 7E F5         [19]10210 	ld	a, -11 (ix)
+      004220 CE 00            [ 7]10211 	adc	a, #0x00
+      004222 DD 77 FA         [19]10212 	ld	-6 (ix), a
+      004225 DD 7E F6         [19]10213 	ld	a, -10 (ix)
+      004228 B7               [ 4]10214 	or	a, a
+      004229 28 18            [12]10215 	jr	Z, 00148$
+      00422B DD 7E F7         [19]10216 	ld	a, -9 (ix)
+      00422E DD 77 FC         [19]10217 	ld	-4 (ix), a
+      004231 DD 7E F8         [19]10218 	ld	a, -8 (ix)
+      004234 DD 77 FD         [19]10219 	ld	-3 (ix), a
+      004237 DD 7E F9         [19]10220 	ld	a, -7 (ix)
+      00423A DD 77 FE         [19]10221 	ld	-2 (ix), a
+      00423D DD 7E FA         [19]10222 	ld	a, -6 (ix)
+      004240 DD 77 FF         [19]10223 	ld	-1 (ix), a
+      004243                      10224 00148$:
+      004243 DD 66 FC         [19]10225 	ld	h, -4 (ix)
+                                  10226 ;	spillPairReg hl
                                   10227 ;	spillPairReg hl
-                                  10228 ;	spillPairReg hl
-      004246 CB 3D            [ 8]10229 	srl	l
-      004248 CB 1C            [ 8]10230 	rr	h
-      00424A CB 3D            [ 8]10231 	srl	l
-      00424C CB 1C            [ 8]10232 	rr	h
-      00424E CB 3D            [ 8]10233 	srl	l
-      004250 CB 1C            [ 8]10234 	rr	h
-      004252 C5               [11]10235 	push	bc
-      004253 D5               [11]10236 	push	de
-      004254 DD 6E FB         [19]10237 	ld	l, -5 (ix)
-                                  10238 ;	spillPairReg hl
-                                  10239 ;	spillPairReg hl
-      004257 7C               [ 4]10240 	ld	a, h
-      004258 CDr1Er01         [17]10241 	call	_get_tile
-      00425B 6F               [ 4]10242 	ld	l, a
-                                  10243 ;	spillPairReg hl
-                                  10244 ;	spillPairReg hl
-      00425C D1               [10]10245 	pop	de
-      00425D C1               [10]10246 	pop	bc
-      00425E DD 7E E8         [19]10247 	ld	a, -24 (ix)
-      004261 95               [ 4]10248 	sub	a, l
-      004262 CAr48r43         [10]10249 	jp	Z,00123$
-                                  10250 ;pocket_platformer.c:1582: get_tile((unsigned char)((px+1)/TILE_SIZE),             (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv ||
-      004265 DD 6E E9         [19]10251 	ld	l, -23 (ix)
-                                  10252 ;	spillPairReg hl
-                                  10253 ;	spillPairReg hl
-      004268 DD 66 EA         [19]10254 	ld	h, -22 (ix)
+      004246 DD 6E FD         [19]10228 	ld	l, -3 (ix)
+                                  10229 ;	spillPairReg hl
+                                  10230 ;	spillPairReg hl
+      004249 CB 3D            [ 8]10231 	srl	l
+      00424B CB 1C            [ 8]10232 	rr	h
+      00424D CB 3D            [ 8]10233 	srl	l
+      00424F CB 1C            [ 8]10234 	rr	h
+      004251 CB 3D            [ 8]10235 	srl	l
+      004253 CB 1C            [ 8]10236 	rr	h
+      004255 C5               [11]10237 	push	bc
+      004256 D5               [11]10238 	push	de
+      004257 DD 6E FB         [19]10239 	ld	l, -5 (ix)
+                                  10240 ;	spillPairReg hl
+                                  10241 ;	spillPairReg hl
+      00425A 7C               [ 4]10242 	ld	a, h
+      00425B CDr1Er01         [17]10243 	call	_get_tile
+      00425E 6F               [ 4]10244 	ld	l, a
+                                  10245 ;	spillPairReg hl
+                                  10246 ;	spillPairReg hl
+      00425F D1               [10]10247 	pop	de
+      004260 C1               [10]10248 	pop	bc
+      004261 DD 7E E8         [19]10249 	ld	a, -24 (ix)
+      004264 95               [ 4]10250 	sub	a, l
+      004265 CAr4Br43         [10]10251 	jp	Z,00123$
+                                  10252 ;pocket_platformer.c:1583: get_tile((unsigned char)((px+1)/TILE_SIZE),             (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv ||
+      004268 DD 6E E9         [19]10253 	ld	l, -23 (ix)
+                                  10254 ;	spillPairReg hl
                                   10255 ;	spillPairReg hl
-                                  10256 ;	spillPairReg hl
-      00426B FD E5            [15]10257 	push	iy
-      00426D E3               [19]10258 	ex	(sp), hl
-      00426E DD 6E EB         [19]10259 	ld	l, -21 (ix)
-                                  10260 ;	spillPairReg hl
-                                  10261 ;	spillPairReg hl
-      004271 E3               [19]10262 	ex	(sp), hl
-      004272 E3               [19]10263 	ex	(sp), hl
-      004273 DD 66 EC         [19]10264 	ld	h, -20 (ix)
-                                  10265 ;	spillPairReg hl
-                                  10266 ;	spillPairReg hl
-      004276 E3               [19]10267 	ex	(sp), hl
-      004277 FD E1            [14]10268 	pop	iy
-      004279 DD 7E EC         [19]10269 	ld	a, -20 (ix)
-      00427C 07               [ 4]10270 	rlca
-      00427D E6 01            [ 7]10271 	and	a,#0x01
-      00427F DD 77 FB         [19]10272 	ld	-5 (ix), a
-      004282 DD 7E E9         [19]10273 	ld	a, -23 (ix)
-      004285 C6 07            [ 7]10274 	add	a, #0x07
-      004287 DD 77 FC         [19]10275 	ld	-4 (ix), a
-      00428A DD 7E EA         [19]10276 	ld	a, -22 (ix)
-      00428D CE 00            [ 7]10277 	adc	a, #0x00
-      00428F DD 77 FD         [19]10278 	ld	-3 (ix), a
-      004292 DD 7E EB         [19]10279 	ld	a, -21 (ix)
-      004295 CE 00            [ 7]10280 	adc	a, #0x00
-      004297 DD 77 FE         [19]10281 	ld	-2 (ix), a
-      00429A DD 7E EC         [19]10282 	ld	a, -20 (ix)
-      00429D CE 00            [ 7]10283 	adc	a, #0x00
-      00429F DD 77 FF         [19]10284 	ld	-1 (ix), a
-      0042A2 DD 7E FB         [19]10285 	ld	a, -5 (ix)
-      0042A5 B7               [ 4]10286 	or	a, a
-      0042A6 28 14            [12]10287 	jr	Z, 00149$
-      0042A8 DD 6E FC         [19]10288 	ld	l, -4 (ix)
-                                  10289 ;	spillPairReg hl
-                                  10290 ;	spillPairReg hl
-      0042AB DD 66 FD         [19]10291 	ld	h, -3 (ix)
+      00426B DD 66 EA         [19]10256 	ld	h, -22 (ix)
+                                  10257 ;	spillPairReg hl
+                                  10258 ;	spillPairReg hl
+      00426E FD E5            [15]10259 	push	iy
+      004270 E3               [19]10260 	ex	(sp), hl
+      004271 DD 6E EB         [19]10261 	ld	l, -21 (ix)
+                                  10262 ;	spillPairReg hl
+                                  10263 ;	spillPairReg hl
+      004274 E3               [19]10264 	ex	(sp), hl
+      004275 E3               [19]10265 	ex	(sp), hl
+      004276 DD 66 EC         [19]10266 	ld	h, -20 (ix)
+                                  10267 ;	spillPairReg hl
+                                  10268 ;	spillPairReg hl
+      004279 E3               [19]10269 	ex	(sp), hl
+      00427A FD E1            [14]10270 	pop	iy
+      00427C DD 7E EC         [19]10271 	ld	a, -20 (ix)
+      00427F 07               [ 4]10272 	rlca
+      004280 E6 01            [ 7]10273 	and	a,#0x01
+      004282 DD 77 FB         [19]10274 	ld	-5 (ix), a
+      004285 DD 7E E9         [19]10275 	ld	a, -23 (ix)
+      004288 C6 07            [ 7]10276 	add	a, #0x07
+      00428A DD 77 FC         [19]10277 	ld	-4 (ix), a
+      00428D DD 7E EA         [19]10278 	ld	a, -22 (ix)
+      004290 CE 00            [ 7]10279 	adc	a, #0x00
+      004292 DD 77 FD         [19]10280 	ld	-3 (ix), a
+      004295 DD 7E EB         [19]10281 	ld	a, -21 (ix)
+      004298 CE 00            [ 7]10282 	adc	a, #0x00
+      00429A DD 77 FE         [19]10283 	ld	-2 (ix), a
+      00429D DD 7E EC         [19]10284 	ld	a, -20 (ix)
+      0042A0 CE 00            [ 7]10285 	adc	a, #0x00
+      0042A2 DD 77 FF         [19]10286 	ld	-1 (ix), a
+      0042A5 DD 7E FB         [19]10287 	ld	a, -5 (ix)
+      0042A8 B7               [ 4]10288 	or	a, a
+      0042A9 28 14            [12]10289 	jr	Z, 00149$
+      0042AB DD 6E FC         [19]10290 	ld	l, -4 (ix)
+                                  10291 ;	spillPairReg hl
                                   10292 ;	spillPairReg hl
-                                  10293 ;	spillPairReg hl
-      0042AE FD E5            [15]10294 	push	iy
-      0042B0 E3               [19]10295 	ex	(sp), hl
-      0042B1 DD 6E FE         [19]10296 	ld	l, -2 (ix)
-                                  10297 ;	spillPairReg hl
-                                  10298 ;	spillPairReg hl
-      0042B4 E3               [19]10299 	ex	(sp), hl
-      0042B5 E3               [19]10300 	ex	(sp), hl
-      0042B6 DD 66 FF         [19]10301 	ld	h, -1 (ix)
-                                  10302 ;	spillPairReg hl
-                                  10303 ;	spillPairReg hl
-      0042B9 E3               [19]10304 	ex	(sp), hl
-      0042BA FD E1            [14]10305 	pop	iy
-      0042BC                      10306 00149$:
-      0042BC CB 3C            [ 8]10307 	srl	h
-      0042BE CB 1D            [ 8]10308 	rr	l
-      0042C0 CB 3C            [ 8]10309 	srl	h
-      0042C2 CB 1D            [ 8]10310 	rr	l
-      0042C4 CB 3C            [ 8]10311 	srl	h
-      0042C6 CB 1D            [ 8]10312 	rr	l
-      0042C8 DD 7E ED         [19]10313 	ld	a, -19 (ix)
-      0042CB B7               [ 4]10314 	or	a, a
-      0042CC 28 06            [12]10315 	jr	Z, 00150$
-      0042CE DD 4E EE         [19]10316 	ld	c, -18 (ix)
-      0042D1 DD 46 EF         [19]10317 	ld	b, -17 (ix)
-      0042D4                      10318 00150$:
-      0042D4 CB 38            [ 8]10319 	srl	b
-      0042D6 CB 19            [ 8]10320 	rr	c
-      0042D8 CB 38            [ 8]10321 	srl	b
-      0042DA CB 19            [ 8]10322 	rr	c
-      0042DC CB 38            [ 8]10323 	srl	b
-      0042DE CB 19            [ 8]10324 	rr	c
-      0042E0 79               [ 4]10325 	ld	a, c
-      0042E1 CDr1Er01         [17]10326 	call	_get_tile
-      0042E4 4F               [ 4]10327 	ld	c, a
-      0042E5 DD 7E E8         [19]10328 	ld	a, -24 (ix)
-      0042E8 91               [ 4]10329 	sub	a, c
-      0042E9 28 5D            [12]10330 	jr	Z, 00123$
-                                  10331 ;pocket_platformer.c:1583: get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv)
-      0042EB 21 0A 00         [10]10332 	ld	hl, #10
-      0042EE 39               [11]10333 	add	hl, sp
-      0042EF EB               [ 4]10334 	ex	de, hl
-      0042F0 21 05 00         [10]10335 	ld	hl, #5
-      0042F3 39               [11]10336 	add	hl, sp
-      0042F4 01 04 00         [10]10337 	ld	bc, #4
-      0042F7 ED B0            [21]10338 	ldir
-      0042F9 DD 7E FB         [19]10339 	ld	a, -5 (ix)
-      0042FC B7               [ 4]10340 	or	a, a
-      0042FD 28 0E            [12]10341 	jr	Z, 00151$
-      0042FF 21 0A 00         [10]10342 	ld	hl, #10
-      004302 39               [11]10343 	add	hl, sp
-      004303 EB               [ 4]10344 	ex	de, hl
-      004304 21 18 00         [10]10345 	ld	hl, #24
-      004307 39               [11]10346 	add	hl, sp
-      004308 01 04 00         [10]10347 	ld	bc, #4
-      00430B ED B0            [21]10348 	ldir
-      00430D                      10349 00151$:
-      00430D DD 6E EE         [19]10350 	ld	l, -18 (ix)
-                                  10351 ;	spillPairReg hl
-                                  10352 ;	spillPairReg hl
-      004310 DD 66 EF         [19]10353 	ld	h, -17 (ix)
+      0042AE DD 66 FD         [19]10293 	ld	h, -3 (ix)
+                                  10294 ;	spillPairReg hl
+                                  10295 ;	spillPairReg hl
+      0042B1 FD E5            [15]10296 	push	iy
+      0042B3 E3               [19]10297 	ex	(sp), hl
+      0042B4 DD 6E FE         [19]10298 	ld	l, -2 (ix)
+                                  10299 ;	spillPairReg hl
+                                  10300 ;	spillPairReg hl
+      0042B7 E3               [19]10301 	ex	(sp), hl
+      0042B8 E3               [19]10302 	ex	(sp), hl
+      0042B9 DD 66 FF         [19]10303 	ld	h, -1 (ix)
+                                  10304 ;	spillPairReg hl
+                                  10305 ;	spillPairReg hl
+      0042BC E3               [19]10306 	ex	(sp), hl
+      0042BD FD E1            [14]10307 	pop	iy
+      0042BF                      10308 00149$:
+      0042BF CB 3C            [ 8]10309 	srl	h
+      0042C1 CB 1D            [ 8]10310 	rr	l
+      0042C3 CB 3C            [ 8]10311 	srl	h
+      0042C5 CB 1D            [ 8]10312 	rr	l
+      0042C7 CB 3C            [ 8]10313 	srl	h
+      0042C9 CB 1D            [ 8]10314 	rr	l
+      0042CB DD 7E ED         [19]10315 	ld	a, -19 (ix)
+      0042CE B7               [ 4]10316 	or	a, a
+      0042CF 28 06            [12]10317 	jr	Z, 00150$
+      0042D1 DD 4E EE         [19]10318 	ld	c, -18 (ix)
+      0042D4 DD 46 EF         [19]10319 	ld	b, -17 (ix)
+      0042D7                      10320 00150$:
+      0042D7 CB 38            [ 8]10321 	srl	b
+      0042D9 CB 19            [ 8]10322 	rr	c
+      0042DB CB 38            [ 8]10323 	srl	b
+      0042DD CB 19            [ 8]10324 	rr	c
+      0042DF CB 38            [ 8]10325 	srl	b
+      0042E1 CB 19            [ 8]10326 	rr	c
+      0042E3 79               [ 4]10327 	ld	a, c
+      0042E4 CDr1Er01         [17]10328 	call	_get_tile
+      0042E7 4F               [ 4]10329 	ld	c, a
+      0042E8 DD 7E E8         [19]10330 	ld	a, -24 (ix)
+      0042EB 91               [ 4]10331 	sub	a, c
+      0042EC 28 5D            [12]10332 	jr	Z, 00123$
+                                  10333 ;pocket_platformer.c:1584: get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv)
+      0042EE 21 0A 00         [10]10334 	ld	hl, #10
+      0042F1 39               [11]10335 	add	hl, sp
+      0042F2 EB               [ 4]10336 	ex	de, hl
+      0042F3 21 05 00         [10]10337 	ld	hl, #5
+      0042F6 39               [11]10338 	add	hl, sp
+      0042F7 01 04 00         [10]10339 	ld	bc, #4
+      0042FA ED B0            [21]10340 	ldir
+      0042FC DD 7E FB         [19]10341 	ld	a, -5 (ix)
+      0042FF B7               [ 4]10342 	or	a, a
+      004300 28 0E            [12]10343 	jr	Z, 00151$
+      004302 21 0A 00         [10]10344 	ld	hl, #10
+      004305 39               [11]10345 	add	hl, sp
+      004306 EB               [ 4]10346 	ex	de, hl
+      004307 21 18 00         [10]10347 	ld	hl, #24
+      00430A 39               [11]10348 	add	hl, sp
+      00430B 01 04 00         [10]10349 	ld	bc, #4
+      00430E ED B0            [21]10350 	ldir
+      004310                      10351 00151$:
+      004310 DD 6E EE         [19]10352 	ld	l, -18 (ix)
+                                  10353 ;	spillPairReg hl
                                   10354 ;	spillPairReg hl
-                                  10355 ;	spillPairReg hl
-      004313 CB 3C            [ 8]10356 	srl	h
-      004315 CB 1D            [ 8]10357 	rr	l
-      004317 CB 3C            [ 8]10358 	srl	h
-      004319 CB 1D            [ 8]10359 	rr	l
-      00431B CB 3C            [ 8]10360 	srl	h
-      00431D CB 1D            [ 8]10361 	rr	l
-      00431F DD 4E F2         [19]10362 	ld	c, -14 (ix)
-      004322 DD 46 F3         [19]10363 	ld	b, -13 (ix)
-      004325 DD 7E F6         [19]10364 	ld	a, -10 (ix)
-      004328 B7               [ 4]10365 	or	a, a
-      004329 28 06            [12]10366 	jr	Z, 00152$
-      00432B DD 4E F7         [19]10367 	ld	c, -9 (ix)
-      00432E DD 46 F8         [19]10368 	ld	b, -8 (ix)
-      004331                      10369 00152$:
-      004331 CB 38            [ 8]10370 	srl	b
-      004333 CB 19            [ 8]10371 	rr	c
-      004335 CB 38            [ 8]10372 	srl	b
-      004337 CB 19            [ 8]10373 	rr	c
-      004339 CB 38            [ 8]10374 	srl	b
-      00433B CB 19            [ 8]10375 	rr	c
-      00433D 79               [ 4]10376 	ld	a, c
-      00433E CDr1Er01         [17]10377 	call	_get_tile
-      004341 4F               [ 4]10378 	ld	c, a
-      004342 DD 7E E8         [19]10379 	ld	a, -24 (ix)
-      004345 91               [ 4]10380 	sub	a, c
-      004346 20 05            [12]10381 	jr	NZ, 00129$
-      004348                      10382 00123$:
-                                  10383 ;pocket_platformer.c:1584: player_died = 1;
-      004348 21rB0r00         [10]10384 	ld	hl, #_player_died
-      00434B 36 01            [10]10385 	ld	(hl), #0x01
-      00434D                      10386 00129$:
-                                  10387 ;pocket_platformer.c:1586: check_rb_switch();
-      00434D CDrA3r31         [17]10388 	call	_check_rb_switch
-                                  10389 ;pocket_platformer.c:1587: update_disappearing_blocks();
-      004350 CDrE7r35         [17]10390 	call	_update_disappearing_blocks
-                                  10391 ;pocket_platformer.c:1588: update_camera();
-      004353 CDr23r3B         [17]10392 	call	_update_camera
-                                  10393 ;pocket_platformer.c:1589: update_anim();
-      004356 CDr2Er3B         [17]10394 	call	_update_anim
-                                  10395 ;pocket_platformer.c:1591: SMS_initSprites();
-      004359 CDr00r00         [17]10396 	call	_SMS_initSprites
-                                  10397 ;pocket_platformer.c:1592: draw_objects();
-      00435C CDrB6r0B         [17]10398 	call	_draw_objects
-                                  10399 ;pocket_platformer.c:1593: draw_barrels();
-      00435F CDrBCr0C         [17]10400 	call	_draw_barrels
-                                  10401 ;pocket_platformer.c:1594: draw_npcs();
-      004362 CDr9Br0D         [17]10402 	call	_draw_npcs
-                                  10403 ;pocket_platformer.c:1595: draw_player();
-      004365 CDr20r0E         [17]10404 	call	_draw_player
-                                  10405 ;pocket_platformer.c:1596: SMS_finalizeSprites();
-      004368 CDr00r00         [17]10406 	call	_SMS_finalizeSprites
-                                  10407 ;pocket_platformer.c:1597: SMS_copySpritestoSAT();
-      00436B CDr00r00         [17]10408 	call	_SMS_copySpritestoSAT
-                                  10409 ;pocket_platformer.c:1599: if (player_died) {
-      00436E 3ArB0r00         [13]10410 	ld	a, (_player_died+0)
-      004371 B7               [ 4]10411 	or	a, a
-      004372 28 09            [12]10412 	jr	Z, 00135$
-                                  10413 ;pocket_platformer.c:1600: death_sequence(level_n);
-      004374 DD 7E E6         [19]10414 	ld	a, -26 (ix)
-      004377 CDr91r3E         [17]10415 	call	_death_sequence
-      00437A C3rEAr3E         [10]10416 	jp	00138$
-      00437D                      10417 00135$:
-                                  10418 ;pocket_platformer.c:1601: } else if (level_complete) {
-      00437D 3ArAFr00         [13]10419 	ld	a, (_level_complete+0)
-      004380 B7               [ 4]10420 	or	a, a
-      004381 CArEAr3E         [10]10421 	jp	Z, 00138$
-                                  10422 ;pocket_platformer.c:1603: for (i = 0; i < 60; i++) SMS_waitForVBlank();
-      004384 0E 3C            [ 7]10423 	ld	c, #0x3c
-      004386                      10424 00142$:
-      004386 C5               [11]10425 	push	bc
-      004387 CDr00r00         [17]10426 	call	_SMS_waitForVBlank
-      00438A C1               [10]10427 	pop	bc
-      00438B 0D               [ 4]10428 	dec	c
-      00438C 20 F8            [12]10429 	jr	NZ, 00142$
-                                  10430 ;pocket_platformer.c:1604: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
-      00438E DD 4E E6         [19]10431 	ld	c, -26 (ix)
-      004391 06 00            [ 7]10432 	ld	b, #0x00
-      004393 03               [ 6]10433 	inc	bc
-      004394 DD 5E E7         [19]10434 	ld	e, -25 (ix)
-      004397 16 00            [ 7]10435 	ld	d, #0x00
-      004399 79               [ 4]10436 	ld	a, c
-      00439A 93               [ 4]10437 	sub	a, e
-      00439B 78               [ 4]10438 	ld	a, b
-      00439C 9A               [ 4]10439 	sbc	a, d
-      00439D E2rA2r43         [10]10440 	jp	PO, 00323$
-      0043A0 EE 80            [ 7]10441 	xor	a, #0x80
-      0043A2                      10442 00323$:
-      0043A2 F2rBBr43         [10]10443 	jp	P, 00153$
-      0043A5 DD 7E E6         [19]10444 	ld	a, -26 (ix)
-      0043A8 DD 77 FF         [19]10445 	ld	-1 (ix), a
-      0043AB DD 34 FF         [23]10446 	inc	-1 (ix)
-      0043AE DD 7E FF         [19]10447 	ld	a, -1 (ix)
-      0043B1 DD 77 FE         [19]10448 	ld	-2 (ix), a
-      0043B4 07               [ 4]10449 	rlca
-      0043B5 9F               [ 4]10450 	sbc	a, a
-      0043B6 DD 77 FF         [19]10451 	ld	-1 (ix), a
-      0043B9 18 07            [12]10452 	jr	00154$
-      0043BB                      10453 00153$:
-      0043BB AF               [ 4]10454 	xor	a, a
-      0043BC DD 77 FE         [19]10455 	ld	-2 (ix), a
-      0043BF DD 77 FF         [19]10456 	ld	-1 (ix), a
-      0043C2                      10457 00154$:
-      0043C2 DD 7E FE         [19]10458 	ld	a, -2 (ix)
-                                  10459 ;pocket_platformer.c:1605: load_level(level_n);
-      0043C5 DD 77 E6         [19]10460 	ld	-26 (ix), a
-      0043C8 CDr43r3B         [17]10461 	call	_load_level
-                                  10462 ;pocket_platformer.c:1608: }
-      0043CB C3rEAr3E         [10]10463 	jp	00138$
-                                  10464 ;pocket_platformer.c:1613: static void title_screen(void) {
-                                  10465 ;	---------------------------------
-                                  10466 ; Function title_screen
-                                  10467 ; ---------------------------------
-      0043CE                      10468 _title_screen:
-                                  10469 ;pocket_platformer.c:1615: SMS_waitForVBlank();
-      0043CE CDr00r00         [17]10470 	call	_SMS_waitForVBlank
-                                  10471 ;pocket_platformer.c:1616: SMS_displayOff();
-      0043D1 21 40 01         [10]10472 	ld	hl, #0x0140
-      0043D4 CDr00r00         [17]10473 	call	_SMS_VDPturnOffFeature
-                                  10474 ;pocket_platformer.c:1617: SMS_VRAMmemsetW(0, 0, 16 * 1024);
-      0043D7 21 00 40         [10]10475 	ld	hl, #0x4000
-      0043DA E5               [11]10476 	push	hl
-      0043DB 11 00 00         [10]10477 	ld	de, #0x0000
-      0043DE 65               [ 4]10478 	ld	h, l
-      0043DF CDr00r00         [17]10479 	call	_SMS_VRAMmemsetW
-                                  10480 ;pocket_platformer.c:1618: SMS_zeroBGPalette();
-      0043E2 CDr00r00         [17]10481 	call	_SMS_zeroBGPalette
-                                  10482 ;pocket_platformer.c:1619: SMS_zeroSpritePalette();
-      0043E5 CDr00r00         [17]10483 	call	_SMS_zeroSpritePalette
-                                  10484 ;pocket_platformer.c:1620: SMS_setBGPaletteColor(1, 0x3F);
-      0043E8 2E 3F            [ 7]10485 	ld	l, #0x3f
-                                  10486 ;	spillPairReg hl
-                                  10487 ;	spillPairReg hl
-      0043EA 3E 01            [ 7]10488 	ld	a, #0x01
-      0043EC CDr00r00         [17]10489 	call	_SMS_setBGPaletteColor
-                                  10490 ;pocket_platformer.c:1621: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
-      0043EF 21 00 01         [10]10491 	ld	hl, #0x100
-      0043F2 E5               [11]10492 	push	hl
-      0043F3 2Ar00r00         [16]10493 	ld	hl, (_font_1bpp_size)
-      0043F6 E5               [11]10494 	push	hl
-      0043F7 11 60 01         [10]10495 	ld	de, #0x0160
-      0043FA 21r00r00         [10]10496 	ld	hl, #_font_1bpp
-      0043FD CDr00r00         [17]10497 	call	_SMS_load1bppTiles
-                                  10498 ;pocket_platformer.c:1622: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
-      004400 21 40 01         [10]10499 	ld	hl, #0x0140
-      004403 CDr00r00         [17]10500 	call	_SMS_configureTextRenderer
-                                  10501 ;pocket_platformer.c:1623: SMS_displayOn();
-      004406 21 40 01         [10]10502 	ld	hl, #0x0140
-      004409 CDr00r00         [17]10503 	call	_SMS_VDPturnOnFeature
-                                  10504 ;pocket_platformer.c:1624: SMS_printatXY(4,  8, "POCKET PLATFORMER");
-      00440C 21 08 7A         [10]10505 	ld	hl, #0x7a08
-      00440F CF               [11]10506 	rst	#0x08
-      004410 21r41r44         [10]10507 	ld	hl, #___str_2
-      004413 CDr00r00         [17]10508 	call	_SMS_print
-                                  10509 ;pocket_platformer.c:1625: SMS_printatXY(3, 10, "for Sega Master System");
-      004416 21 86 7A         [10]10510 	ld	hl, #0x7a86
-      004419 CF               [11]10511 	rst	#0x08
-      00441A 21r53r44         [10]10512 	ld	hl, #___str_3
-      00441D CDr00r00         [17]10513 	call	_SMS_print
-                                  10514 ;pocket_platformer.c:1626: SMS_printatXY(4, 14, "Press 1 to start");
-      004420 21 88 7B         [10]10515 	ld	hl, #0x7b88
-      004423 CF               [11]10516 	rst	#0x08
-      004424 21r6Ar44         [10]10517 	ld	hl, #___str_4
-      004427 CDr00r00         [17]10518 	call	_SMS_print
-                                  10519 ;pocket_platformer.c:1627: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
-      00442A                      10520 00110$:
-      00442A CDr00r00         [17]10521 	call	_SMS_waitForVBlank
-      00442D CDr00r00         [17]10522 	call	_SMS_getKeysStatus
-      004430 7B               [ 4]10523 	ld	a, e
-                                  10524 ;pocket_platformer.c:1628: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
-      004431 E6 30            [ 7]10525 	and	a, #0x30
-      004433 28 F5            [12]10526 	jr	Z, 00110$
-                                  10527 ;pocket_platformer.c:1629: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
-      004435                      10528 00113$:
-      004435 CDr00r00         [17]10529 	call	_SMS_waitForVBlank
-      004438 CDr00r00         [17]10530 	call	_SMS_getKeysStatus
-      00443B 7B               [ 4]10531 	ld	a, e
-                                  10532 ;pocket_platformer.c:1630: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
-      00443C E6 30            [ 7]10533 	and	a, #0x30
-      00443E 20 F5            [12]10534 	jr	NZ, 00113$
-                                  10535 ;pocket_platformer.c:1631: }
-      004440 C9               [10]10536 	ret
-      004441                      10537 ___str_2:
-      004441 50 4F 43 4B 45 54 20 10538 	.ascii "POCKET PLATFORMER"
+      004313 DD 66 EF         [19]10355 	ld	h, -17 (ix)
+                                  10356 ;	spillPairReg hl
+                                  10357 ;	spillPairReg hl
+      004316 CB 3C            [ 8]10358 	srl	h
+      004318 CB 1D            [ 8]10359 	rr	l
+      00431A CB 3C            [ 8]10360 	srl	h
+      00431C CB 1D            [ 8]10361 	rr	l
+      00431E CB 3C            [ 8]10362 	srl	h
+      004320 CB 1D            [ 8]10363 	rr	l
+      004322 DD 4E F2         [19]10364 	ld	c, -14 (ix)
+      004325 DD 46 F3         [19]10365 	ld	b, -13 (ix)
+      004328 DD 7E F6         [19]10366 	ld	a, -10 (ix)
+      00432B B7               [ 4]10367 	or	a, a
+      00432C 28 06            [12]10368 	jr	Z, 00152$
+      00432E DD 4E F7         [19]10369 	ld	c, -9 (ix)
+      004331 DD 46 F8         [19]10370 	ld	b, -8 (ix)
+      004334                      10371 00152$:
+      004334 CB 38            [ 8]10372 	srl	b
+      004336 CB 19            [ 8]10373 	rr	c
+      004338 CB 38            [ 8]10374 	srl	b
+      00433A CB 19            [ 8]10375 	rr	c
+      00433C CB 38            [ 8]10376 	srl	b
+      00433E CB 19            [ 8]10377 	rr	c
+      004340 79               [ 4]10378 	ld	a, c
+      004341 CDr1Er01         [17]10379 	call	_get_tile
+      004344 4F               [ 4]10380 	ld	c, a
+      004345 DD 7E E8         [19]10381 	ld	a, -24 (ix)
+      004348 91               [ 4]10382 	sub	a, c
+      004349 20 05            [12]10383 	jr	NZ, 00129$
+      00434B                      10384 00123$:
+                                  10385 ;pocket_platformer.c:1585: player_died = 1;
+      00434B 21rB0r00         [10]10386 	ld	hl, #_player_died
+      00434E 36 01            [10]10387 	ld	(hl), #0x01
+      004350                      10388 00129$:
+                                  10389 ;pocket_platformer.c:1587: check_rb_switch();
+      004350 CDrA3r31         [17]10390 	call	_check_rb_switch
+                                  10391 ;pocket_platformer.c:1588: update_disappearing_blocks();
+      004353 CDrE7r35         [17]10392 	call	_update_disappearing_blocks
+                                  10393 ;pocket_platformer.c:1589: update_camera();
+      004356 CDr23r3B         [17]10394 	call	_update_camera
+                                  10395 ;pocket_platformer.c:1590: update_anim();
+      004359 CDr2Er3B         [17]10396 	call	_update_anim
+                                  10397 ;pocket_platformer.c:1592: SMS_initSprites();
+      00435C CDr00r00         [17]10398 	call	_SMS_initSprites
+                                  10399 ;pocket_platformer.c:1593: draw_objects();
+      00435F CDrB6r0B         [17]10400 	call	_draw_objects
+                                  10401 ;pocket_platformer.c:1594: draw_barrels();
+      004362 CDrBCr0C         [17]10402 	call	_draw_barrels
+                                  10403 ;pocket_platformer.c:1595: draw_npcs();
+      004365 CDr9Br0D         [17]10404 	call	_draw_npcs
+                                  10405 ;pocket_platformer.c:1596: draw_player();
+      004368 CDr20r0E         [17]10406 	call	_draw_player
+                                  10407 ;pocket_platformer.c:1597: SMS_finalizeSprites();
+      00436B CDr00r00         [17]10408 	call	_SMS_finalizeSprites
+                                  10409 ;pocket_platformer.c:1598: SMS_copySpritestoSAT();
+      00436E CDr00r00         [17]10410 	call	_SMS_copySpritestoSAT
+                                  10411 ;pocket_platformer.c:1600: if (player_died) {
+      004371 3ArB0r00         [13]10412 	ld	a, (_player_died+0)
+      004374 B7               [ 4]10413 	or	a, a
+      004375 28 09            [12]10414 	jr	Z, 00135$
+                                  10415 ;pocket_platformer.c:1601: death_sequence(level_n);
+      004377 DD 7E E6         [19]10416 	ld	a, -26 (ix)
+      00437A CDr91r3E         [17]10417 	call	_death_sequence
+      00437D C3rEAr3E         [10]10418 	jp	00138$
+      004380                      10419 00135$:
+                                  10420 ;pocket_platformer.c:1602: } else if (level_complete) {
+      004380 3ArAFr00         [13]10421 	ld	a, (_level_complete+0)
+      004383 B7               [ 4]10422 	or	a, a
+      004384 CArEAr3E         [10]10423 	jp	Z, 00138$
+                                  10424 ;pocket_platformer.c:1604: for (i = 0; i < 60; i++) SMS_waitForVBlank();
+      004387 0E 3C            [ 7]10425 	ld	c, #0x3c
+      004389                      10426 00142$:
+      004389 C5               [11]10427 	push	bc
+      00438A CDr00r00         [17]10428 	call	_SMS_waitForVBlank
+      00438D C1               [10]10429 	pop	bc
+      00438E 0D               [ 4]10430 	dec	c
+      00438F 20 F8            [12]10431 	jr	NZ, 00142$
+                                  10432 ;pocket_platformer.c:1605: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
+      004391 DD 4E E6         [19]10433 	ld	c, -26 (ix)
+      004394 06 00            [ 7]10434 	ld	b, #0x00
+      004396 03               [ 6]10435 	inc	bc
+      004397 DD 5E E7         [19]10436 	ld	e, -25 (ix)
+      00439A 16 00            [ 7]10437 	ld	d, #0x00
+      00439C 79               [ 4]10438 	ld	a, c
+      00439D 93               [ 4]10439 	sub	a, e
+      00439E 78               [ 4]10440 	ld	a, b
+      00439F 9A               [ 4]10441 	sbc	a, d
+      0043A0 E2rA5r43         [10]10442 	jp	PO, 00323$
+      0043A3 EE 80            [ 7]10443 	xor	a, #0x80
+      0043A5                      10444 00323$:
+      0043A5 F2rBEr43         [10]10445 	jp	P, 00153$
+      0043A8 DD 7E E6         [19]10446 	ld	a, -26 (ix)
+      0043AB DD 77 FF         [19]10447 	ld	-1 (ix), a
+      0043AE DD 34 FF         [23]10448 	inc	-1 (ix)
+      0043B1 DD 7E FF         [19]10449 	ld	a, -1 (ix)
+      0043B4 DD 77 FE         [19]10450 	ld	-2 (ix), a
+      0043B7 07               [ 4]10451 	rlca
+      0043B8 9F               [ 4]10452 	sbc	a, a
+      0043B9 DD 77 FF         [19]10453 	ld	-1 (ix), a
+      0043BC 18 07            [12]10454 	jr	00154$
+      0043BE                      10455 00153$:
+      0043BE AF               [ 4]10456 	xor	a, a
+      0043BF DD 77 FE         [19]10457 	ld	-2 (ix), a
+      0043C2 DD 77 FF         [19]10458 	ld	-1 (ix), a
+      0043C5                      10459 00154$:
+      0043C5 DD 7E FE         [19]10460 	ld	a, -2 (ix)
+                                  10461 ;pocket_platformer.c:1606: load_level(level_n);
+      0043C8 DD 77 E6         [19]10462 	ld	-26 (ix), a
+      0043CB CDr43r3B         [17]10463 	call	_load_level
+                                  10464 ;pocket_platformer.c:1609: }
+      0043CE C3rEAr3E         [10]10465 	jp	00138$
+                                  10466 ;pocket_platformer.c:1614: static void title_screen(void) {
+                                  10467 ;	---------------------------------
+                                  10468 ; Function title_screen
+                                  10469 ; ---------------------------------
+      0043D1                      10470 _title_screen:
+                                  10471 ;pocket_platformer.c:1616: SMS_waitForVBlank();
+      0043D1 CDr00r00         [17]10472 	call	_SMS_waitForVBlank
+                                  10473 ;pocket_platformer.c:1617: SMS_displayOff();
+      0043D4 21 40 01         [10]10474 	ld	hl, #0x0140
+      0043D7 CDr00r00         [17]10475 	call	_SMS_VDPturnOffFeature
+                                  10476 ;pocket_platformer.c:1618: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+      0043DA 21 00 40         [10]10477 	ld	hl, #0x4000
+      0043DD E5               [11]10478 	push	hl
+      0043DE 11 00 00         [10]10479 	ld	de, #0x0000
+      0043E1 65               [ 4]10480 	ld	h, l
+      0043E2 CDr00r00         [17]10481 	call	_SMS_VRAMmemsetW
+                                  10482 ;pocket_platformer.c:1619: SMS_zeroBGPalette();
+      0043E5 CDr00r00         [17]10483 	call	_SMS_zeroBGPalette
+                                  10484 ;pocket_platformer.c:1620: SMS_zeroSpritePalette();
+      0043E8 CDr00r00         [17]10485 	call	_SMS_zeroSpritePalette
+                                  10486 ;pocket_platformer.c:1621: SMS_setBGPaletteColor(1, 0x3F);
+      0043EB 2E 3F            [ 7]10487 	ld	l, #0x3f
+                                  10488 ;	spillPairReg hl
+                                  10489 ;	spillPairReg hl
+      0043ED 3E 01            [ 7]10490 	ld	a, #0x01
+      0043EF CDr00r00         [17]10491 	call	_SMS_setBGPaletteColor
+                                  10492 ;pocket_platformer.c:1622: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
+      0043F2 21 00 01         [10]10493 	ld	hl, #0x100
+      0043F5 E5               [11]10494 	push	hl
+      0043F6 2Ar00r00         [16]10495 	ld	hl, (_font_1bpp_size)
+      0043F9 E5               [11]10496 	push	hl
+      0043FA 11 60 01         [10]10497 	ld	de, #0x0160
+      0043FD 21r00r00         [10]10498 	ld	hl, #_font_1bpp
+      004400 CDr00r00         [17]10499 	call	_SMS_load1bppTiles
+                                  10500 ;pocket_platformer.c:1623: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
+      004403 21 40 01         [10]10501 	ld	hl, #0x0140
+      004406 CDr00r00         [17]10502 	call	_SMS_configureTextRenderer
+                                  10503 ;pocket_platformer.c:1624: SMS_displayOn();
+      004409 21 40 01         [10]10504 	ld	hl, #0x0140
+      00440C CDr00r00         [17]10505 	call	_SMS_VDPturnOnFeature
+                                  10506 ;pocket_platformer.c:1625: SMS_printatXY(4,  8, "POCKET PLATFORMER");
+      00440F 21 08 7A         [10]10507 	ld	hl, #0x7a08
+      004412 CF               [11]10508 	rst	#0x08
+      004413 21r44r44         [10]10509 	ld	hl, #___str_2
+      004416 CDr00r00         [17]10510 	call	_SMS_print
+                                  10511 ;pocket_platformer.c:1626: SMS_printatXY(3, 10, "for Sega Master System");
+      004419 21 86 7A         [10]10512 	ld	hl, #0x7a86
+      00441C CF               [11]10513 	rst	#0x08
+      00441D 21r56r44         [10]10514 	ld	hl, #___str_3
+      004420 CDr00r00         [17]10515 	call	_SMS_print
+                                  10516 ;pocket_platformer.c:1627: SMS_printatXY(4, 14, "Press 1 to start");
+      004423 21 88 7B         [10]10517 	ld	hl, #0x7b88
+      004426 CF               [11]10518 	rst	#0x08
+      004427 21r6Dr44         [10]10519 	ld	hl, #___str_4
+      00442A CDr00r00         [17]10520 	call	_SMS_print
+                                  10521 ;pocket_platformer.c:1628: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+      00442D                      10522 00110$:
+      00442D CDr00r00         [17]10523 	call	_SMS_waitForVBlank
+      004430 CDr00r00         [17]10524 	call	_SMS_getKeysStatus
+      004433 7B               [ 4]10525 	ld	a, e
+                                  10526 ;pocket_platformer.c:1629: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
+      004434 E6 30            [ 7]10527 	and	a, #0x30
+      004436 28 F5            [12]10528 	jr	Z, 00110$
+                                  10529 ;pocket_platformer.c:1630: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+      004438                      10530 00113$:
+      004438 CDr00r00         [17]10531 	call	_SMS_waitForVBlank
+      00443B CDr00r00         [17]10532 	call	_SMS_getKeysStatus
+      00443E 7B               [ 4]10533 	ld	a, e
+                                  10534 ;pocket_platformer.c:1631: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
+      00443F E6 30            [ 7]10535 	and	a, #0x30
+      004441 20 F5            [12]10536 	jr	NZ, 00113$
+                                  10537 ;pocket_platformer.c:1632: }
+      004443 C9               [10]10538 	ret
+      004444                      10539 ___str_2:
+      004444 50 4F 43 4B 45 54 20 10540 	.ascii "POCKET PLATFORMER"
              50 4C 41 54 46 4F 52
              4D 45 52
-      004452 00                   10539 	.db 0x00
-      004453                      10540 ___str_3:
-      004453 66 6F 72 20 53 65 67 10541 	.ascii "for Sega Master System"
+      004455 00                   10541 	.db 0x00
+      004456                      10542 ___str_3:
+      004456 66 6F 72 20 53 65 67 10543 	.ascii "for Sega Master System"
              61 20 4D 61 73 74 65
              72 20 53 79 73 74 65
              6D
-      004469 00                   10542 	.db 0x00
-      00446A                      10543 ___str_4:
-      00446A 50 72 65 73 73 20 31 10544 	.ascii "Press 1 to start"
+      00446C 00                   10544 	.db 0x00
+      00446D                      10545 ___str_4:
+      00446D 50 72 65 73 73 20 31 10546 	.ascii "Press 1 to start"
              20 74 6F 20 73 74 61
              72 74
-      00447A 00                   10545 	.db 0x00
-                                  10546 ;pocket_platformer.c:1636: void main(void) {
-                                  10547 ;	---------------------------------
-                                  10548 ; Function main
-                                  10549 ; ---------------------------------
-      00447B                      10550 _main::
-                                  10551 ;pocket_platformer.c:1638: SMS_useFirstHalfTilesforSprites(0);
-      00447B 2E 00            [ 7]10552 	ld	l, #0x00
-                                  10553 ;	spillPairReg hl
-                                  10554 ;	spillPairReg hl
-      00447D CDr00r00         [17]10555 	call	_SMS_useFirstHalfTilesforSprites
-                                  10556 ;pocket_platformer.c:1639: SMS_setSpriteMode(SPRITEMODE_NORMAL);
-      004480 2E 00            [ 7]10557 	ld	l, #0x00
-                                  10558 ;	spillPairReg hl
-                                  10559 ;	spillPairReg hl
-      004482 CDr00r00         [17]10560 	call	_SMS_setSpriteMode
-                                  10561 ;pocket_platformer.c:1640: SMS_setBackdropColor(0);
-      004485 2E 00            [ 7]10562 	ld	l, #0x00
-                                  10563 ;	spillPairReg hl
-                                  10564 ;	spillPairReg hl
-      004487 CDr00r00         [17]10565 	call	_SMS_setBackdropColor
-                                  10566 ;pocket_platformer.c:1642: while (1) {
-      00448A                      10567 00104$:
-                                  10568 ;pocket_platformer.c:1643: title_screen();
-      00448A CDrCEr43         [17]10569 	call	_title_screen
-                                  10570 ;pocket_platformer.c:1644: if (!has_resource()) continue;
-      00448D CDr00r00         [17]10571 	call	_has_resource
-      004490 B7               [ 4]10572 	or	a, a
-      004491 28 F7            [12]10573 	jr	Z, 00104$
-                                  10574 ;pocket_platformer.c:1645: init_resources();
-      004493 CDr26r00         [17]10575 	call	_init_resources
-                                  10576 ;pocket_platformer.c:1646: SMS_waitForVBlank();
-      004496 CDr00r00         [17]10577 	call	_SMS_waitForVBlank
-                                  10578 ;pocket_platformer.c:1647: SMS_displayOff();
-      004499 21 40 01         [10]10579 	ld	hl, #0x0140
-      00449C CDr00r00         [17]10580 	call	_SMS_VDPturnOffFeature
-                                  10581 ;pocket_platformer.c:1648: SMS_VRAMmemsetW(0, 0, 16 * 1024);
-      00449F 21 00 40         [10]10582 	ld	hl, #0x4000
-      0044A2 E5               [11]10583 	push	hl
-      0044A3 11 00 00         [10]10584 	ld	de, #0x0000
-      0044A6 65               [ 4]10585 	ld	h, l
-      0044A7 CDr00r00         [17]10586 	call	_SMS_VRAMmemsetW
-                                  10587 ;pocket_platformer.c:1649: load_graphics();
-      0044AA CDr04r0A         [17]10588 	call	_load_graphics
-                                  10589 ;pocket_platformer.c:1650: SMS_displayOn();
-      0044AD 21 40 01         [10]10590 	ld	hl, #0x0140
-      0044B0 CDr00r00         [17]10591 	call	_SMS_VDPturnOnFeature
-                                  10592 ;pocket_platformer.c:1651: gameplay_loop();
-      0044B3 CDrBBr3E         [17]10593 	call	_gameplay_loop
-                                  10594 ;pocket_platformer.c:1653: }
-      0044B6 18 D2            [12]10595 	jr	00104$
-                                  10596 	.area _CODE
-      0044B8                      10597 __str_5:
-      0044B8 70 6F 63 6B 65 74 2D 10598 	.ascii "pocket-platformer-sms"
+      00447D 00                   10547 	.db 0x00
+                                  10548 ;pocket_platformer.c:1637: void main(void) {
+                                  10549 ;	---------------------------------
+                                  10550 ; Function main
+                                  10551 ; ---------------------------------
+      00447E                      10552 _main::
+                                  10553 ;pocket_platformer.c:1639: SMS_useFirstHalfTilesforSprites(0);
+      00447E 2E 00            [ 7]10554 	ld	l, #0x00
+                                  10555 ;	spillPairReg hl
+                                  10556 ;	spillPairReg hl
+      004480 CDr00r00         [17]10557 	call	_SMS_useFirstHalfTilesforSprites
+                                  10558 ;pocket_platformer.c:1640: SMS_setSpriteMode(SPRITEMODE_NORMAL);
+      004483 2E 00            [ 7]10559 	ld	l, #0x00
+                                  10560 ;	spillPairReg hl
+                                  10561 ;	spillPairReg hl
+      004485 CDr00r00         [17]10562 	call	_SMS_setSpriteMode
+                                  10563 ;pocket_platformer.c:1641: SMS_setBackdropColor(0);
+      004488 2E 00            [ 7]10564 	ld	l, #0x00
+                                  10565 ;	spillPairReg hl
+                                  10566 ;	spillPairReg hl
+      00448A CDr00r00         [17]10567 	call	_SMS_setBackdropColor
+                                  10568 ;pocket_platformer.c:1643: while (1) {
+      00448D                      10569 00104$:
+                                  10570 ;pocket_platformer.c:1644: title_screen();
+      00448D CDrD1r43         [17]10571 	call	_title_screen
+                                  10572 ;pocket_platformer.c:1645: if (!has_resource()) continue;
+      004490 CDr00r00         [17]10573 	call	_has_resource
+      004493 B7               [ 4]10574 	or	a, a
+      004494 28 F7            [12]10575 	jr	Z, 00104$
+                                  10576 ;pocket_platformer.c:1646: init_resources();
+      004496 CDr26r00         [17]10577 	call	_init_resources
+                                  10578 ;pocket_platformer.c:1647: SMS_waitForVBlank();
+      004499 CDr00r00         [17]10579 	call	_SMS_waitForVBlank
+                                  10580 ;pocket_platformer.c:1648: SMS_displayOff();
+      00449C 21 40 01         [10]10581 	ld	hl, #0x0140
+      00449F CDr00r00         [17]10582 	call	_SMS_VDPturnOffFeature
+                                  10583 ;pocket_platformer.c:1649: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+      0044A2 21 00 40         [10]10584 	ld	hl, #0x4000
+      0044A5 E5               [11]10585 	push	hl
+      0044A6 11 00 00         [10]10586 	ld	de, #0x0000
+      0044A9 65               [ 4]10587 	ld	h, l
+      0044AA CDr00r00         [17]10588 	call	_SMS_VRAMmemsetW
+                                  10589 ;pocket_platformer.c:1650: load_graphics();
+      0044AD CDr04r0A         [17]10590 	call	_load_graphics
+                                  10591 ;pocket_platformer.c:1651: SMS_displayOn();
+      0044B0 21 40 01         [10]10592 	ld	hl, #0x0140
+      0044B3 CDr00r00         [17]10593 	call	_SMS_VDPturnOnFeature
+                                  10594 ;pocket_platformer.c:1652: gameplay_loop();
+      0044B6 CDrBBr3E         [17]10595 	call	_gameplay_loop
+                                  10596 ;pocket_platformer.c:1654: }
+      0044B9 18 D2            [12]10597 	jr	00104$
+                                  10598 	.area _CODE
+      0044BB                      10599 __str_5:
+      0044BB 70 6F 63 6B 65 74 2D 10600 	.ascii "pocket-platformer-sms"
              70 6C 61 74 66 6F 72
              6D 65 72 2D 73 6D 73
-      0044CD 00                   10599 	.db 0x00
-      0044CE                      10600 __str_6:
-      0044CE 50 6F 63 6B 65 74 20 10601 	.ascii "Pocket Platformer SMS Engine"
+      0044D0 00                   10601 	.db 0x00
+      0044D1                      10602 __str_6:
+      0044D1 50 6F 63 6B 65 74 20 10603 	.ascii "Pocket Platformer SMS Engine"
              50 6C 61 74 66 6F 72
              6D 65 72 20 53 4D 53
              20 45 6E 67 69 6E 65
-      0044EA 00                   10602 	.db 0x00
-      0044EB                      10603 __str_7:
-      0044EB 47 65 6E 65 72 61 74 10604 	.ascii "Generated by pocket-platformer-to-sms web exporter."
+      0044ED 00                   10604 	.db 0x00
+      0044EE                      10605 __str_7:
+      0044EE 47 65 6E 65 72 61 74 10606 	.ascii "Generated by pocket-platformer-to-sms web exporter."
              65 64 20 62 79 20 70
              6F 63 6B 65 74 2D 70
              6C 61 74 66 6F 72 6D
@@ -10623,43 +10625,43 @@
              6D 73 20 77 65 62 20
              65 78 70 6F 72 74 65
              72 2E
-      00451E 00                   10605 	.db 0x00
-                                  10606 	.area _INITIALIZER
-                                  10607 	.area _CABS (ABS)
-      007FF0                      10608 	.org 0x7FF0
-      007FF0                      10609 ___SMS__SEGA_signature:
-      007FF0 54                   10610 	.db #0x54	; 84	'T'
-      007FF1 4D                   10611 	.db #0x4d	; 77	'M'
-      007FF2 52                   10612 	.db #0x52	; 82	'R'
-      007FF3 20                   10613 	.db #0x20	; 32
-      007FF4 53                   10614 	.db #0x53	; 83	'S'
-      007FF5 45                   10615 	.db #0x45	; 69	'E'
-      007FF6 47                   10616 	.db #0x47	; 71	'G'
-      007FF7 41                   10617 	.db #0x41	; 65	'A'
-      007FF8 FF                   10618 	.db #0xff	; 255
-      007FF9 FF                   10619 	.db #0xff	; 255
-      007FFA FF                   10620 	.db #0xff	; 255
-      007FFB FF                   10621 	.db #0xff	; 255
-      007FFC 99                   10622 	.db #0x99	; 153
-      007FFD 99                   10623 	.db #0x99	; 153
-      007FFE 00                   10624 	.db #0x00	; 0
-      007FFF 4C                   10625 	.db #0x4c	; 76	'L'
-      007FCA                      10626 	.org 0x7FCA
-      007FCA                      10627 ___SMS__SDSC_author:
-      007FCA 70 6F 63 6B 65 74 2D 10628 	.ascii "pocket-platformer-sms"
+      004521 00                   10607 	.db 0x00
+                                  10608 	.area _INITIALIZER
+                                  10609 	.area _CABS (ABS)
+      007FF0                      10610 	.org 0x7FF0
+      007FF0                      10611 ___SMS__SEGA_signature:
+      007FF0 54                   10612 	.db #0x54	; 84	'T'
+      007FF1 4D                   10613 	.db #0x4d	; 77	'M'
+      007FF2 52                   10614 	.db #0x52	; 82	'R'
+      007FF3 20                   10615 	.db #0x20	; 32
+      007FF4 53                   10616 	.db #0x53	; 83	'S'
+      007FF5 45                   10617 	.db #0x45	; 69	'E'
+      007FF6 47                   10618 	.db #0x47	; 71	'G'
+      007FF7 41                   10619 	.db #0x41	; 65	'A'
+      007FF8 FF                   10620 	.db #0xff	; 255
+      007FF9 FF                   10621 	.db #0xff	; 255
+      007FFA FF                   10622 	.db #0xff	; 255
+      007FFB FF                   10623 	.db #0xff	; 255
+      007FFC 99                   10624 	.db #0x99	; 153
+      007FFD 99                   10625 	.db #0x99	; 153
+      007FFE 00                   10626 	.db #0x00	; 0
+      007FFF 4C                   10627 	.db #0x4c	; 76	'L'
+      007FCA                      10628 	.org 0x7FCA
+      007FCA                      10629 ___SMS__SDSC_author:
+      007FCA 70 6F 63 6B 65 74 2D 10630 	.ascii "pocket-platformer-sms"
              70 6C 61 74 66 6F 72
              6D 65 72 2D 73 6D 73
-      007FDF 00                   10629 	.db 0x00
-      007FAD                      10630 	.org 0x7FAD
-      007FAD                      10631 ___SMS__SDSC_name:
-      007FAD 50 6F 63 6B 65 74 20 10632 	.ascii "Pocket Platformer SMS Engine"
+      007FDF 00                   10631 	.db 0x00
+      007FAD                      10632 	.org 0x7FAD
+      007FAD                      10633 ___SMS__SDSC_name:
+      007FAD 50 6F 63 6B 65 74 20 10634 	.ascii "Pocket Platformer SMS Engine"
              50 6C 61 74 66 6F 72
              6D 65 72 20 53 4D 53
              20 45 6E 67 69 6E 65
-      007FC9 00                   10633 	.db 0x00
-      007F79                      10634 	.org 0x7F79
-      007F79                      10635 ___SMS__SDSC_descr:
-      007F79 47 65 6E 65 72 61 74 10636 	.ascii "Generated by pocket-platformer-to-sms web exporter."
+      007FC9 00                   10635 	.db 0x00
+      007F79                      10636 	.org 0x7F79
+      007F79                      10637 ___SMS__SDSC_descr:
+      007F79 47 65 6E 65 72 61 74 10638 	.ascii "Generated by pocket-platformer-to-sms web exporter."
              65 64 20 62 79 20 70
              6F 63 6B 65 74 2D 70
              6C 61 74 66 6F 72 6D
@@ -10667,22 +10669,22 @@
              6D 73 20 77 65 62 20
              65 78 70 6F 72 74 65
              72 2E
-      007FAC 00                   10637 	.db 0x00
-      007FE0                      10638 	.org 0x7FE0
-      007FE0                      10639 ___SMS__SDSC_signature:
-      007FE0 53                   10640 	.db #0x53	; 83	'S'
-      007FE1 44                   10641 	.db #0x44	; 68	'D'
-      007FE2 53                   10642 	.db #0x53	; 83	'S'
-      007FE3 43                   10643 	.db #0x43	; 67	'C'
-      007FE4 01                   10644 	.db #0x01	; 1
-      007FE5 03                   10645 	.db #0x03	; 3
-      007FE6 01                   10646 	.db #0x01	; 1
-      007FE7 01                   10647 	.db #0x01	; 1
-      007FE8 25                   10648 	.db #0x25	; 37
-      007FE9 20                   10649 	.db #0x20	; 32
-      007FEA CA                   10650 	.db #0xca	; 202
-      007FEB 7F                   10651 	.db #0x7f	; 127
-      007FEC AD                   10652 	.db #0xad	; 173
-      007FED 7F                   10653 	.db #0x7f	; 127
-      007FEE 79                   10654 	.db #0x79	; 121	'y'
-      007FEF 7F                   10655 	.db #0x7f	; 127
+      007FAC 00                   10639 	.db 0x00
+      007FE0                      10640 	.org 0x7FE0
+      007FE0                      10641 ___SMS__SDSC_signature:
+      007FE0 53                   10642 	.db #0x53	; 83	'S'
+      007FE1 44                   10643 	.db #0x44	; 68	'D'
+      007FE2 53                   10644 	.db #0x53	; 83	'S'
+      007FE3 43                   10645 	.db #0x43	; 67	'C'
+      007FE4 01                   10646 	.db #0x01	; 1
+      007FE5 03                   10647 	.db #0x03	; 3
+      007FE6 01                   10648 	.db #0x01	; 1
+      007FE7 01                   10649 	.db #0x01	; 1
+      007FE8 25                   10650 	.db #0x25	; 37
+      007FE9 20                   10651 	.db #0x20	; 32
+      007FEA CA                   10652 	.db #0xca	; 202
+      007FEB 7F                   10653 	.db #0x7f	; 127
+      007FEC AD                   10654 	.db #0xad	; 173
+      007FED 7F                   10655 	.db #0x7f	; 127
+      007FEE 79                   10656 	.db #0x79	; 121	'y'
+      007FEF 7F                   10657 	.db #0x7f	; 127

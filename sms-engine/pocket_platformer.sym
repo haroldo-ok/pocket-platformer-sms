@@ -44,15 +44,15 @@ Symbol Table
   9 ___SMS__SEGA_signature                                         007FF0 GR
   0 ___str_0                                                       0012A3 R
   0 ___str_1                                                       0012B0 R
-  0 ___str_2                                                       004441 R
-  0 ___str_3                                                       004453 R
-  0 ___str_4                                                       00446A R
+  0 ___str_2                                                       004444 R
+  0 ___str_3                                                       004456 R
+  0 ___str_4                                                       00446D R
     __divslong                                                     ****** GX
     __mulint                                                       ****** GX
     __mullong                                                      ****** GX
-  0 __str_5                                                        0044B8 R
-  0 __str_6                                                        0044CE R
-  0 __str_7                                                        0044EB R
+  0 __str_5                                                        0044BB R
+  0 __str_6                                                        0044D1 R
+  0 __str_7                                                        0044EE R
   0 _apply_gravity                                                 001503 R
   1 _barrel_active                                                 000599 R
   1 _barrel_btn_released                                           0005A3 R
@@ -123,7 +123,7 @@ Hexadecimal [24-Bits]
 
 Symbol Table
 
-  0 _main                                                          00447B GR
+  0 _main                                                          00447E GR
   0 _move_player_x                                                 001EF4 R
   0 _move_player_y                                                 00215E R
   1 _npc_contact_auto                                              000598 R
@@ -154,7 +154,7 @@ Symbol Table
   0 _restore_dialogue_rows                                         001150 R
   0 _save_dialogue_rows                                            001131 R
   1 _saved_nametable                                               000455 R
-  0 _title_screen                                                  0043CE R
+  0 _title_screen                                                  0043D1 R
   0 _update_anim                                                   003B2E R
   0 _update_camera                                                 003B23 R
   0 _update_disappearing_blocks                                    0035E7 R
@@ -169,7 +169,7 @@ Hexadecimal [24-Bits]
 
 Area Table
 
-   0 _CODE                                      size   451F   flags    0
+   0 _CODE                                      size   4522   flags    0
    1 _DATA                                      size    756   flags    0
    2 _INITIALIZED                               size      0   flags    0
    3 _DABS                                      size      0   flags    8

@@ -1556,6 +1556,7 @@ static void gameplay_loop(void) {
             barrel_update(joy);
             SMS_initSprites();
             draw_objects();
+            draw_barrels();
             draw_npcs();
             draw_player();
             SMS_finalizeSprites();
