@@ -73,7 +73,8 @@
 #define BARREL_DIR_TOP   1
 #define BARREL_DIR_LEFT  2
 #define BARREL_DIR_BOTTOM 3
-#define BARREL_LAUNCH_SPEED FP(2.0) /* 6 JS px/frame * 8/24 */
+#define BARREL_LAUNCH_SPEED_H FP(2.0) /* horizontal: constant until wall */
+#define BARREL_LAUNCH_SPEED_V FP(6.0) /* vertical: strong cannon launch */
 
 /* ── Fixed-point 8.8 using long (32-bit) ────────────────── */
 /* Max velocity per frame must stay < TILE_SIZE to prevent tunneling */
@@ -187,7 +188,8 @@ static unsigned char  barrel_dir;        /* BARREL_DIR_* */
 static long           barrel_cx;         /* barrel center x (FP) */
 static long           barrel_cy;         /* barrel center y (FP) */
 static unsigned char  barrel_btn_released; /* 1 = jump released since entry */
-static unsigned char  barrel_launched;     /* 1 = suppress friction until landing */
+static unsigned char  barrel_launched;     /* 1 = in flight (suppress friction) */
+static unsigned char  barrel_launched_h;   /* 1 = horizontal launch (suppress gravity too) */
 
 
 /* ── Violet/Pink block system (jump-toggle) ─────────────── */
@@ -778,7 +780,6 @@ static void render_dialogue(void) {
 static void close_dialogue(void) {
     dialogue_active = 0;
     npc_contact_idx = 0xFF;
-    barrel_active = 0;
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
@@ -817,23 +818,29 @@ static void barrel_update(unsigned char joy) {
         switch (barrel_dir) {
             case BARREL_DIR_RIGHT:
                 player.x  = barrel_cx + FP(TILE_SIZE);
-                player.vx = BARREL_LAUNCH_SPEED;
+                player.vx = BARREL_LAUNCH_SPEED_H;
+                player.vy = 0;
                 player.falling = 1;
+                barrel_launched_h = 1;
                 break;
             case BARREL_DIR_LEFT:
                 player.x  = barrel_cx - FP(TILE_SIZE);
-                player.vx = -BARREL_LAUNCH_SPEED;
+                player.vx = -BARREL_LAUNCH_SPEED_H;
+                player.vy = 0;
                 player.falling = 1;
+                barrel_launched_h = 1;
                 break;
             case BARREL_DIR_TOP:
                 player.y    = barrel_cy - FP(TILE_SIZE);
-                player.vy   = -BARREL_LAUNCH_SPEED;
+                player.vy   = -BARREL_LAUNCH_SPEED_V;
+                player.vx   = 0;
                 player.jumping = 0;
                 player.falling = 1;
                 break;
             case BARREL_DIR_BOTTOM:
                 player.y    = barrel_cy + FP(TILE_SIZE);
-                player.vy   = BARREL_LAUNCH_SPEED;
+                player.vy   = BARREL_LAUNCH_SPEED_V;
+                player.vx   = 0;
                 player.falling = 1;
                 break;
         }
@@ -847,8 +854,8 @@ static void barrel_update(unsigned char joy) {
 
 
 static void apply_gravity(void) {
-    /* Gravity only while falling (not during active jump ramp) */
-    if (player.falling) {
+    /* Gravity only while falling (not during active jump ramp or barrel launch) */
+    if (player.falling && !barrel_launched_h) {
         player.vy += GRAVITY;
         if (player.vy > MAX_VY)
             player.vy = MAX_VY;
@@ -978,8 +985,9 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         }
     }
 
-    /* Release decel: vy *= 0.75 per frame while vy < 0 and not in any jump ramp */
-    if (!player.jumping && !player.wall_jumping && player.vy < 0) {
+    /* Release decel: vy *= 0.75 per frame while vy < 0 and not in any jump ramp.
+       Suppressed during barrel launch so the cannon speed isn't killed on release. */
+    if (!player.jumping && !player.wall_jumping && player.vy < 0 && !barrel_launched) {
         player.vy = FP_MUL(player.vy, FP(0.75));
         if (player.vy > -FP(0.5)) player.vy = 0;
     }
@@ -996,6 +1004,7 @@ static void move_player_x(void) {
             new_x = (tile_r * TILE_SIZE - PLAYER_W - 1) * FP_ONE;
             player.vx = 0;
             barrel_launched = 0;
+            barrel_launched_h = 0;
         }
     } else if (player.vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
@@ -1004,6 +1013,7 @@ static void move_player_x(void) {
             new_x = tile_l * TILE_SIZE * FP_ONE;
             player.vx = 0;
             barrel_launched = 0;
+            barrel_launched_h = 0;
         }
     }
     player.x = new_x;
@@ -1043,6 +1053,7 @@ static void move_player_y(void) {
             player.wall_jumping = 0;
             player.double_jump_used = 0;
             barrel_launched = 0;
+            barrel_launched_h = 0;
             skip_land:;
         }
     } else {
@@ -1124,7 +1135,7 @@ static void check_object_collisions(void) {
                 break;
             case OBJ_SPIKE: /* handled via tile probe below */ break;
             case OBJ_BARREL:
-                if (!barrel_active) barrel_enter(obj);
+                if (!barrel_active && !barrel_launched) barrel_enter(obj);
                 break;
             case OBJ_NPC:
                 if (!dialogue_active) {
@@ -1551,8 +1562,7 @@ static void gameplay_loop(void) {
             SMS_copySpritestoSAT();
             continue;
         }
-        npc_contact_idx = 0xFF;
-    barrel_active = 0; /* reset each frame */
+        npc_contact_idx = 0xFF; /* reset each frame */
         check_object_collisions();
         /* NPC dialogue trigger */
         if (!dialogue_active && npc_contact_idx != 0xFF) {
