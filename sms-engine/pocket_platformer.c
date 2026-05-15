@@ -872,10 +872,12 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
         player.vx -= accel;
         if (player.vx < -max_spd) player.vx = -max_spd;
         player.facing_left = 1;
+        barrel_launched_h = 0; /* player took control: restore gravity */
     } else if (joy & PORT_A_KEY_RIGHT) {
         player.vx += accel;
         if (player.vx > max_spd) player.vx = max_spd;
         player.facing_left = 0;
+        barrel_launched_h = 0; /* player took control: restore gravity */
     } else if (!barrel_launched) {
         player.vx = FP_MUL(player.vx, fric);
         if (player.vx > -FP(0.5) && player.vx < FP(0.5)) player.vx = 0;
