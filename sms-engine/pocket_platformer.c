@@ -959,17 +959,9 @@ static void update_tp(void) {
         }
     }
 
-    /* Apply platform carry velocity (skip if platform is OOB) */
-    if (player_bonus_x || player_bonus_y) {
-        player.x += player_bonus_x;
-        player.y += player_bonus_y;
-    }
-
-    /* Clear is_carrying on platforms the player is no longer on */
-    for (i = 0; i < tp_count; i++) {
-        if (tp[i].is_carrying && player_bonus_x == 0 && player_bonus_y == 0)
-            tp[i].is_carrying = 0;
-    }
+    /* Feed carry into move_player_x/y for collision-aware movement */
+    tp_carry_vx = player_bonus_x;
+    tp_carry_vy = player_bonus_y;
 }
 
 /* Draw all triggered platforms */
