@@ -198,10 +198,13 @@ typedef struct {
     unsigned char moving; /* 1 = moving */
     unsigned char endless;/* 1 = move endlessly once touched */
     unsigned char oob_timer; /* out-of-bounds timer */
-    unsigned char active; /* 1 = slot used this level */
+    unsigned char active;      /* 1 = slot used this level */
+    unsigned char is_carrying; /* 1 = player currently on this platform */
 } tp_state;
 static tp_state tp[MAX_TP];
 static unsigned char tp_count; /* platforms in current level */
+static long tp_carry_vx = 0; /* platform carry for move_player_x */
+static long tp_carry_vy = 0; /* platform carry for move_player_y */
 
 /* ── Barrel Cannon state ───────────────────────────────── */
 static unsigned char  barrel_active;     /* 1 = player inside a barrel */
@@ -896,6 +899,36 @@ static void update_tp(void) {
         tp_state *t = &tp[i];
         if (!t->active) continue;
 
+        /* Check player overlap BEFORE moving (avoids 1-frame lag) */
+        {
+            long plat_top  = t->y >> 8;
+            long plat_left = (t->x >> 8) - t->width / 2;
+            long plat_right = plat_left + t->width;
+            long player_bot   = py + PLAYER_H;
+            long player_right = px + PLAYER_W;
+
+            if (player.vy >= 0 &&
+                player_bot >= plat_top && player_bot <= plat_top + 4 &&
+                px + 1 < plat_right && player_right - 1 > plat_left) {
+
+                if (!t->moving) t->moving = 1;
+                t->is_carrying = 1;
+                /* Set carry velocity — applied via move_player_x/y */
+                player_bonus_x = t->vx;
+                player_bonus_y = t->vy;
+                /* Snap player to platform top */
+                player.y = t->y - FP(PLAYER_H);
+                player.vy = 0;
+                player.on_ground = 1;
+                player.falling = 0;
+                player.jumping = 0;
+                player.double_jump_used = 0;
+            } else {
+                t->is_carrying = 0;
+            }
+        }
+
+        /* Now move the platform */
         if (t->moving) {
             t->x += t->vx;
             t->y += t->vy;
@@ -909,58 +942,26 @@ static void update_tp(void) {
                                  tx > SCREEN_PX_W + 8 ||
                                  ty < -(int)SCREEN_PX_H ||
                                  ty > SCREEN_PX_H * 2);
-            if (oob && t->moving) {
-                t->oob_timer++;
-                if (t->oob_timer >= 100) {
-                    t->x = t->init_x;
-                    t->y = t->init_y;
-                    t->moving  = 0;
-                    t->oob_timer = 0;
+            if (oob) {
+                t->is_carrying = 0;
+                if (t->moving) {
+                    t->oob_timer++;
+                    if (t->oob_timer >= 100) {
+                        t->x = t->init_x;
+                        t->y = t->init_y;
+                        t->moving  = 0;
+                        t->oob_timer = 0;
+                    }
                 }
-            } else if (!oob) {
+            } else {
                 t->oob_timer = 0;
             }
         }
-
-        /* Player standing on platform:
-           player bottom == platform top AND horizontal overlap */
-        {
-            long plat_top = t->y >> 8;
-            long plat_left = (t->x >> 8) - t->width / 2;
-            long plat_right = plat_left + t->width;
-            long player_bot = py + PLAYER_H;
-            long player_right = px + PLAYER_W;
-
-            /* Check if player was just above platform last frame and now at top */
-            if (player.vy >= 0 &&
-                player_bot >= plat_top && player_bot <= plat_top + 2 &&
-                px + 1 < plat_right && player_right - 1 > plat_left) {
-
-                /* Land player on platform */
-                player.y = (t->y) - FP(PLAYER_H);
-                player.vy = 0;
-                player.on_ground = 1;
-                player.falling = 0;
-                player.jumping = 0;
-                player.double_jump_used = 0;
-
-                /* Trigger movement */
-                if (!t->moving)
-                    t->moving = 1;
-
-                /* Carry player */
-                player_bonus_x = t->vx;
-                player_bonus_y = t->vy;
-            }
-        }
     }
 
-    /* Apply platform carry velocity */
-    if (player_bonus_x || player_bonus_y) {
-        player.x += player_bonus_x;
-        player.y += player_bonus_y;
-        /* Stop "moving when player on it" platforms after player leaves — handled next frame */
-    }
+    /* Feed carry into move_player_x/y for collision-aware movement */
+    tp_carry_vx = player_bonus_x;
+    tp_carry_vy = player_bonus_y;
 }
 
 /* Draw all triggered platforms */
@@ -1194,9 +1195,10 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 }
 
 static void move_player_x(void) {
-    long new_x = player.x + player.vx;
+    long total_vx = player.vx + tp_carry_vx;
+    long new_x = player.x + total_vx;
     long px    = new_x >> 8;
-    if (player.vx > 0) {
+    if (total_vx > 0) {
         long r = new_x + FP(PLAYER_W);
         if (is_solid_px(r, player.y + FP(1)) ||
             is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
@@ -1206,7 +1208,7 @@ static void move_player_x(void) {
             barrel_launched = 0;
             barrel_launched_h = 0;
         }
-    } else if (player.vx < 0) {
+    } else if (total_vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
             is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
             long tile_l = px / TILE_SIZE + 1;
@@ -1220,9 +1222,10 @@ static void move_player_x(void) {
 }
 
 static void move_player_y(void) {
-    long new_y = player.y + player.vy;
+    long total_vy = player.vy + tp_carry_vy;
+    long new_y = player.y + total_vy;
     long py    = new_y >> 8;
-    if (player.vy >= 0) {
+    if (total_vy >= 0) {
         long b = new_y + FP(PLAYER_H);
         if (is_solid_falling_px(player.x + FP(1),            b) ||
             is_solid_falling_px(player.x + FP(PLAYER_W - 2), b)) {
@@ -1308,6 +1311,8 @@ static void move_player_y(void) {
             player.jumping = 0;
             player.wall_jumping = 0;
             player.jump_frames = res_physics->max_jump_frames;
+            /* Crushed against ceiling by upward platform */
+            if (tp_carry_vy < 0) player_died = 1;
         }
     }
     player.y = new_y;
@@ -1751,6 +1756,8 @@ static void gameplay_loop(void) {
         if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
         player.on_ground = 0;
         apply_gravity();
+        tp_carry_vx = 0; tp_carry_vy = 0;
+        update_tp();
         move_player_x();
         move_player_y();
         /* Barrel cannon: override physics when player is inside */
@@ -1768,7 +1775,6 @@ static void gameplay_loop(void) {
         }
         npc_contact_idx = 0xFF; /* reset each frame */
         check_object_collisions();
-        update_tp();
         /* NPC dialogue trigger */
         if (!dialogue_active && npc_contact_idx != 0xFF) {
             if (npc_contact_auto) {
