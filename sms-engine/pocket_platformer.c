@@ -899,6 +899,36 @@ static void update_tp(void) {
         tp_state *t = &tp[i];
         if (!t->active) continue;
 
+        /* Check player overlap BEFORE moving (avoids 1-frame lag) */
+        {
+            long plat_top  = t->y >> 8;
+            long plat_left = (t->x >> 8) - t->width / 2;
+            long plat_right = plat_left + t->width;
+            long player_bot   = py + PLAYER_H;
+            long player_right = px + PLAYER_W;
+
+            if (player.vy >= 0 &&
+                player_bot >= plat_top && player_bot <= plat_top + 4 &&
+                px + 1 < plat_right && player_right - 1 > plat_left) {
+
+                if (!t->moving) t->moving = 1;
+                t->is_carrying = 1;
+                /* Set carry velocity — applied via move_player_x/y */
+                player_bonus_x = t->vx;
+                player_bonus_y = t->vy;
+                /* Snap player to platform top */
+                player.y = t->y - FP(PLAYER_H);
+                player.vy = 0;
+                player.on_ground = 1;
+                player.falling = 0;
+                player.jumping = 0;
+                player.double_jump_used = 0;
+            } else {
+                t->is_carrying = 0;
+            }
+        }
+
+        /* Now move the platform */
         if (t->moving) {
             t->x += t->vx;
             t->y += t->vy;
@@ -913,7 +943,6 @@ static void update_tp(void) {
                                  ty < -(int)SCREEN_PX_H ||
                                  ty > SCREEN_PX_H * 2);
             if (oob) {
-                /* Platform left screen: player detaches immediately */
                 t->is_carrying = 0;
                 if (t->moving) {
                     t->oob_timer++;
@@ -926,39 +955,6 @@ static void update_tp(void) {
                 }
             } else {
                 t->oob_timer = 0;
-            }
-        }
-
-        /* Player standing on platform:
-           player bottom == platform top AND horizontal overlap */
-        {
-            long plat_top = t->y >> 8;
-            long plat_left = (t->x >> 8) - t->width / 2;
-            long plat_right = plat_left + t->width;
-            long player_bot = py + PLAYER_H;
-            long player_right = px + PLAYER_W;
-
-            /* Check if player was just above platform last frame and now at top */
-            if (player.vy >= 0 &&
-                player_bot >= plat_top && player_bot <= plat_top + 2 &&
-                px + 1 < plat_right && player_right - 1 > plat_left) {
-
-                /* Land player on platform */
-                player.y = (t->y) - FP(PLAYER_H);
-                player.vy = 0;
-                player.on_ground = 1;
-                player.falling = 0;
-                player.jumping = 0;
-                player.double_jump_used = 0;
-
-                /* Trigger movement */
-                if (!t->moving)
-                    t->moving = 1;
-                t->is_carrying = 1;
-
-                /* Carry player */
-                player_bonus_x = t->vx;
-                player_bonus_y = t->vy;
             }
         }
     }
