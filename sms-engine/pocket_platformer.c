@@ -804,7 +804,6 @@ static void render_dialogue(void) {
 static void close_dialogue(void) {
     dialogue_active = 0;
     npc_contact_idx = 0xFF;
-    load_tp_level(n);
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
@@ -1686,6 +1685,7 @@ static void load_level(unsigned char n) {
         }
     }
 
+    load_tp_level(n);
     SMS_waitForVBlank();
     SMS_displayOff();
     SMS_VRAMmemsetW(0x3800, 0, 0x700);
