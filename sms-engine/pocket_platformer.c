@@ -198,7 +198,8 @@ typedef struct {
     unsigned char moving; /* 1 = moving */
     unsigned char endless;/* 1 = move endlessly once touched */
     unsigned char oob_timer; /* out-of-bounds timer */
-    unsigned char active; /* 1 = slot used this level */
+    unsigned char active;      /* 1 = slot used this level */
+    unsigned char is_carrying; /* 1 = player currently on this platform */
 } tp_state;
 static tp_state tp[MAX_TP];
 static unsigned char tp_count; /* platforms in current level */
@@ -909,15 +910,19 @@ static void update_tp(void) {
                                  tx > SCREEN_PX_W + 8 ||
                                  ty < -(int)SCREEN_PX_H ||
                                  ty > SCREEN_PX_H * 2);
-            if (oob && t->moving) {
-                t->oob_timer++;
-                if (t->oob_timer >= 100) {
-                    t->x = t->init_x;
-                    t->y = t->init_y;
-                    t->moving  = 0;
-                    t->oob_timer = 0;
+            if (oob) {
+                /* Platform left screen: player detaches immediately */
+                t->is_carrying = 0;
+                if (t->moving) {
+                    t->oob_timer++;
+                    if (t->oob_timer >= 100) {
+                        t->x = t->init_x;
+                        t->y = t->init_y;
+                        t->moving  = 0;
+                        t->oob_timer = 0;
+                    }
                 }
-            } else if (!oob) {
+            } else {
                 t->oob_timer = 0;
             }
         }
@@ -947,6 +952,7 @@ static void update_tp(void) {
                 /* Trigger movement */
                 if (!t->moving)
                     t->moving = 1;
+                t->is_carrying = 1;
 
                 /* Carry player */
                 player_bonus_x = t->vx;
@@ -955,11 +961,16 @@ static void update_tp(void) {
         }
     }
 
-    /* Apply platform carry velocity */
+    /* Apply platform carry velocity (skip if platform is OOB) */
     if (player_bonus_x || player_bonus_y) {
         player.x += player_bonus_x;
         player.y += player_bonus_y;
-        /* Stop "moving when player on it" platforms after player leaves — handled next frame */
+    }
+
+    /* Clear is_carrying on platforms the player is no longer on */
+    for (i = 0; i < tp_count; i++) {
+        if (tp[i].is_carrying && player_bonus_x == 0 && player_bonus_y == 0)
+            tp[i].is_carrying = 0;
     }
 }
 
