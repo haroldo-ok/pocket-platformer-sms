@@ -1222,9 +1222,10 @@ static void move_player_x(void) {
 }
 
 static void move_player_y(void) {
-    long new_y = player.y + player.vy + tp_carry_vy;
+    long total_vy = player.vy + tp_carry_vy;
+    long new_y = player.y + total_vy;
     long py    = new_y >> 8;
-    if (player.vy >= 0) {
+    if (total_vy >= 0) {
         long b = new_y + FP(PLAYER_H);
         if (is_solid_falling_px(player.x + FP(1),            b) ||
             is_solid_falling_px(player.x + FP(PLAYER_W - 2), b)) {
@@ -1310,7 +1311,7 @@ static void move_player_y(void) {
             player.jumping = 0;
             player.wall_jumping = 0;
             player.jump_frames = res_physics->max_jump_frames;
-            /* Crushed by upward platform */
+            /* Crushed against ceiling by upward platform */
             if (tp_carry_vy < 0) player_died = 1;
         }
     }
