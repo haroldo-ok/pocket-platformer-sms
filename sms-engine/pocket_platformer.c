@@ -69,9 +69,9 @@
 #define VRAM_SPR_TPLAT   271 /* sprite sheet tile 271 */
 #define MAX_TP            8  /* max triggered platforms per level */
 /* pathMovementMapper speeds scaled by 8/24, stored as FP */
+/* pathMovementMapper[1..7] * (8/24) * 256 */
 static const int tp_speed_table[8] = { 0,
-    FP(1.0/3.0), FP(2.0/3.0), FP(1.0), FP(4.0/3.0),
-    FP(2.0),     FP(8.0/3.0), FP(4.0) };
+    85, 171, 256, 341, 512, 683, 1024 };
 #define VRAM_SPR_BARREL_RIGHT  267
 #define VRAM_SPR_BARREL_LEFT   268
 #define VRAM_SPR_BARREL_TOP    269
@@ -656,6 +656,8 @@ static void draw_player(void) {
  * ──────────────────────────────────────────────────────────*/
 
 /* Find pointer to the NPC string table (after all level data) */
+static void load_tp_level(unsigned char level_n); /* forward decl */
+
 static unsigned char *get_npc_table(void) {
     level_header *lh = res_levels;
     unsigned char i;
@@ -802,7 +804,6 @@ static void render_dialogue(void) {
 static void close_dialogue(void) {
     dialogue_active = 0;
     npc_contact_idx = 0xFF;
-    load_tp_level(n);
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
