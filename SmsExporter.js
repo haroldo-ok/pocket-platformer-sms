@@ -209,9 +209,6 @@ const SmsExporter = (() => {
     // NPC sprite = tile 266 (VRAM_SPR_NPC in C)
     const npcS = get('NPC_SPRITE');
     npcS ? encodeSprite8(npcS, 0) : encodeBlank();
-    // Triggered platform sprite = tile 271
-    const tpS = get('TRIGGERED_PLATFORM');
-    tpS ? encodeSprite8(tpS, 0) : encodeBlank();
     // Barrel cannon sprites: tiles 267-270 (right, left, top, bottom)
     {
       const barrelSObj = get('BARREL_CANNON');
@@ -234,6 +231,9 @@ const SmsExporter = (() => {
         tiles.push(encodeTile4bpp(blank8, palette));
       }
     }
+    // Triggered platform sprite = tile 271 (after barrel tiles 267-270)
+    const tpS = get('TRIGGERED_PLATFORM');
+    tpS ? encodeSprite8(tpS, 0) : encodeBlank();
 
     const out = new Uint8Array(tiles.length * BYTES_PER_TILE);
     let offset = 0;
