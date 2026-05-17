@@ -203,6 +203,8 @@ typedef struct {
 } tp_state;
 static tp_state tp[MAX_TP];
 static unsigned char tp_count; /* platforms in current level */
+static long tp_carry_vx = 0; /* platform carry for move_player_x */
+static long tp_carry_vy = 0; /* platform carry for move_player_y */
 
 /* ── Barrel Cannon state ───────────────────────────────── */
 static unsigned char  barrel_active;     /* 1 = player inside a barrel */
@@ -1205,9 +1207,10 @@ static void handle_input(unsigned int joy, unsigned int joy_pressed) {
 }
 
 static void move_player_x(void) {
-    long new_x = player.x + player.vx;
+    long total_vx = player.vx + tp_carry_vx;
+    long new_x = player.x + total_vx;
     long px    = new_x >> 8;
-    if (player.vx > 0) {
+    if (total_vx > 0) {
         long r = new_x + FP(PLAYER_W);
         if (is_solid_px(r, player.y + FP(1)) ||
             is_solid_px(r, player.y + FP(PLAYER_H - 2))) {
@@ -1217,7 +1220,7 @@ static void move_player_x(void) {
             barrel_launched = 0;
             barrel_launched_h = 0;
         }
-    } else if (player.vx < 0) {
+    } else if (total_vx < 0) {
         if (is_solid_px(new_x, player.y + FP(1)) ||
             is_solid_px(new_x, player.y + FP(PLAYER_H - 2))) {
             long tile_l = px / TILE_SIZE + 1;
@@ -1231,7 +1234,7 @@ static void move_player_x(void) {
 }
 
 static void move_player_y(void) {
-    long new_y = player.y + player.vy;
+    long new_y = player.y + player.vy + tp_carry_vy;
     long py    = new_y >> 8;
     if (player.vy >= 0) {
         long b = new_y + FP(PLAYER_H);
@@ -1762,6 +1765,8 @@ static void gameplay_loop(void) {
         if (!player.on_ground && !player.jumping && !player.wall_jumping) player.falling = 1;
         player.on_ground = 0;
         apply_gravity();
+        tp_carry_vx = 0; tp_carry_vy = 0;
+        update_tp();
         move_player_x();
         move_player_y();
         /* Barrel cannon: override physics when player is inside */
@@ -1779,7 +1784,6 @@ static void gameplay_loop(void) {
         }
         npc_contact_idx = 0xFF; /* reset each frame */
         check_object_collisions();
-        update_tp();
         /* NPC dialogue trigger */
         if (!dialogue_active && npc_contact_idx != 0xFF) {
             if (npc_contact_auto) {
