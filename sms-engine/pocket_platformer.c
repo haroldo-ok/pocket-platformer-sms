@@ -65,6 +65,13 @@
 #define OBJ_FINISH_FLAG_LOCKED 12
 #define OBJ_NPC          13
 #define OBJ_BARREL       14
+#define OBJ_TPLAT        15  /* triggered platform */
+#define VRAM_SPR_TPLAT   271 /* sprite sheet tile 271 */
+#define MAX_TP            8  /* max triggered platforms per level */
+/* pathMovementMapper speeds scaled by 8/24, stored as FP */
+static const int tp_speed_table[8] = { 0,
+    FP(1.0/3.0), FP(2.0/3.0), FP(1.0), FP(4.0/3.0),
+    FP(2.0),     FP(8.0/3.0), FP(4.0) };
 #define VRAM_SPR_BARREL_RIGHT  267
 #define VRAM_SPR_BARREL_LEFT   268
 #define VRAM_SPR_BARREL_TOP    269
@@ -182,6 +189,20 @@ static unsigned char  npc_contact_idx;   /* 0xFF = no NPC contact this frame */
 static unsigned char  npc_contact_level; /* level of contacted NPC */
 static unsigned char  npc_contact_auto;  /* play_automatically flag */
 
+/* ── Triggered Platform state ──────────────────────────── */
+typedef struct {
+    long x, y;            /* current position (FP) */
+    long init_x, init_y;  /* initial position (FP) */
+    int  vx, vy;          /* velocity (FP, one axis nonzero) */
+    unsigned char width;  /* size * TILE_SIZE pixels */
+    unsigned char moving; /* 1 = moving */
+    unsigned char endless;/* 1 = move endlessly once touched */
+    unsigned char oob_timer; /* out-of-bounds timer */
+    unsigned char active; /* 1 = slot used this level */
+} tp_state;
+static tp_state tp[MAX_TP];
+static unsigned char tp_count; /* platforms in current level */
+
 /* ── Barrel Cannon state ───────────────────────────────── */
 static unsigned char  barrel_active;     /* 1 = player inside a barrel */
 static unsigned char  barrel_dir;        /* BARREL_DIR_* */
@@ -254,7 +275,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 15u * 32u); /* 10 std + NPC + 4 barrel */
+    res_levels  = (level_header *)(res_sprites + 16u * 32u); /* 10 std + NPC + 4 barrel + TP */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -547,6 +568,7 @@ static void draw_objects(void) {
         if (obj->type == OBJ_SPIKE) continue;  /* spike is a BG tile */
         if (obj->type == OBJ_NPC) continue;    /* NPC sprite handled separately */
         if (obj->type == OBJ_BARREL) continue; /* drawn by draw_barrels() */
+        if (obj->type == OBJ_TPLAT)  continue; /* drawn by draw_tp() */
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
         /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
@@ -780,12 +802,187 @@ static void render_dialogue(void) {
 static void close_dialogue(void) {
     dialogue_active = 0;
     npc_contact_idx = 0xFF;
+    load_tp_level(n);
     restore_dialogue_rows();
     /* Restore tile palette */
     map_res_bank();
     SMS_loadBGPalette(res_palette);
 }
 
+
+
+/* ──────────────────────────────────────────────────────────
+ * Triggered Platform
+ * ──────────────────────────────────────────────────────────*/
+
+/* Find the TP table (after NPC table, which is after all level data) */
+static unsigned char *get_tp_table(void) {
+    unsigned char *p = get_npc_table();
+    unsigned char li;
+    /* Skip NPC table */
+    for (li = 0; li < res_header->level_count; li++) {
+        unsigned char cnt = *p++;
+        unsigned char ni;
+        for (ni = 0; ni < cnt; ni++) {
+            unsigned char lines, ll;
+            p++; /* play_auto */
+            lines = *p++;
+            for (ll = 0; ll < lines; ll++) { unsigned char ln = *p++; p += ln; }
+        }
+    }
+    return p;
+}
+
+/* Load triggered platforms for level n into the tp[] array */
+static void load_tp_level(unsigned char level_n) {
+    unsigned char *p = get_tp_table();
+    unsigned char li, i;
+    /* Skip to current level's block */
+    for (li = 0; li < level_n; li++) {
+        unsigned char cnt = *p++;
+        unsigned char ti;
+        for (ti = 0; ti < cnt; ti++) { p += 3; } /* size, speed_idx, act_once */
+    }
+    tp_count = *p++;
+    if (tp_count > MAX_TP) tp_count = MAX_TP;
+    /* Init TP slots from object list */
+    {
+        unsigned char obj_tp_idx = 0;
+        for (i = 0; i < cur_level->obj_count && obj_tp_idx < tp_count; i++) {
+            level_object *obj = &cur_objects[i];
+            if (obj->type != OBJ_TPLAT) continue;
+            {
+                unsigned char raw_y  = obj->y & 0x3F;
+                unsigned char dir    = obj->y >> 6;
+                unsigned char size   = p[0];
+                unsigned char spd_i  = p[1] < 8 ? p[1] : 7;
+                unsigned char endless = p[2];
+                long ix = (long)obj->x * TILE_SIZE * FP_ONE;
+                long iy = (long)raw_y  * TILE_SIZE * FP_ONE;
+                int  spd = tp_speed_table[spd_i];
+                tp[obj_tp_idx].init_x  = ix;
+                tp[obj_tp_idx].init_y  = iy;
+                tp[obj_tp_idx].x       = ix;
+                tp[obj_tp_idx].y       = iy;
+                tp[obj_tp_idx].width   = (unsigned char)(size * TILE_SIZE);
+                tp[obj_tp_idx].endless = endless;
+                tp[obj_tp_idx].moving  = 0;
+                tp[obj_tp_idx].oob_timer = 0;
+                tp[obj_tp_idx].active  = 1;
+                /* Set velocity based on direction */
+                tp[obj_tp_idx].vx = 0;
+                tp[obj_tp_idx].vy = 0;
+                switch (dir) {
+                    case 0: tp[obj_tp_idx].vx =  spd; break; /* right */
+                    case 1: tp[obj_tp_idx].vy = -spd; break; /* top */
+                    case 2: tp[obj_tp_idx].vx = -spd; break; /* left */
+                    case 3: tp[obj_tp_idx].vy =  spd; break; /* bottom */
+                }
+                p += 3;
+                obj_tp_idx++;
+            }
+        }
+    }
+}
+
+/* Update all triggered platforms: movement, OOB reset, player carrying */
+static void update_tp(void) {
+    unsigned char i;
+    long px = player.x >> 8, py = player.y >> 8;
+    long player_bonus_x = 0, player_bonus_y = 0;
+
+    for (i = 0; i < tp_count; i++) {
+        tp_state *t = &tp[i];
+        if (!t->active) continue;
+
+        if (t->moving) {
+            t->x += t->vx;
+            t->y += t->vy;
+        }
+
+        /* Out-of-bounds check */
+        {
+            int tx = (int)(t->x >> 8);
+            int ty = (int)(t->y >> 8);
+            unsigned char oob = (tx + (int)t->width < -8 ||
+                                 tx > SCREEN_PX_W + 8 ||
+                                 ty < -(int)SCREEN_PX_H ||
+                                 ty > SCREEN_PX_H * 2);
+            if (oob && t->moving) {
+                t->oob_timer++;
+                if (t->oob_timer >= 100) {
+                    t->x = t->init_x;
+                    t->y = t->init_y;
+                    t->moving  = 0;
+                    t->oob_timer = 0;
+                }
+            } else if (!oob) {
+                t->oob_timer = 0;
+            }
+        }
+
+        /* Player standing on platform:
+           player bottom == platform top AND horizontal overlap */
+        {
+            long plat_top = t->y >> 8;
+            long plat_left = (t->x >> 8) - t->width / 2;
+            long plat_right = plat_left + t->width;
+            long player_bot = py + PLAYER_H;
+            long player_right = px + PLAYER_W;
+
+            /* Check if player was just above platform last frame and now at top */
+            if (player.vy >= 0 &&
+                player_bot >= plat_top && player_bot <= plat_top + 2 &&
+                px + 1 < plat_right && player_right - 1 > plat_left) {
+
+                /* Land player on platform */
+                player.y = (t->y) - FP(PLAYER_H);
+                player.vy = 0;
+                player.on_ground = 1;
+                player.falling = 0;
+                player.jumping = 0;
+                player.double_jump_used = 0;
+
+                /* Trigger movement */
+                if (!t->moving)
+                    t->moving = 1;
+
+                /* Carry player */
+                player_bonus_x = t->vx;
+                player_bonus_y = t->vy;
+            }
+        }
+    }
+
+    /* Apply platform carry velocity */
+    if (player_bonus_x || player_bonus_y) {
+        player.x += player_bonus_x;
+        player.y += player_bonus_y;
+        /* Stop "moving when player on it" platforms after player leaves — handled next frame */
+    }
+}
+
+/* Draw all triggered platforms */
+static void draw_tp(void) {
+    unsigned char i;
+    for (i = 0; i < tp_count; i++) {
+        tp_state *t = &tp[i];
+        unsigned char seg, segs;
+        int tx, ty;
+        if (!t->active) continue;
+        tx = (int)(t->x >> 8) - (int)camera_x;
+        ty = (int)(t->y >> 8);
+        segs = t->width / TILE_SIZE;
+        /* Draw each segment (tile) of the platform */
+        for (seg = 0; seg < segs; seg++) {
+            int sx = tx - (int)(t->width / 2) + seg * TILE_SIZE;
+            if (sx < -8 || sx > SCREEN_PX_W) continue;
+            if (ty < 0  || ty > SCREEN_PX_H)  continue;
+            SMS_addSprite((unsigned char)sx, (unsigned char)ty,
+                          (unsigned char)(VRAM_SPR_TPLAT & 0xFF));
+        }
+    }
+}
 
 /* ──────────────────────────────────────────────────────────
  * Barrel Cannon
@@ -1136,6 +1333,7 @@ static void check_object_collisions(void) {
                 if (!coins_remaining()) level_complete = 1;
                 break;
             case OBJ_SPIKE: /* handled via tile probe below */ break;
+            case OBJ_TPLAT: /* handled by update_tp() */ break;
             case OBJ_BARREL:
                 if (!barrel_active) barrel_enter(obj);
                 break;
@@ -1559,6 +1757,7 @@ static void gameplay_loop(void) {
             SMS_initSprites();
             draw_objects();
             draw_barrels();
+            draw_tp();
             draw_npcs();
             draw_player();
             SMS_finalizeSprites();
@@ -1567,6 +1766,7 @@ static void gameplay_loop(void) {
         }
         npc_contact_idx = 0xFF; /* reset each frame */
         check_object_collisions();
+        update_tp();
         /* NPC dialogue trigger */
         if (!dialogue_active && npc_contact_idx != 0xFF) {
             if (npc_contact_auto) {
@@ -1594,6 +1794,7 @@ static void gameplay_loop(void) {
         SMS_initSprites();
         draw_objects();
         draw_barrels();
+        draw_tp();
         draw_npcs();
         draw_player();
         SMS_finalizeSprites();

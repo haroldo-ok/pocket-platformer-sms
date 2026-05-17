@@ -72,6 +72,7 @@ const SmsExporter = (() => {
     'pinkBlock':          11,
     'npc':                13,
     'barrelCannon':       14,
+    'triggeredPlatform':  15,
   };
 
   // ─── Fixed-point helpers ─────────────────────────────────────────────────────
@@ -208,6 +209,9 @@ const SmsExporter = (() => {
     // NPC sprite = tile 266 (VRAM_SPR_NPC in C)
     const npcS = get('NPC_SPRITE');
     npcS ? encodeSprite8(npcS, 0) : encodeBlank();
+    // Triggered platform sprite = tile 271
+    const tpS = get('TRIGGERED_PLATFORM');
+    tpS ? encodeSprite8(tpS, 0) : encodeBlank();
     // Barrel cannon sprites: tiles 267-270 (right, left, top, bottom)
     {
       const barrelSObj = get('BARREL_CANNON');
@@ -501,9 +505,9 @@ const SmsExporter = (() => {
       for (const obj of level.levelObjects) {
         let typeId = OBJECT_TYPE_MAP[obj.type];
         if (typeId === undefined) continue;
-        // Barrel cannon: encode direction in top 2 bits of y
+        // Barrel cannon / triggered platform: encode direction in top 2 bits of y
         // dir: 0=right, 1=top, 2=left, 3=bottom
-        if (obj.type === 'barrelCannon') {
+        if (obj.type === 'barrelCannon' || obj.type === 'triggeredPlatform') {
           const dirMap = { 'right': 0, 'top': 1, 'left': 2, 'bottom': 3 };
           const dir = dirMap[obj.extraAttributes && obj.extraAttributes.currentFacingDirection] || 0;
           objects.push({ x: obj.x, y: (obj.y & 0x3F) | (dir << 6), type: typeId });
@@ -724,7 +728,27 @@ const SmsExporter = (() => {
     const npcTable = buildNpcTable(levels);
 
     // 9. Assemble everything
-    const parts = [header, physicsBytes, new Uint8Array(palette), bgTiles, spriteSheet, ...encodedLevels, npcTable];
+    // Triggered platform table: per level: tp_count (1), per TP: size (1), speed_idx (1), act_once (1)
+    function buildTpTable(levels) {
+      const bytes = [];
+      for (const level of levels) {
+        const tps = (level.levelObjects || []).filter(o => o.type === 'triggeredPlatform');
+        bytes.push(Math.min(tps.length, 255));
+        for (const tp of tps) {
+          const ea = tp.extraAttributes || {};
+          const size = ea.size || 3;
+          const speedIdx = ea.speed || 3; // 1-7, index into pathMovementMapper
+          const actOnce = (ea.activationOnce === 'moving endlessly when touched') ? 1 : 0;
+          bytes.push(Math.min(size, 15));
+          bytes.push(Math.min(speedIdx, 7));
+          bytes.push(actOnce);
+        }
+      }
+      return new Uint8Array(bytes);
+    }
+    const tpTable = buildTpTable(levels);
+
+    const parts = [header, physicsBytes, new Uint8Array(palette), bgTiles, spriteSheet, ...encodedLevels, npcTable, tpTable];
     let totalSize = 0;
     for (const p of parts) totalSize += p.length;
 
