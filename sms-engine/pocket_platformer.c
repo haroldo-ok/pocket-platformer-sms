@@ -1310,6 +1310,8 @@ static void move_player_y(void) {
             player.jumping = 0;
             player.wall_jumping = 0;
             player.jump_frames = res_physics->max_jump_frames;
+            /* Crushed by upward platform */
+            if (tp_carry_vy < 0) player_died = 1;
         }
     }
     player.y = new_y;
