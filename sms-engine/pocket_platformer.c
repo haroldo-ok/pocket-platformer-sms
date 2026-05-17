@@ -503,8 +503,8 @@ static void load_graphics(void) {
     /* BG tiles at VRAM 1..N */
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
-    /* Sprite sheet at VRAM 256..270 (15 × 8x8 tiles: 10 standard + NPC + 4 barrel) */
-    SMS_loadTiles(res_sprites, 256u, 15u * 32u);
+    /* Sprite sheet at VRAM 256..271 (16 × 8x8 tiles: 10 standard + NPC + 4 barrel + TP) */
+    SMS_loadTiles(res_sprites, 256u, 16u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
