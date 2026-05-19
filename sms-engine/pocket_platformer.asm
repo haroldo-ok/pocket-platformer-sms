@@ -1858,11 +1858,11 @@ _load_graphics:
 	push	hl
 	ld	hl, #0x0020
 	call	_SMS_VRAMmemcpy
-;pocket_platformer.c:514: SMS_loadTiles(res_sprites, 256u, 16u * 32u);
+;pocket_platformer.c:514: SMS_loadTiles(res_sprites, 256u, 20u * 32u);
 	ld	de, (_res_sprites)
-	ld	hl, #0x0200
+	ld	hl, #0x0280
 	push	hl
-	ld	h, #0x20
+	ld	hl, #0x2000
 	call	_SMS_VRAMmemcpy
 ;pocket_platformer.c:515: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
 	ld	a, #0x01
