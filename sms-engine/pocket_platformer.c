@@ -67,6 +67,10 @@
 #define OBJ_BARREL       14
 #define OBJ_TPLAT        15  /* triggered platform */
 #define VRAM_SPR_TPLAT   271 /* sprite sheet tile 271 */
+#define VRAM_SPR_PLAYER_IDLE_L  272 /* mirrored player sprites */
+#define VRAM_SPR_PLAYER_WALK0_L 273
+#define VRAM_SPR_PLAYER_WALK1_L 274
+#define VRAM_SPR_PLAYER_JUMP_L  275
 #define MAX_TP            8  /* max triggered platforms per level */
 /* pathMovementMapper speeds scaled by 8/24, stored as FP */
 /* pathMovementMapper[1..7] * (8/24) * 256 */
@@ -278,7 +282,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 16u * 32u); /* 10 std + NPC + 4 barrel + TP */
+    res_levels  = (level_header *)(res_sprites + 20u * 32u); /* 10 std + NPC + 4 barrel + TP + 4 mirrored player */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -507,7 +511,7 @@ static void load_graphics(void) {
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
     /* Sprite sheet at VRAM 256..271 (16 × 8x8 tiles: 10 standard + NPC + 4 barrel + TP) */
-    SMS_loadTiles(res_sprites, 256u, 16u * 32u);
+    SMS_loadTiles(res_sprites, 256u, 20u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
@@ -645,11 +649,13 @@ static void draw_player(void) {
     unsigned int tile;
     if (sx < -8 || sx > SCREEN_PX_W) return;
     if (!player.on_ground)
-        tile = VRAM_SPR_PLAYER_JUMP;
+        tile = player.facing_left ? VRAM_SPR_PLAYER_JUMP_L  : VRAM_SPR_PLAYER_JUMP;
     else if (player.vx != 0)
-        tile = (player.anim_frame & 2) ? VRAM_SPR_PLAYER_WALK1 : VRAM_SPR_PLAYER_WALK0;
+        tile = player.facing_left
+            ? ((player.anim_frame & 2) ? VRAM_SPR_PLAYER_WALK1_L : VRAM_SPR_PLAYER_WALK0_L)
+            : ((player.anim_frame & 2) ? VRAM_SPR_PLAYER_WALK1   : VRAM_SPR_PLAYER_WALK0);
     else
-        tile = VRAM_SPR_PLAYER_IDLE;
+        tile = player.facing_left ? VRAM_SPR_PLAYER_IDLE_L : VRAM_SPR_PLAYER_IDLE;
     SMS_addSprite((unsigned char)sx, (unsigned char)sy, (unsigned char)tile);
 }
 
