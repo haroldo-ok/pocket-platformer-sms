@@ -66,6 +66,10 @@
 #define OBJ_NPC          13
 #define OBJ_BARREL       14
 #define OBJ_TPLAT        15  /* triggered platform */
+#define OBJ_RFBALL       16  /* rotating fireball center */
+#define VRAM_SPR_RFBALL  276 /* fireball sprite tile */
+#define MAX_RFBALL        8  /* max fireball centers per level */
+#define RFBALL_HITBOX     6  /* pixel hitbox (tileSize - 2*hitBoxOffset ~= tileSize/6*2) */
 #define VRAM_SPR_TPLAT   271 /* sprite sheet tile 271 */
 #define VRAM_SPR_PLAYER_IDLE_L  272 /* mirrored player sprites */
 #define VRAM_SPR_PLAYER_WALK0_L 273
@@ -282,7 +286,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 20u * 32u); /* 10 std + NPC + 4 barrel + TP + 4 mirrored player */
+    res_levels  = (level_header *)(res_sprites + 21u * 32u); /* +fireball */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -511,7 +515,7 @@ static void load_graphics(void) {
     SMS_loadTiles(res_tileset, VRAM_BG_BASE,
                   (unsigned int)res_header->num_tiles * 32u);
     /* Sprite sheet at VRAM 256..271 (16 × 8x8 tiles: 10 standard + NPC + 4 barrel + TP) */
-    SMS_loadTiles(res_sprites, 256u, 20u * 32u);
+    SMS_loadTiles(res_sprites, 256u, 21u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
 }
@@ -576,6 +580,7 @@ static void draw_objects(void) {
         if (obj->type == OBJ_NPC) continue;    /* NPC sprite handled separately */
         if (obj->type == OBJ_BARREL) continue; /* drawn by draw_barrels() */
         if (obj->type == OBJ_TPLAT)  continue; /* drawn by draw_tp() */
+        if (obj->type == OBJ_RFBALL) continue; /* drawn by draw_rfball() */
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
         /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
@@ -666,6 +671,7 @@ static void draw_player(void) {
 
 /* Find pointer to the NPC string table (after all level data) */
 static void load_tp_level(unsigned char level_n); /* forward decl */
+static void load_rfball_level(unsigned char level_n); /* forward decl */
 
 static unsigned char *get_npc_table(void) {
     level_header *lh = res_levels;
@@ -988,6 +994,202 @@ static void draw_tp(void) {
             if (ty < 0  || ty > SCREEN_PX_H)  continue;
             SMS_addSprite((unsigned char)sx, (unsigned char)ty,
                           (unsigned char)(VRAM_SPR_TPLAT & 0xFF));
+        }
+    }
+}
+
+
+/* ── Rotating Fireball state ───────────────────────────────── */
+static const signed char sin_table[360] = {
+       0,    2,    4,    7,    9,   11,   13,   15,   18,   20,   22,   24,
+      26,   29,   31,   33,   35,   37,   39,   41,   43,   46,   48,   50,
+      52,   54,   56,   58,   60,   62,   63,   65,   67,   69,   71,   73,
+      75,   76,   78,   80,   82,   83,   85,   87,   88,   90,   91,   93,
+      94,   96,   97,   99,  100,  101,  103,  104,  105,  107,  108,  109,
+     110,  111,  112,  113,  114,  115,  116,  117,  118,  119,  119,  120,
+     121,  121,  122,  123,  123,  124,  124,  125,  125,  125,  126,  126,
+     126,  127,  127,  127,  127,  127,  127,  127,  127,  127,  127,  127,
+     126,  126,  126,  125,  125,  125,  124,  124,  123,  123,  122,  121,
+     121,  120,  119,  119,  118,  117,  116,  115,  114,  113,  112,  111,
+     110,  109,  108,  107,  105,  104,  103,  101,  100,   99,   97,   96,
+      94,   93,   91,   90,   88,   87,   85,   83,   82,   80,   78,   76,
+      75,   73,   71,   69,   67,   65,   63,   62,   60,   58,   56,   54,
+      52,   50,   48,   46,   43,   41,   39,   37,   35,   33,   31,   29,
+      26,   24,   22,   20,   18,   15,   13,   11,    9,    7,    4,    2,
+       0,   -2,   -4,   -7,   -9,  -11,  -13,  -15,  -18,  -20,  -22,  -24,
+     -26,  -29,  -31,  -33,  -35,  -37,  -39,  -41,  -43,  -46,  -48,  -50,
+     -52,  -54,  -56,  -58,  -60,  -62,  -64,  -65,  -67,  -69,  -71,  -73,
+     -75,  -76,  -78,  -80,  -82,  -83,  -85,  -87,  -88,  -90,  -91,  -93,
+     -94,  -96,  -97,  -99, -100, -101, -103, -104, -105, -107, -108, -109,
+    -110, -111, -112, -113, -114, -115, -116, -117, -118, -119, -119, -120,
+    -121, -121, -122, -123, -123, -124, -124, -125, -125, -125, -126, -126,
+    -126, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127, -127,
+    -126, -126, -126, -125, -125, -125, -124, -124, -123, -123, -122, -121,
+    -121, -120, -119, -119, -118, -117, -116, -115, -114, -113, -112, -111,
+    -110, -109, -108, -107, -105, -104, -103, -101, -100,  -99,  -97,  -96,
+     -94,  -93,  -91,  -90,  -88,  -87,  -85,  -83,  -82,  -80,  -78,  -76,
+     -75,  -73,  -71,  -69,  -67,  -65,  -64,  -62,  -60,  -58,  -56,  -54,
+     -52,  -50,  -48,  -46,  -43,  -41,  -39,  -37,  -35,  -33,  -31,  -29,
+     -26,  -24,  -22,  -20,  -18,  -15,  -13,  -11,   -9,   -7,   -4,   -2,
+};
+static const signed char cos_table[360] = {
+     127,  127,  127,  127,  127,  127,  126,  126,  126,  125,  125,  125,
+     124,  124,  123,  123,  122,  121,  121,  120,  119,  119,  118,  117,
+     116,  115,  114,  113,  112,  111,  110,  109,  108,  107,  105,  104,
+     103,  101,  100,   99,   97,   96,   94,   93,   91,   90,   88,   87,
+      85,   83,   82,   80,   78,   76,   75,   73,   71,   69,   67,   65,
+      64,   62,   60,   58,   56,   54,   52,   50,   48,   46,   43,   41,
+      39,   37,   35,   33,   31,   29,   26,   24,   22,   20,   18,   15,
+      13,   11,    9,    7,    4,    2,    0,   -2,   -4,   -7,   -9,  -11,
+     -13,  -15,  -18,  -20,  -22,  -24,  -26,  -29,  -31,  -33,  -35,  -37,
+     -39,  -41,  -43,  -46,  -48,  -50,  -52,  -54,  -56,  -58,  -60,  -62,
+     -63,  -65,  -67,  -69,  -71,  -73,  -75,  -76,  -78,  -80,  -82,  -83,
+     -85,  -87,  -88,  -90,  -91,  -93,  -94,  -96,  -97,  -99, -100, -101,
+    -103, -104, -105, -107, -108, -109, -110, -111, -112, -113, -114, -115,
+    -116, -117, -118, -119, -119, -120, -121, -121, -122, -123, -123, -124,
+    -124, -125, -125, -125, -126, -126, -126, -127, -127, -127, -127, -127,
+    -127, -127, -127, -127, -127, -127, -126, -126, -126, -125, -125, -125,
+    -124, -124, -123, -123, -122, -121, -121, -120, -119, -119, -118, -117,
+    -116, -115, -114, -113, -112, -111, -110, -109, -108, -107, -105, -104,
+    -103, -101, -100,  -99,  -97,  -96,  -94,  -93,  -91,  -90,  -88,  -87,
+     -85,  -83,  -82,  -80,  -78,  -76,  -75,  -73,  -71,  -69,  -67,  -65,
+     -64,  -62,  -60,  -58,  -56,  -54,  -52,  -50,  -48,  -46,  -43,  -41,
+     -39,  -37,  -35,  -33,  -31,  -29,  -26,  -24,  -22,  -20,  -18,  -15,
+     -13,  -11,   -9,   -7,   -4,   -2,    0,    2,    4,    7,    9,   11,
+      13,   15,   18,   20,   22,   24,   26,   29,   31,   33,   35,   37,
+      39,   41,   43,   46,   48,   50,   52,   54,   56,   58,   60,   62,
+      64,   65,   67,   69,   71,   73,   75,   76,   78,   80,   82,   83,
+      85,   87,   88,   90,   91,   93,   94,   96,   97,   99,  100,  101,
+     103,  104,  105,  107,  108,  109,  110,  111,  112,  113,  114,  115,
+     116,  117,  118,  119,  119,  120,  121,  121,  122,  123,  123,  124,
+     124,  125,  125,  125,  126,  126,  126,  127,  127,  127,  127,  127,
+};
+
+typedef struct {
+    unsigned char cx, cy;      /* center tile position (pixels) */
+    unsigned int  angle;       /* current angle 0-359 */
+    unsigned char speed;       /* degrees per frame */
+    unsigned char amount;      /* number of arms (1-8, arm at radius i*TILE_SIZE) */
+    unsigned char forwards;    /* 1=angle increases, 0=decreases */
+    unsigned char active;
+} rfball_state;
+static rfball_state rfb[MAX_RFBALL];
+static unsigned char rfb_count;
+
+
+/* ──────────────────────────────────────────────────────────
+ * Rotating Fireball
+ * ──────────────────────────────────────────────────────────*/
+
+static unsigned char *get_rfball_table(void) {
+    /* rfball table comes after tp_table (which comes after npc_table) */
+    unsigned char *p = get_tp_table();
+    unsigned char li;
+    for (li = 0; li < res_header->level_count; li++) {
+        unsigned char cnt = *p++;
+        unsigned char ti;
+        for (ti = 0; ti < cnt; ti++) p += 3; /* size, speed_idx, act_once */
+    }
+    return p;
+}
+
+static void load_rfball_level(unsigned char level_n) {
+    unsigned char *p = get_rfball_table();
+    unsigned char li, i;
+    map_res_bank();
+    /* Skip to current level */
+    for (li = 0; li < level_n; li++) {
+        unsigned char cnt = *p++;
+        unsigned char ri;
+        for (ri = 0; ri < cnt; ri++) p += 3; /* speed, amount, forwards */
+    }
+    rfb_count = *p++;
+    if (rfb_count > MAX_RFBALL) rfb_count = MAX_RFBALL;
+    /* Match rfb slots to OBJ_RFBALL objects in level */
+    {
+        unsigned char obj_ri = 0;
+        for (i = 0; i < cur_level->obj_count && obj_ri < rfb_count; i++) {
+            level_object *obj = &cur_objects[i];
+            if (obj->type != OBJ_RFBALL) continue;
+            rfb[obj_ri].cx      = (unsigned char)obj->x * TILE_SIZE;
+            rfb[obj_ri].cy      = (unsigned char)obj->y * TILE_SIZE;
+            rfb[obj_ri].angle   = 270;
+            rfb[obj_ri].speed    = p[0];
+            rfb[obj_ri].amount   = p[1] < 1 ? 1 : (p[1] > 8 ? 8 : p[1]);
+            rfb[obj_ri].forwards = p[2];
+            rfb[obj_ri].active   = 1;
+            p += 3;
+            obj_ri++;
+        }
+    }
+}
+
+/* Check if a pixel point (px, py) collides with the player hitbox */
+static unsigned char rfball_hits_player(int px, int py) {
+    long plx = player.x >> 8, ply = player.y >> 8;
+    int hb = RFBALL_HITBOX;
+    /* Fireball hitbox centered on px,py */
+    int fb_l = px - hb, fb_r = px + hb;
+    int fb_t = py - hb, fb_b = py + hb;
+    /* Player hitbox */
+    long pl_r = plx + PLAYER_W, pl_b = ply + PLAYER_H;
+    return (fb_r > (int)plx && fb_l < (int)pl_r &&
+            fb_b > (int)ply && fb_t < (int)pl_b) ? 1 : 0;
+}
+
+static void update_rfball(void) {
+    unsigned char i;
+    if (!rfb_count) return;
+    for (i = 0; i < rfb_count; i++) {
+        rfball_state *r = &rfb[i];
+        unsigned char arm;
+        if (!r->active) continue;
+        /* Advance angle */
+        if (r->forwards) {
+            r->angle += r->speed;
+            if (r->angle >= 360) r->angle -= 360;
+        } else {
+            if (r->angle < (unsigned int)r->speed) r->angle += 360;
+            r->angle -= r->speed;
+        }
+        /* Check collision for center */
+        if (!player_died && rfball_hits_player((int)r->cx, (int)r->cy))
+            player_died = 1;
+        /* Check collision for each arm */
+        for (arm = 1; arm < r->amount && !player_died; arm++) {
+            unsigned int ang = r->angle % 360;
+            int radius = (int)arm * TILE_SIZE;
+            int ax = (int)r->cx + (radius * (int)cos_table[ang]) / 127;
+            int ay = (int)r->cy + (radius * (int)sin_table[ang]) / 127;
+            if (rfball_hits_player(ax, ay)) player_died = 1;
+        }
+    }
+}
+
+static void draw_rfball(void) {
+    unsigned char i;
+    unsigned char tile = (unsigned char)(VRAM_SPR_RFBALL & 0xFF);
+    if (!rfb_count) return;
+    for (i = 0; i < rfb_count; i++) {
+        rfball_state *r = &rfb[i];
+        unsigned char arm;
+        int sx, sy;
+        if (!r->active) continue;
+        /* Draw center */
+        sx = (int)r->cx - (int)camera_x;
+        sy = (int)r->cy;
+        if (sx >= -8 && sx <= SCREEN_PX_W && sy >= 0 && sy <= SCREEN_PX_H)
+            SMS_addSprite((unsigned char)sx, (unsigned char)sy, tile);
+        /* Draw arms */
+        for (arm = 1; arm < r->amount; arm++) {
+            unsigned int ang = r->angle % 360;
+            int radius = (int)arm * TILE_SIZE;
+            int ax = (int)r->cx + (radius * (int)cos_table[ang]) / 127;
+            int ay = (int)r->cy + (radius * (int)sin_table[ang]) / 127;
+            sx = ax - (int)camera_x;
+            sy = ay;
+            if (sx >= -8 && sx <= SCREEN_PX_W && sy >= 0 && sy <= SCREEN_PX_H)
+                SMS_addSprite((unsigned char)sx, (unsigned char)sy, tile);
         }
     }
 }
@@ -1346,6 +1548,7 @@ static void check_object_collisions(void) {
                 break;
             case OBJ_SPIKE: /* handled via tile probe below */ break;
             case OBJ_TPLAT: /* handled by update_tp() */ break;
+            case OBJ_RFBALL: /* handled by update_rfball() */ break;
             case OBJ_BARREL:
                 if (!barrel_active) barrel_enter(obj);
                 break;
@@ -1697,6 +1900,7 @@ static void load_level(unsigned char n) {
     }
 
     load_tp_level(n);
+    load_rfball_level(n);
     SMS_waitForVBlank();
     SMS_displayOff();
     SMS_VRAMmemsetW(0x3800, 0, 0x700);
@@ -1773,6 +1977,7 @@ static void gameplay_loop(void) {
             draw_objects();
             draw_barrels();
             draw_tp();
+            draw_rfball();
             draw_npcs();
             draw_player();
             SMS_finalizeSprites();
@@ -1800,6 +2005,7 @@ static void gameplay_loop(void) {
                 get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv)
                 player_died = 1;
         }
+        update_rfball();
         check_rb_switch();
         update_disappearing_blocks();
         update_camera();
@@ -1809,6 +2015,7 @@ static void gameplay_loop(void) {
         draw_objects();
         draw_barrels();
         draw_tp();
+        draw_rfball();
         draw_npcs();
         draw_player();
         SMS_finalizeSprites();
