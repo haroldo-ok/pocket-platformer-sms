@@ -44,17 +44,17 @@ Symbol Table
   9 ___SMS__SEGA_signature                                         007FF0 GR
   0 ___str_0                                                       0012C1 R
   0 ___str_1                                                       0012CE R
-  0 ___str_2                                                       00575B R
-  0 ___str_3                                                       00576D R
-  0 ___str_4                                                       005784 R
+  0 ___str_2                                                       00575E R
+  0 ___str_3                                                       005770 R
+  0 ___str_4                                                       005787 R
     __divsint                                                      ****** GX
     __divslong                                                     ****** GX
     __moduint                                                      ****** GX
     __mulint                                                       ****** GX
     __mullong                                                      ****** GX
-  0 __str_5                                                        0057D2 R
-  0 __str_6                                                        0057E8 R
-  0 __str_7                                                        005805 R
+  0 __str_5                                                        0057D5 R
+  0 __str_6                                                        0057EB R
+  0 __str_7                                                        005808 R
   7 __xinit__tp_carry_vx                                           000000 R
   7 __xinit__tp_carry_vy                                           000004 R
   0 _apply_gravity                                                 002797 R
@@ -134,7 +134,7 @@ Symbol Table
   0 _load_npc_dialogue                                             000FF5 R
   0 _load_rfball_level                                             001F2E R
   0 _load_tp_level                                                 001344 R
-  0 _main                                                          005795 GR
+  0 _main                                                          005798 GR
   0 _move_player_x                                                 003193 R
   0 _move_player_y                                                 003416 R
   1 _npc_contact_auto                                              000598 R
@@ -169,7 +169,7 @@ Symbol Table
   0 _save_dialogue_rows                                            00114F R
   1 _saved_nametable                                               000455 R
   0 _sin_table                                                     001C5E R
-  0 _title_screen                                                  0056E8 R
+  0 _title_screen                                                  0056EB R
   1 _tp                                                            000599 R
   2 _tp_carry_vx                                                   000000 R
   2 _tp_carry_vy                                                   000004 R
@@ -197,7 +197,7 @@ Hexadecimal [24-Bits]
 
 Area Table
 
-   0 _CODE                                      size   5839   flags    0
+   0 _CODE                                      size   583C   flags    0
    1 _DATA                                      size    868   flags    0
    2 _INITIALIZED                               size      8   flags    0
    3 _DABS                                      size      0   flags    8

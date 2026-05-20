@@ -2005,6 +2005,7 @@ static void gameplay_loop(void) {
                 get_tile((unsigned char)((px+PLAYER_W-2)/TILE_SIZE),    (unsigned char)((py+PLAYER_H-1)/TILE_SIZE)) == sv)
                 player_died = 1;
         }
+        update_rfball();
         check_rb_switch();
         update_disappearing_blocks();
         update_camera();

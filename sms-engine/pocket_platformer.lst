@@ -13606,240 +13606,242 @@
       00565C 21rB0r00         [10]13604 	ld	hl, #_player_died
       00565F 36 01            [10]13605 	ld	(hl), #0x01
       005661                      13606 00129$:
-                                  13607 ;pocket_platformer.c:2008: check_rb_switch();
-      005661 CDr74r44         [17]13608 	call	_check_rb_switch
-                                  13609 ;pocket_platformer.c:2009: update_disappearing_blocks();
-      005664 CDrB8r48         [17]13610 	call	_update_disappearing_blocks
-                                  13611 ;pocket_platformer.c:2010: update_camera();
-      005667 CDrF4r4D         [17]13612 	call	_update_camera
-                                  13613 ;pocket_platformer.c:2011: update_anim();
-      00566A CDrFFr4D         [17]13614 	call	_update_anim
-                                  13615 ;pocket_platformer.c:2013: SMS_initSprites();
-      00566D CDr00r00         [17]13616 	call	_SMS_initSprites
-                                  13617 ;pocket_platformer.c:2014: draw_objects();
-      005670 CDrC6r0B         [17]13618 	call	_draw_objects
-                                  13619 ;pocket_platformer.c:2015: draw_barrels();
-      005673 CDrDCr0C         [17]13620 	call	_draw_barrels
-                                  13621 ;pocket_platformer.c:2016: draw_tp();
-      005676 CDrAAr1A         [17]13622 	call	_draw_tp
-                                  13623 ;pocket_platformer.c:2017: draw_rfball();
-      005679 CDr7Ar23         [17]13624 	call	_draw_rfball
-                                  13625 ;pocket_platformer.c:2018: draw_npcs();
-      00567C CDrBBr0D         [17]13626 	call	_draw_npcs
-                                  13627 ;pocket_platformer.c:2019: draw_player();
-      00567F CDr40r0E         [17]13628 	call	_draw_player
-                                  13629 ;pocket_platformer.c:2020: SMS_finalizeSprites();
-      005682 CDr00r00         [17]13630 	call	_SMS_finalizeSprites
-                                  13631 ;pocket_platformer.c:2021: SMS_copySpritestoSAT();
-      005685 CDr00r00         [17]13632 	call	_SMS_copySpritestoSAT
-                                  13633 ;pocket_platformer.c:2023: if (player_died) {
-      005688 3ArB0r00         [13]13634 	ld	a, (_player_died+0)
-      00568B B7               [ 4]13635 	or	a, a
-      00568C 28 09            [12]13636 	jr	Z, 00135$
-                                  13637 ;pocket_platformer.c:2024: death_sequence(level_n);
-      00568E DD 7E E6         [19]13638 	ld	a, -26 (ix)
-      005691 CDr74r51         [17]13639 	call	_death_sequence
-      005694 C3rCDr51         [10]13640 	jp	00138$
-      005697                      13641 00135$:
-                                  13642 ;pocket_platformer.c:2025: } else if (level_complete) {
-      005697 3ArAFr00         [13]13643 	ld	a, (_level_complete+0)
-      00569A B7               [ 4]13644 	or	a, a
-      00569B CArCDr51         [10]13645 	jp	Z, 00138$
-                                  13646 ;pocket_platformer.c:2027: for (i = 0; i < 60; i++) SMS_waitForVBlank();
-      00569E 0E 3C            [ 7]13647 	ld	c, #0x3c
-      0056A0                      13648 00142$:
-      0056A0 C5               [11]13649 	push	bc
-      0056A1 CDr00r00         [17]13650 	call	_SMS_waitForVBlank
-      0056A4 C1               [10]13651 	pop	bc
-      0056A5 0D               [ 4]13652 	dec	c
-      0056A6 20 F8            [12]13653 	jr	NZ, 00142$
-                                  13654 ;pocket_platformer.c:2028: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
-      0056A8 DD 4E E6         [19]13655 	ld	c, -26 (ix)
-      0056AB 06 00            [ 7]13656 	ld	b, #0x00
-      0056AD 03               [ 6]13657 	inc	bc
-      0056AE DD 5E E7         [19]13658 	ld	e, -25 (ix)
-      0056B1 16 00            [ 7]13659 	ld	d, #0x00
-      0056B3 79               [ 4]13660 	ld	a, c
-      0056B4 93               [ 4]13661 	sub	a, e
-      0056B5 78               [ 4]13662 	ld	a, b
-      0056B6 9A               [ 4]13663 	sbc	a, d
-      0056B7 E2rBCr56         [10]13664 	jp	PO, 00323$
-      0056BA EE 80            [ 7]13665 	xor	a, #0x80
-      0056BC                      13666 00323$:
-      0056BC F2rD5r56         [10]13667 	jp	P, 00153$
-      0056BF DD 7E E6         [19]13668 	ld	a, -26 (ix)
-      0056C2 DD 77 FF         [19]13669 	ld	-1 (ix), a
-      0056C5 DD 34 FF         [23]13670 	inc	-1 (ix)
-      0056C8 DD 7E FF         [19]13671 	ld	a, -1 (ix)
-      0056CB DD 77 FE         [19]13672 	ld	-2 (ix), a
-      0056CE 07               [ 4]13673 	rlca
-      0056CF 9F               [ 4]13674 	sbc	a, a
-      0056D0 DD 77 FF         [19]13675 	ld	-1 (ix), a
-      0056D3 18 07            [12]13676 	jr	00154$
-      0056D5                      13677 00153$:
-      0056D5 AF               [ 4]13678 	xor	a, a
-      0056D6 DD 77 FE         [19]13679 	ld	-2 (ix), a
-      0056D9 DD 77 FF         [19]13680 	ld	-1 (ix), a
-      0056DC                      13681 00154$:
-      0056DC DD 7E FE         [19]13682 	ld	a, -2 (ix)
-                                  13683 ;pocket_platformer.c:2029: load_level(level_n);
-      0056DF DD 77 E6         [19]13684 	ld	-26 (ix), a
-      0056E2 CDr14r4E         [17]13685 	call	_load_level
-                                  13686 ;pocket_platformer.c:2032: }
-      0056E5 C3rCDr51         [10]13687 	jp	00138$
-                                  13688 ;pocket_platformer.c:2037: static void title_screen(void) {
-                                  13689 ;	---------------------------------
-                                  13690 ; Function title_screen
-                                  13691 ; ---------------------------------
-      0056E8                      13692 _title_screen:
-                                  13693 ;pocket_platformer.c:2039: SMS_waitForVBlank();
-      0056E8 CDr00r00         [17]13694 	call	_SMS_waitForVBlank
-                                  13695 ;pocket_platformer.c:2040: SMS_displayOff();
-      0056EB 21 40 01         [10]13696 	ld	hl, #0x0140
-      0056EE CDr00r00         [17]13697 	call	_SMS_VDPturnOffFeature
-                                  13698 ;pocket_platformer.c:2041: SMS_VRAMmemsetW(0, 0, 16 * 1024);
-      0056F1 21 00 40         [10]13699 	ld	hl, #0x4000
-      0056F4 E5               [11]13700 	push	hl
-      0056F5 11 00 00         [10]13701 	ld	de, #0x0000
-      0056F8 65               [ 4]13702 	ld	h, l
-      0056F9 CDr00r00         [17]13703 	call	_SMS_VRAMmemsetW
-                                  13704 ;pocket_platformer.c:2042: SMS_zeroBGPalette();
-      0056FC CDr00r00         [17]13705 	call	_SMS_zeroBGPalette
-                                  13706 ;pocket_platformer.c:2043: SMS_zeroSpritePalette();
-      0056FF CDr00r00         [17]13707 	call	_SMS_zeroSpritePalette
-                                  13708 ;pocket_platformer.c:2044: SMS_setBGPaletteColor(1, 0x3F);
-      005702 2E 3F            [ 7]13709 	ld	l, #0x3f
-                                  13710 ;	spillPairReg hl
-                                  13711 ;	spillPairReg hl
-      005704 3E 01            [ 7]13712 	ld	a, #0x01
-      005706 CDr00r00         [17]13713 	call	_SMS_setBGPaletteColor
-                                  13714 ;pocket_platformer.c:2045: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
-      005709 21 00 01         [10]13715 	ld	hl, #0x100
-      00570C E5               [11]13716 	push	hl
-      00570D 2Ar00r00         [16]13717 	ld	hl, (_font_1bpp_size)
-      005710 E5               [11]13718 	push	hl
-      005711 11 60 01         [10]13719 	ld	de, #0x0160
-      005714 21r00r00         [10]13720 	ld	hl, #_font_1bpp
-      005717 CDr00r00         [17]13721 	call	_SMS_load1bppTiles
-                                  13722 ;pocket_platformer.c:2046: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
-      00571A 21 40 01         [10]13723 	ld	hl, #0x0140
-      00571D CDr00r00         [17]13724 	call	_SMS_configureTextRenderer
-                                  13725 ;pocket_platformer.c:2047: SMS_displayOn();
-      005720 21 40 01         [10]13726 	ld	hl, #0x0140
-      005723 CDr00r00         [17]13727 	call	_SMS_VDPturnOnFeature
-                                  13728 ;pocket_platformer.c:2048: SMS_printatXY(4,  8, "POCKET PLATFORMER");
-      005726 21 08 7A         [10]13729 	ld	hl, #0x7a08
-      005729 CF               [11]13730 	rst	#0x08
-      00572A 21r5Br57         [10]13731 	ld	hl, #___str_2
-      00572D CDr00r00         [17]13732 	call	_SMS_print
-                                  13733 ;pocket_platformer.c:2049: SMS_printatXY(3, 10, "for Sega Master System");
-      005730 21 86 7A         [10]13734 	ld	hl, #0x7a86
-      005733 CF               [11]13735 	rst	#0x08
-      005734 21r6Dr57         [10]13736 	ld	hl, #___str_3
-      005737 CDr00r00         [17]13737 	call	_SMS_print
-                                  13738 ;pocket_platformer.c:2050: SMS_printatXY(4, 14, "Press 1 to start");
-      00573A 21 88 7B         [10]13739 	ld	hl, #0x7b88
-      00573D CF               [11]13740 	rst	#0x08
-      00573E 21r84r57         [10]13741 	ld	hl, #___str_4
-      005741 CDr00r00         [17]13742 	call	_SMS_print
-                                  13743 ;pocket_platformer.c:2051: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
-      005744                      13744 00110$:
-      005744 CDr00r00         [17]13745 	call	_SMS_waitForVBlank
-      005747 CDr00r00         [17]13746 	call	_SMS_getKeysStatus
-      00574A 7B               [ 4]13747 	ld	a, e
-                                  13748 ;pocket_platformer.c:2052: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
-      00574B E6 30            [ 7]13749 	and	a, #0x30
-      00574D 28 F5            [12]13750 	jr	Z, 00110$
-                                  13751 ;pocket_platformer.c:2053: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
-      00574F                      13752 00113$:
-      00574F CDr00r00         [17]13753 	call	_SMS_waitForVBlank
-      005752 CDr00r00         [17]13754 	call	_SMS_getKeysStatus
-      005755 7B               [ 4]13755 	ld	a, e
-                                  13756 ;pocket_platformer.c:2054: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
-      005756 E6 30            [ 7]13757 	and	a, #0x30
-      005758 20 F5            [12]13758 	jr	NZ, 00113$
-                                  13759 ;pocket_platformer.c:2055: }
-      00575A C9               [10]13760 	ret
-      00575B                      13761 ___str_2:
-      00575B 50 4F 43 4B 45 54 20 13762 	.ascii "POCKET PLATFORMER"
+                                  13607 ;pocket_platformer.c:2008: update_rfball();
+      005661 CDr63r21         [17]13608 	call	_update_rfball
+                                  13609 ;pocket_platformer.c:2009: check_rb_switch();
+      005664 CDr74r44         [17]13610 	call	_check_rb_switch
+                                  13611 ;pocket_platformer.c:2010: update_disappearing_blocks();
+      005667 CDrB8r48         [17]13612 	call	_update_disappearing_blocks
+                                  13613 ;pocket_platformer.c:2011: update_camera();
+      00566A CDrF4r4D         [17]13614 	call	_update_camera
+                                  13615 ;pocket_platformer.c:2012: update_anim();
+      00566D CDrFFr4D         [17]13616 	call	_update_anim
+                                  13617 ;pocket_platformer.c:2014: SMS_initSprites();
+      005670 CDr00r00         [17]13618 	call	_SMS_initSprites
+                                  13619 ;pocket_platformer.c:2015: draw_objects();
+      005673 CDrC6r0B         [17]13620 	call	_draw_objects
+                                  13621 ;pocket_platformer.c:2016: draw_barrels();
+      005676 CDrDCr0C         [17]13622 	call	_draw_barrels
+                                  13623 ;pocket_platformer.c:2017: draw_tp();
+      005679 CDrAAr1A         [17]13624 	call	_draw_tp
+                                  13625 ;pocket_platformer.c:2018: draw_rfball();
+      00567C CDr7Ar23         [17]13626 	call	_draw_rfball
+                                  13627 ;pocket_platformer.c:2019: draw_npcs();
+      00567F CDrBBr0D         [17]13628 	call	_draw_npcs
+                                  13629 ;pocket_platformer.c:2020: draw_player();
+      005682 CDr40r0E         [17]13630 	call	_draw_player
+                                  13631 ;pocket_platformer.c:2021: SMS_finalizeSprites();
+      005685 CDr00r00         [17]13632 	call	_SMS_finalizeSprites
+                                  13633 ;pocket_platformer.c:2022: SMS_copySpritestoSAT();
+      005688 CDr00r00         [17]13634 	call	_SMS_copySpritestoSAT
+                                  13635 ;pocket_platformer.c:2024: if (player_died) {
+      00568B 3ArB0r00         [13]13636 	ld	a, (_player_died+0)
+      00568E B7               [ 4]13637 	or	a, a
+      00568F 28 09            [12]13638 	jr	Z, 00135$
+                                  13639 ;pocket_platformer.c:2025: death_sequence(level_n);
+      005691 DD 7E E6         [19]13640 	ld	a, -26 (ix)
+      005694 CDr74r51         [17]13641 	call	_death_sequence
+      005697 C3rCDr51         [10]13642 	jp	00138$
+      00569A                      13643 00135$:
+                                  13644 ;pocket_platformer.c:2026: } else if (level_complete) {
+      00569A 3ArAFr00         [13]13645 	ld	a, (_level_complete+0)
+      00569D B7               [ 4]13646 	or	a, a
+      00569E CArCDr51         [10]13647 	jp	Z, 00138$
+                                  13648 ;pocket_platformer.c:2028: for (i = 0; i < 60; i++) SMS_waitForVBlank();
+      0056A1 0E 3C            [ 7]13649 	ld	c, #0x3c
+      0056A3                      13650 00142$:
+      0056A3 C5               [11]13651 	push	bc
+      0056A4 CDr00r00         [17]13652 	call	_SMS_waitForVBlank
+      0056A7 C1               [10]13653 	pop	bc
+      0056A8 0D               [ 4]13654 	dec	c
+      0056A9 20 F8            [12]13655 	jr	NZ, 00142$
+                                  13656 ;pocket_platformer.c:2029: level_n = (level_n + 1 < total) ? level_n + 1 : 0;
+      0056AB DD 4E E6         [19]13657 	ld	c, -26 (ix)
+      0056AE 06 00            [ 7]13658 	ld	b, #0x00
+      0056B0 03               [ 6]13659 	inc	bc
+      0056B1 DD 5E E7         [19]13660 	ld	e, -25 (ix)
+      0056B4 16 00            [ 7]13661 	ld	d, #0x00
+      0056B6 79               [ 4]13662 	ld	a, c
+      0056B7 93               [ 4]13663 	sub	a, e
+      0056B8 78               [ 4]13664 	ld	a, b
+      0056B9 9A               [ 4]13665 	sbc	a, d
+      0056BA E2rBFr56         [10]13666 	jp	PO, 00323$
+      0056BD EE 80            [ 7]13667 	xor	a, #0x80
+      0056BF                      13668 00323$:
+      0056BF F2rD8r56         [10]13669 	jp	P, 00153$
+      0056C2 DD 7E E6         [19]13670 	ld	a, -26 (ix)
+      0056C5 DD 77 FF         [19]13671 	ld	-1 (ix), a
+      0056C8 DD 34 FF         [23]13672 	inc	-1 (ix)
+      0056CB DD 7E FF         [19]13673 	ld	a, -1 (ix)
+      0056CE DD 77 FE         [19]13674 	ld	-2 (ix), a
+      0056D1 07               [ 4]13675 	rlca
+      0056D2 9F               [ 4]13676 	sbc	a, a
+      0056D3 DD 77 FF         [19]13677 	ld	-1 (ix), a
+      0056D6 18 07            [12]13678 	jr	00154$
+      0056D8                      13679 00153$:
+      0056D8 AF               [ 4]13680 	xor	a, a
+      0056D9 DD 77 FE         [19]13681 	ld	-2 (ix), a
+      0056DC DD 77 FF         [19]13682 	ld	-1 (ix), a
+      0056DF                      13683 00154$:
+      0056DF DD 7E FE         [19]13684 	ld	a, -2 (ix)
+                                  13685 ;pocket_platformer.c:2030: load_level(level_n);
+      0056E2 DD 77 E6         [19]13686 	ld	-26 (ix), a
+      0056E5 CDr14r4E         [17]13687 	call	_load_level
+                                  13688 ;pocket_platformer.c:2033: }
+      0056E8 C3rCDr51         [10]13689 	jp	00138$
+                                  13690 ;pocket_platformer.c:2038: static void title_screen(void) {
+                                  13691 ;	---------------------------------
+                                  13692 ; Function title_screen
+                                  13693 ; ---------------------------------
+      0056EB                      13694 _title_screen:
+                                  13695 ;pocket_platformer.c:2040: SMS_waitForVBlank();
+      0056EB CDr00r00         [17]13696 	call	_SMS_waitForVBlank
+                                  13697 ;pocket_platformer.c:2041: SMS_displayOff();
+      0056EE 21 40 01         [10]13698 	ld	hl, #0x0140
+      0056F1 CDr00r00         [17]13699 	call	_SMS_VDPturnOffFeature
+                                  13700 ;pocket_platformer.c:2042: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+      0056F4 21 00 40         [10]13701 	ld	hl, #0x4000
+      0056F7 E5               [11]13702 	push	hl
+      0056F8 11 00 00         [10]13703 	ld	de, #0x0000
+      0056FB 65               [ 4]13704 	ld	h, l
+      0056FC CDr00r00         [17]13705 	call	_SMS_VRAMmemsetW
+                                  13706 ;pocket_platformer.c:2043: SMS_zeroBGPalette();
+      0056FF CDr00r00         [17]13707 	call	_SMS_zeroBGPalette
+                                  13708 ;pocket_platformer.c:2044: SMS_zeroSpritePalette();
+      005702 CDr00r00         [17]13709 	call	_SMS_zeroSpritePalette
+                                  13710 ;pocket_platformer.c:2045: SMS_setBGPaletteColor(1, 0x3F);
+      005705 2E 3F            [ 7]13711 	ld	l, #0x3f
+                                  13712 ;	spillPairReg hl
+                                  13713 ;	spillPairReg hl
+      005707 3E 01            [ 7]13714 	ld	a, #0x01
+      005709 CDr00r00         [17]13715 	call	_SMS_setBGPaletteColor
+                                  13716 ;pocket_platformer.c:2046: SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
+      00570C 21 00 01         [10]13717 	ld	hl, #0x100
+      00570F E5               [11]13718 	push	hl
+      005710 2Ar00r00         [16]13719 	ld	hl, (_font_1bpp_size)
+      005713 E5               [11]13720 	push	hl
+      005714 11 60 01         [10]13721 	ld	de, #0x0160
+      005717 21r00r00         [10]13722 	ld	hl, #_font_1bpp
+      00571A CDr00r00         [17]13723 	call	_SMS_load1bppTiles
+                                  13724 ;pocket_platformer.c:2047: SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
+      00571D 21 40 01         [10]13725 	ld	hl, #0x0140
+      005720 CDr00r00         [17]13726 	call	_SMS_configureTextRenderer
+                                  13727 ;pocket_platformer.c:2048: SMS_displayOn();
+      005723 21 40 01         [10]13728 	ld	hl, #0x0140
+      005726 CDr00r00         [17]13729 	call	_SMS_VDPturnOnFeature
+                                  13730 ;pocket_platformer.c:2049: SMS_printatXY(4,  8, "POCKET PLATFORMER");
+      005729 21 08 7A         [10]13731 	ld	hl, #0x7a08
+      00572C CF               [11]13732 	rst	#0x08
+      00572D 21r5Er57         [10]13733 	ld	hl, #___str_2
+      005730 CDr00r00         [17]13734 	call	_SMS_print
+                                  13735 ;pocket_platformer.c:2050: SMS_printatXY(3, 10, "for Sega Master System");
+      005733 21 86 7A         [10]13736 	ld	hl, #0x7a86
+      005736 CF               [11]13737 	rst	#0x08
+      005737 21r70r57         [10]13738 	ld	hl, #___str_3
+      00573A CDr00r00         [17]13739 	call	_SMS_print
+                                  13740 ;pocket_platformer.c:2051: SMS_printatXY(4, 14, "Press 1 to start");
+      00573D 21 88 7B         [10]13741 	ld	hl, #0x7b88
+      005740 CF               [11]13742 	rst	#0x08
+      005741 21r87r57         [10]13743 	ld	hl, #___str_4
+      005744 CDr00r00         [17]13744 	call	_SMS_print
+                                  13745 ;pocket_platformer.c:2052: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+      005747                      13746 00110$:
+      005747 CDr00r00         [17]13747 	call	_SMS_waitForVBlank
+      00574A CDr00r00         [17]13748 	call	_SMS_getKeysStatus
+      00574D 7B               [ 4]13749 	ld	a, e
+                                  13750 ;pocket_platformer.c:2053: while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2)));
+      00574E E6 30            [ 7]13751 	and	a, #0x30
+      005750 28 F5            [12]13752 	jr	Z, 00110$
+                                  13753 ;pocket_platformer.c:2054: do { SMS_waitForVBlank(); joy = SMS_getKeysStatus(); }
+      005752                      13754 00113$:
+      005752 CDr00r00         [17]13755 	call	_SMS_waitForVBlank
+      005755 CDr00r00         [17]13756 	call	_SMS_getKeysStatus
+      005758 7B               [ 4]13757 	ld	a, e
+                                  13758 ;pocket_platformer.c:2055: while (joy & (PORT_A_KEY_1 | PORT_A_KEY_2));
+      005759 E6 30            [ 7]13759 	and	a, #0x30
+      00575B 20 F5            [12]13760 	jr	NZ, 00113$
+                                  13761 ;pocket_platformer.c:2056: }
+      00575D C9               [10]13762 	ret
+      00575E                      13763 ___str_2:
+      00575E 50 4F 43 4B 45 54 20 13764 	.ascii "POCKET PLATFORMER"
              50 4C 41 54 46 4F 52
              4D 45 52
-      00576C 00                   13763 	.db 0x00
-      00576D                      13764 ___str_3:
-      00576D 66 6F 72 20 53 65 67 13765 	.ascii "for Sega Master System"
+      00576F 00                   13765 	.db 0x00
+      005770                      13766 ___str_3:
+      005770 66 6F 72 20 53 65 67 13767 	.ascii "for Sega Master System"
              61 20 4D 61 73 74 65
              72 20 53 79 73 74 65
              6D
-      005783 00                   13766 	.db 0x00
-      005784                      13767 ___str_4:
-      005784 50 72 65 73 73 20 31 13768 	.ascii "Press 1 to start"
+      005786 00                   13768 	.db 0x00
+      005787                      13769 ___str_4:
+      005787 50 72 65 73 73 20 31 13770 	.ascii "Press 1 to start"
              20 74 6F 20 73 74 61
              72 74
-      005794 00                   13769 	.db 0x00
-                                  13770 ;pocket_platformer.c:2060: void main(void) {
-                                  13771 ;	---------------------------------
-                                  13772 ; Function main
-                                  13773 ; ---------------------------------
-      005795                      13774 _main::
-                                  13775 ;pocket_platformer.c:2062: SMS_useFirstHalfTilesforSprites(0);
-      005795 2E 00            [ 7]13776 	ld	l, #0x00
-                                  13777 ;	spillPairReg hl
-                                  13778 ;	spillPairReg hl
-      005797 CDr00r00         [17]13779 	call	_SMS_useFirstHalfTilesforSprites
-                                  13780 ;pocket_platformer.c:2063: SMS_setSpriteMode(SPRITEMODE_NORMAL);
-      00579A 2E 00            [ 7]13781 	ld	l, #0x00
-                                  13782 ;	spillPairReg hl
-                                  13783 ;	spillPairReg hl
-      00579C CDr00r00         [17]13784 	call	_SMS_setSpriteMode
-                                  13785 ;pocket_platformer.c:2064: SMS_setBackdropColor(0);
-      00579F 2E 00            [ 7]13786 	ld	l, #0x00
-                                  13787 ;	spillPairReg hl
-                                  13788 ;	spillPairReg hl
-      0057A1 CDr00r00         [17]13789 	call	_SMS_setBackdropColor
-                                  13790 ;pocket_platformer.c:2066: while (1) {
-      0057A4                      13791 00104$:
-                                  13792 ;pocket_platformer.c:2067: title_screen();
-      0057A4 CDrE8r56         [17]13793 	call	_title_screen
-                                  13794 ;pocket_platformer.c:2068: if (!has_resource()) continue;
-      0057A7 CDr00r00         [17]13795 	call	_has_resource
-      0057AA B7               [ 4]13796 	or	a, a
-      0057AB 28 F7            [12]13797 	jr	Z, 00104$
-                                  13798 ;pocket_platformer.c:2069: init_resources();
-      0057AD CDr36r00         [17]13799 	call	_init_resources
-                                  13800 ;pocket_platformer.c:2070: SMS_waitForVBlank();
-      0057B0 CDr00r00         [17]13801 	call	_SMS_waitForVBlank
-                                  13802 ;pocket_platformer.c:2071: SMS_displayOff();
-      0057B3 21 40 01         [10]13803 	ld	hl, #0x0140
-      0057B6 CDr00r00         [17]13804 	call	_SMS_VDPturnOffFeature
-                                  13805 ;pocket_platformer.c:2072: SMS_VRAMmemsetW(0, 0, 16 * 1024);
-      0057B9 21 00 40         [10]13806 	ld	hl, #0x4000
-      0057BC E5               [11]13807 	push	hl
-      0057BD 11 00 00         [10]13808 	ld	de, #0x0000
-      0057C0 65               [ 4]13809 	ld	h, l
-      0057C1 CDr00r00         [17]13810 	call	_SMS_VRAMmemsetW
-                                  13811 ;pocket_platformer.c:2073: load_graphics();
-      0057C4 CDr14r0A         [17]13812 	call	_load_graphics
-                                  13813 ;pocket_platformer.c:2074: SMS_displayOn();
-      0057C7 21 40 01         [10]13814 	ld	hl, #0x0140
-      0057CA CDr00r00         [17]13815 	call	_SMS_VDPturnOnFeature
-                                  13816 ;pocket_platformer.c:2075: gameplay_loop();
-      0057CD CDr9Er51         [17]13817 	call	_gameplay_loop
-                                  13818 ;pocket_platformer.c:2077: }
-      0057D0 18 D2            [12]13819 	jr	00104$
-                                  13820 	.area _CODE
-      0057D2                      13821 __str_5:
-      0057D2 70 6F 63 6B 65 74 2D 13822 	.ascii "pocket-platformer-sms"
+      005797 00                   13771 	.db 0x00
+                                  13772 ;pocket_platformer.c:2061: void main(void) {
+                                  13773 ;	---------------------------------
+                                  13774 ; Function main
+                                  13775 ; ---------------------------------
+      005798                      13776 _main::
+                                  13777 ;pocket_platformer.c:2063: SMS_useFirstHalfTilesforSprites(0);
+      005798 2E 00            [ 7]13778 	ld	l, #0x00
+                                  13779 ;	spillPairReg hl
+                                  13780 ;	spillPairReg hl
+      00579A CDr00r00         [17]13781 	call	_SMS_useFirstHalfTilesforSprites
+                                  13782 ;pocket_platformer.c:2064: SMS_setSpriteMode(SPRITEMODE_NORMAL);
+      00579D 2E 00            [ 7]13783 	ld	l, #0x00
+                                  13784 ;	spillPairReg hl
+                                  13785 ;	spillPairReg hl
+      00579F CDr00r00         [17]13786 	call	_SMS_setSpriteMode
+                                  13787 ;pocket_platformer.c:2065: SMS_setBackdropColor(0);
+      0057A2 2E 00            [ 7]13788 	ld	l, #0x00
+                                  13789 ;	spillPairReg hl
+                                  13790 ;	spillPairReg hl
+      0057A4 CDr00r00         [17]13791 	call	_SMS_setBackdropColor
+                                  13792 ;pocket_platformer.c:2067: while (1) {
+      0057A7                      13793 00104$:
+                                  13794 ;pocket_platformer.c:2068: title_screen();
+      0057A7 CDrEBr56         [17]13795 	call	_title_screen
+                                  13796 ;pocket_platformer.c:2069: if (!has_resource()) continue;
+      0057AA CDr00r00         [17]13797 	call	_has_resource
+      0057AD B7               [ 4]13798 	or	a, a
+      0057AE 28 F7            [12]13799 	jr	Z, 00104$
+                                  13800 ;pocket_platformer.c:2070: init_resources();
+      0057B0 CDr36r00         [17]13801 	call	_init_resources
+                                  13802 ;pocket_platformer.c:2071: SMS_waitForVBlank();
+      0057B3 CDr00r00         [17]13803 	call	_SMS_waitForVBlank
+                                  13804 ;pocket_platformer.c:2072: SMS_displayOff();
+      0057B6 21 40 01         [10]13805 	ld	hl, #0x0140
+      0057B9 CDr00r00         [17]13806 	call	_SMS_VDPturnOffFeature
+                                  13807 ;pocket_platformer.c:2073: SMS_VRAMmemsetW(0, 0, 16 * 1024);
+      0057BC 21 00 40         [10]13808 	ld	hl, #0x4000
+      0057BF E5               [11]13809 	push	hl
+      0057C0 11 00 00         [10]13810 	ld	de, #0x0000
+      0057C3 65               [ 4]13811 	ld	h, l
+      0057C4 CDr00r00         [17]13812 	call	_SMS_VRAMmemsetW
+                                  13813 ;pocket_platformer.c:2074: load_graphics();
+      0057C7 CDr14r0A         [17]13814 	call	_load_graphics
+                                  13815 ;pocket_platformer.c:2075: SMS_displayOn();
+      0057CA 21 40 01         [10]13816 	ld	hl, #0x0140
+      0057CD CDr00r00         [17]13817 	call	_SMS_VDPturnOnFeature
+                                  13818 ;pocket_platformer.c:2076: gameplay_loop();
+      0057D0 CDr9Er51         [17]13819 	call	_gameplay_loop
+                                  13820 ;pocket_platformer.c:2078: }
+      0057D3 18 D2            [12]13821 	jr	00104$
+                                  13822 	.area _CODE
+      0057D5                      13823 __str_5:
+      0057D5 70 6F 63 6B 65 74 2D 13824 	.ascii "pocket-platformer-sms"
              70 6C 61 74 66 6F 72
              6D 65 72 2D 73 6D 73
-      0057E7 00                   13823 	.db 0x00
-      0057E8                      13824 __str_6:
-      0057E8 50 6F 63 6B 65 74 20 13825 	.ascii "Pocket Platformer SMS Engine"
+      0057EA 00                   13825 	.db 0x00
+      0057EB                      13826 __str_6:
+      0057EB 50 6F 63 6B 65 74 20 13827 	.ascii "Pocket Platformer SMS Engine"
              50 6C 61 74 66 6F 72
              6D 65 72 20 53 4D 53
              20 45 6E 67 69 6E 65
-      005804 00                   13826 	.db 0x00
-      005805                      13827 __str_7:
-      005805 47 65 6E 65 72 61 74 13828 	.ascii "Generated by pocket-platformer-to-sms web exporter."
+      005807 00                   13828 	.db 0x00
+      005808                      13829 __str_7:
+      005808 47 65 6E 65 72 61 74 13830 	.ascii "Generated by pocket-platformer-to-sms web exporter."
              65 64 20 62 79 20 70
              6F 63 6B 65 74 2D 70
              6C 61 74 66 6F 72 6D
@@ -13847,47 +13849,47 @@
              6D 73 20 77 65 62 20
              65 78 70 6F 72 74 65
              72 2E
-      005838 00                   13829 	.db 0x00
-                                  13830 	.area _INITIALIZER
-      000000                      13831 __xinit__tp_carry_vx:
-      000000 00 00 00 00          13832 	.byte #0x00, #0x00, #0x00, #0x00	;  0
-      000004                      13833 __xinit__tp_carry_vy:
-      000004 00 00 00 00          13834 	.byte #0x00, #0x00, #0x00, #0x00	;  0
-                                  13835 	.area _CABS (ABS)
-      007FF0                      13836 	.org 0x7FF0
-      007FF0                      13837 ___SMS__SEGA_signature:
-      007FF0 54                   13838 	.db #0x54	; 84	'T'
-      007FF1 4D                   13839 	.db #0x4d	; 77	'M'
-      007FF2 52                   13840 	.db #0x52	; 82	'R'
-      007FF3 20                   13841 	.db #0x20	; 32
-      007FF4 53                   13842 	.db #0x53	; 83	'S'
-      007FF5 45                   13843 	.db #0x45	; 69	'E'
-      007FF6 47                   13844 	.db #0x47	; 71	'G'
-      007FF7 41                   13845 	.db #0x41	; 65	'A'
-      007FF8 FF                   13846 	.db #0xff	; 255
-      007FF9 FF                   13847 	.db #0xff	; 255
-      007FFA FF                   13848 	.db #0xff	; 255
-      007FFB FF                   13849 	.db #0xff	; 255
-      007FFC 99                   13850 	.db #0x99	; 153
-      007FFD 99                   13851 	.db #0x99	; 153
-      007FFE 00                   13852 	.db #0x00	; 0
-      007FFF 4C                   13853 	.db #0x4c	; 76	'L'
-      007FCA                      13854 	.org 0x7FCA
-      007FCA                      13855 ___SMS__SDSC_author:
-      007FCA 70 6F 63 6B 65 74 2D 13856 	.ascii "pocket-platformer-sms"
+      00583B 00                   13831 	.db 0x00
+                                  13832 	.area _INITIALIZER
+      000000                      13833 __xinit__tp_carry_vx:
+      000000 00 00 00 00          13834 	.byte #0x00, #0x00, #0x00, #0x00	;  0
+      000004                      13835 __xinit__tp_carry_vy:
+      000004 00 00 00 00          13836 	.byte #0x00, #0x00, #0x00, #0x00	;  0
+                                  13837 	.area _CABS (ABS)
+      007FF0                      13838 	.org 0x7FF0
+      007FF0                      13839 ___SMS__SEGA_signature:
+      007FF0 54                   13840 	.db #0x54	; 84	'T'
+      007FF1 4D                   13841 	.db #0x4d	; 77	'M'
+      007FF2 52                   13842 	.db #0x52	; 82	'R'
+      007FF3 20                   13843 	.db #0x20	; 32
+      007FF4 53                   13844 	.db #0x53	; 83	'S'
+      007FF5 45                   13845 	.db #0x45	; 69	'E'
+      007FF6 47                   13846 	.db #0x47	; 71	'G'
+      007FF7 41                   13847 	.db #0x41	; 65	'A'
+      007FF8 FF                   13848 	.db #0xff	; 255
+      007FF9 FF                   13849 	.db #0xff	; 255
+      007FFA FF                   13850 	.db #0xff	; 255
+      007FFB FF                   13851 	.db #0xff	; 255
+      007FFC 99                   13852 	.db #0x99	; 153
+      007FFD 99                   13853 	.db #0x99	; 153
+      007FFE 00                   13854 	.db #0x00	; 0
+      007FFF 4C                   13855 	.db #0x4c	; 76	'L'
+      007FCA                      13856 	.org 0x7FCA
+      007FCA                      13857 ___SMS__SDSC_author:
+      007FCA 70 6F 63 6B 65 74 2D 13858 	.ascii "pocket-platformer-sms"
              70 6C 61 74 66 6F 72
              6D 65 72 2D 73 6D 73
-      007FDF 00                   13857 	.db 0x00
-      007FAD                      13858 	.org 0x7FAD
-      007FAD                      13859 ___SMS__SDSC_name:
-      007FAD 50 6F 63 6B 65 74 20 13860 	.ascii "Pocket Platformer SMS Engine"
+      007FDF 00                   13859 	.db 0x00
+      007FAD                      13860 	.org 0x7FAD
+      007FAD                      13861 ___SMS__SDSC_name:
+      007FAD 50 6F 63 6B 65 74 20 13862 	.ascii "Pocket Platformer SMS Engine"
              50 6C 61 74 66 6F 72
              6D 65 72 20 53 4D 53
              20 45 6E 67 69 6E 65
-      007FC9 00                   13861 	.db 0x00
-      007F79                      13862 	.org 0x7F79
-      007F79                      13863 ___SMS__SDSC_descr:
-      007F79 47 65 6E 65 72 61 74 13864 	.ascii "Generated by pocket-platformer-to-sms web exporter."
+      007FC9 00                   13863 	.db 0x00
+      007F79                      13864 	.org 0x7F79
+      007F79                      13865 ___SMS__SDSC_descr:
+      007F79 47 65 6E 65 72 61 74 13866 	.ascii "Generated by pocket-platformer-to-sms web exporter."
              65 64 20 62 79 20 70
              6F 63 6B 65 74 2D 70
              6C 61 74 66 6F 72 6D
@@ -13895,22 +13897,22 @@
              6D 73 20 77 65 62 20
              65 78 70 6F 72 74 65
              72 2E
-      007FAC 00                   13865 	.db 0x00
-      007FE0                      13866 	.org 0x7FE0
-      007FE0                      13867 ___SMS__SDSC_signature:
-      007FE0 53                   13868 	.db #0x53	; 83	'S'
-      007FE1 44                   13869 	.db #0x44	; 68	'D'
-      007FE2 53                   13870 	.db #0x53	; 83	'S'
-      007FE3 43                   13871 	.db #0x43	; 67	'C'
-      007FE4 01                   13872 	.db #0x01	; 1
-      007FE5 03                   13873 	.db #0x03	; 3
-      007FE6 01                   13874 	.db #0x01	; 1
-      007FE7 01                   13875 	.db #0x01	; 1
-      007FE8 25                   13876 	.db #0x25	; 37
-      007FE9 20                   13877 	.db #0x20	; 32
-      007FEA CA                   13878 	.db #0xca	; 202
-      007FEB 7F                   13879 	.db #0x7f	; 127
-      007FEC AD                   13880 	.db #0xad	; 173
-      007FED 7F                   13881 	.db #0x7f	; 127
-      007FEE 79                   13882 	.db #0x79	; 121	'y'
-      007FEF 7F                   13883 	.db #0x7f	; 127
+      007FAC 00                   13867 	.db 0x00
+      007FE0                      13868 	.org 0x7FE0
+      007FE0                      13869 ___SMS__SDSC_signature:
+      007FE0 53                   13870 	.db #0x53	; 83	'S'
+      007FE1 44                   13871 	.db #0x44	; 68	'D'
+      007FE2 53                   13872 	.db #0x53	; 83	'S'
+      007FE3 43                   13873 	.db #0x43	; 67	'C'
+      007FE4 01                   13874 	.db #0x01	; 1
+      007FE5 03                   13875 	.db #0x03	; 3
+      007FE6 01                   13876 	.db #0x01	; 1
+      007FE7 01                   13877 	.db #0x01	; 1
+      007FE8 25                   13878 	.db #0x25	; 37
+      007FE9 20                   13879 	.db #0x20	; 32
+      007FEA CA                   13880 	.db #0xca	; 202
+      007FEB 7F                   13881 	.db #0x7f	; 127
+      007FEC AD                   13882 	.db #0xad	; 173
+      007FED 7F                   13883 	.db #0x7f	; 127
+      007FEE 79                   13884 	.db #0x79	; 121	'y'
+      007FEF 7F                   13885 	.db #0x7f	; 127
