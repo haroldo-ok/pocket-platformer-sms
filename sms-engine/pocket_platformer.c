@@ -67,6 +67,12 @@
 #define OBJ_BARREL       14
 #define OBJ_TPLAT        15  /* triggered platform */
 #define OBJ_RFBALL       16  /* rotating fireball center */
+#define OBJ_PORTAL_BLUE  17  /* blue portal (first of pair) */
+#define OBJ_PORTAL_ORANGE 18 /* orange portal (second of pair) */
+#define VRAM_SPR_PORTAL_BLUE   277
+#define VRAM_SPR_PORTAL_ORANGE 278
+#define PORTAL_COOLDOWN  60  /* frames inactive after teleport */
+#define MAX_PORTALS      16  /* max portal objects per level */
 #define VRAM_SPR_RFBALL  276 /* fireball sprite tile */
 #define MAX_RFBALL        8  /* max fireball centers per level */
 #define RFBALL_HITBOX     6  /* pixel hitbox (tileSize - 2*hitBoxOffset ~= tileSize/6*2) */
@@ -286,7 +292,7 @@ static void init_resources(void) {
     res_tileset = res_palette + 16;
     /* Sprite sheet: 9 tiles × 32 bytes (8x8 sprites, SPRITEMODE_NORMAL) */
     res_sprites = res_tileset + (unsigned int)res_header->num_tiles * 32u;
-    res_levels  = (level_header *)(res_sprites + 21u * 32u); /* +fireball */
+    res_levels  = (level_header *)(res_sprites + 23u * 32u); /* +portals */
 }
 
 static level_header *get_level(unsigned char n) {
@@ -581,6 +587,7 @@ static void draw_objects(void) {
         if (obj->type == OBJ_BARREL) continue; /* drawn by draw_barrels() */
         if (obj->type == OBJ_TPLAT)  continue; /* drawn by draw_tp() */
         if (obj->type == OBJ_RFBALL) continue; /* drawn by draw_rfball() */
+        if (obj->type == OBJ_PORTAL_BLUE || obj->type == OBJ_PORTAL_ORANGE) continue;
         if (obj->type == OBJ_COIN && coin_collected[i]) continue;
         /* Red/blue blocks, switch, and violet/pink blocks are BG tiles, not sprites */
         if (obj->type == 7 || obj->type == 8 || obj->type == 9) continue;
@@ -1194,6 +1201,124 @@ static void draw_rfball(void) {
     }
 }
 
+
+/* ── Portal state ──────────────────────────────────────────── */
+typedef struct {
+    unsigned char obj_idx;     /* index in cur_objects[] */
+    unsigned char partner_idx; /* obj_idx of the paired exit portal */
+    unsigned char cooldown;    /* frames remaining inactive (0 = active) */
+    unsigned char touching;    /* 1 = player currently overlapping this portal */
+    unsigned char type;        /* OBJ_PORTAL_BLUE or OBJ_PORTAL_ORANGE */
+} portal_state;
+static portal_state portals[MAX_PORTALS];
+static unsigned char portal_count;
+
+
+/* ──────────────────────────────────────────────────────────
+ * Portal
+ * ──────────────────────────────────────────────────────────*/
+
+static void load_portals_level(void) {
+    unsigned char i, bi = 255, oi = 255;
+    unsigned char n = cur_level->obj_count < MAX_OBJECTS
+                    ? cur_level->obj_count : MAX_OBJECTS;
+    portal_count = 0;
+    map_res_bank();
+    /* Collect portals in order; pair blues with next orange */
+    for (i = 0; i < n && portal_count < MAX_PORTALS; i++) {
+        if (cur_objects[i].type == OBJ_PORTAL_BLUE ||
+            cur_objects[i].type == OBJ_PORTAL_ORANGE) {
+            portals[portal_count].obj_idx    = i;
+            portals[portal_count].cooldown   = 0;
+            portals[portal_count].touching   = 0;
+            portals[portal_count].type       = cur_objects[i].type;
+            portals[portal_count].partner_idx = 255; /* unlinked */
+            portal_count++;
+        }
+    }
+    /* Link pairs: blue[k] pairs with orange[k+1] */
+    {
+        unsigned char pi;
+        for (pi = 0; pi + 1 < portal_count; pi++) {
+            if (portals[pi].type == OBJ_PORTAL_BLUE &&
+                portals[pi+1].type == OBJ_PORTAL_ORANGE) {
+                portals[pi].partner_idx   = portals[pi+1].obj_idx;
+                portals[pi+1].partner_idx = portals[pi].obj_idx;
+                pi++; /* skip the orange, already paired */
+            }
+        }
+    }
+}
+
+static void update_portals(void) {
+    unsigned char i;
+    long px = player.x >> 8, py = player.y >> 8;
+    if (!portal_count) return;
+    for (i = 0; i < portal_count; i++) {
+        portal_state *p = &portals[i];
+        level_object *obj;
+        long ox, oy;
+        /* Decay cooldown */
+        if (p->cooldown > 0) { p->cooldown--; continue; }
+        map_res_bank();
+        obj = &cur_objects[p->obj_idx];
+        ox = (long)obj->x * TILE_SIZE;
+        oy = (long)obj->y * TILE_SIZE;
+        /* AABB with expanded hitbox (hitBoxOffset = -TILE_SIZE/3 ~= -2) */
+        {
+            long hb = 2; /* ~tileSize/3 expansion */
+            unsigned char hit =
+                px + PLAYER_W > ox - hb && px < ox + TILE_SIZE + hb &&
+                py + PLAYER_H > oy - hb && py < oy + TILE_SIZE + hb;
+            if (!hit) { p->touching = 0; continue; }
+            if (p->touching) continue; /* already inside, wait for exit */
+            p->touching = 1;
+            /* Teleport to partner */
+            if (p->partner_idx != 255) {
+                unsigned char pi2;
+                for (pi2 = 0; pi2 < portal_count; pi2++) {
+                    if (portals[pi2].obj_idx == p->partner_idx) {
+                        level_object *exit_obj = &cur_objects[p->partner_idx];
+                        /* Place player feet just above exit portal */
+                        player.x = ((long)exit_obj->x * TILE_SIZE + 1) * FP_ONE;
+                        player.y = ((long)exit_obj->y * TILE_SIZE
+                                    + TILE_SIZE - PLAYER_H - 1) * FP_ONE;
+                        player.vx = 0;
+                        player.vy = 0;
+                        player.jumping = 0;
+                        player.falling = 1;
+                        /* Apply cooldown to both portals */
+                        p->cooldown = PORTAL_COOLDOWN;
+                        portals[pi2].cooldown = PORTAL_COOLDOWN;
+                        portals[pi2].touching = 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void draw_portals(void) {
+    unsigned char i;
+    if (!portal_count) return;
+    map_res_bank();
+    for (i = 0; i < portal_count; i++) {
+        portal_state *p = &portals[i];
+        level_object *obj = &cur_objects[p->obj_idx];
+        int sx = (int)obj->x * TILE_SIZE - (int)camera_x;
+        int sy = (int)obj->y * TILE_SIZE;
+        unsigned char tile;
+        if (sx < -8 || sx > SCREEN_PX_W) continue;
+        if (sy < 0  || sy > SCREEN_PX_H)  continue;
+        /* Blink when on cooldown */
+        if (p->cooldown > 0 && (p->cooldown & 4)) continue;
+        tile = (unsigned char)((p->type == OBJ_PORTAL_BLUE
+               ? VRAM_SPR_PORTAL_BLUE : VRAM_SPR_PORTAL_ORANGE) & 0xFF);
+        SMS_addSprite((unsigned char)sx, (unsigned char)sy, tile);
+    }
+}
+
 /* ──────────────────────────────────────────────────────────
  * Barrel Cannon
  * ──────────────────────────────────────────────────────────*/
@@ -1549,6 +1674,8 @@ static void check_object_collisions(void) {
             case OBJ_SPIKE: /* handled via tile probe below */ break;
             case OBJ_TPLAT: /* handled by update_tp() */ break;
             case OBJ_RFBALL: /* handled by update_rfball() */ break;
+            case OBJ_PORTAL_BLUE:
+            case OBJ_PORTAL_ORANGE: /* handled by update_portals() */ break;
             case OBJ_BARREL:
                 if (!barrel_active) barrel_enter(obj);
                 break;
@@ -1901,6 +2028,7 @@ static void load_level(unsigned char n) {
 
     load_tp_level(n);
     load_rfball_level(n);
+    load_portals_level();
     SMS_waitForVBlank();
     SMS_displayOff();
     SMS_VRAMmemsetW(0x3800, 0, 0x700);
@@ -1978,6 +2106,7 @@ static void gameplay_loop(void) {
             draw_barrels();
             draw_tp();
             draw_rfball();
+            draw_portals();
             draw_npcs();
             draw_player();
             SMS_finalizeSprites();
@@ -2006,6 +2135,7 @@ static void gameplay_loop(void) {
                 player_died = 1;
         }
         update_rfball();
+        update_portals();
         check_rb_switch();
         update_disappearing_blocks();
         update_camera();
@@ -2016,6 +2146,7 @@ static void gameplay_loop(void) {
         draw_barrels();
         draw_tp();
         draw_rfball();
+        draw_portals();
         draw_npcs();
         draw_player();
         SMS_finalizeSprites();
