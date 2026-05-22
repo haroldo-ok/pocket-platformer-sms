@@ -1866,9 +1866,9 @@ _load_graphics:
 	push	hl
 	ld	hl, #0x0020
 	call	_SMS_VRAMmemcpy
-;pocket_platformer.c:524: SMS_loadTiles(res_sprites, 256u, 21u * 32u);
+;pocket_platformer.c:524: SMS_loadTiles(res_sprites, 256u, 23u * 32u);
 	ld	de, (_res_sprites)
-	ld	hl, #0x02a0
+	ld	hl, #0x02e0
 	push	hl
 	ld	hl, #0x2000
 	call	_SMS_VRAMmemcpy
