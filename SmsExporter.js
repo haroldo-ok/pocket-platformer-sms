@@ -74,9 +74,8 @@ const SmsExporter = (() => {
     'barrelCannon':       14,
     'triggeredPlatform':  15,
     'rotatingFireballCenter': 16,
-    'portal':  17,
     'portal2': 18,
-  };
+  }; /* portal (blue/orange) handled specially below */
 
   // ─── Fixed-point helpers ─────────────────────────────────────────────────────
   const toFP = v => Math.round(v * FP_ONE);
@@ -523,6 +522,13 @@ const SmsExporter = (() => {
       for (const obj of level.levelObjects) {
         let typeId = OBJECT_TYPE_MAP[obj.type];
         if (typeId === undefined) continue;
+        // Portal: type determined by extraAttributes.portalType
+        if (obj.type === 'portal' || obj.type === 'portal2') {
+          const isOrange = (obj.extraAttributes && obj.extraAttributes.portalType === 'orange')
+                        || obj.type === 'portal2';
+          objects.push({ x: obj.x, y: obj.y, type: isOrange ? 18 : 17 });
+          continue;
+        }
         // Barrel cannon / triggered platform: encode direction in top 2 bits of y
         // dir: 0=right, 1=top, 2=left, 3=bottom
         if (obj.type === 'barrelCannon' || obj.type === 'triggeredPlatform') {
