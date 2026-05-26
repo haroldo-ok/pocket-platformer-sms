@@ -520,15 +520,15 @@ const SmsExporter = (() => {
     const objects = [];
     if (level.levelObjects) {
       for (const obj of level.levelObjects) {
-        let typeId = OBJECT_TYPE_MAP[obj.type];
-        if (typeId === undefined) continue;
-        // Portal: type determined by extraAttributes.portalType
+        // Portal: type determined by extraAttributes.portalType (check BEFORE typeId guard)
         if (obj.type === 'portal' || obj.type === 'portal2') {
           const isOrange = (obj.extraAttributes && obj.extraAttributes.portalType === 'orange')
                         || obj.type === 'portal2';
           objects.push({ x: obj.x, y: obj.y, type: isOrange ? 18 : 17 });
           continue;
         }
+        let typeId = OBJECT_TYPE_MAP[obj.type];
+        if (typeId === undefined) continue;
         // Barrel cannon / triggered platform: encode direction in top 2 bits of y
         // dir: 0=right, 1=top, 2=left, 3=bottom
         if (obj.type === 'barrelCannon' || obj.type === 'triggeredPlatform') {
