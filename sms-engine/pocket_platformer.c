@@ -182,6 +182,7 @@ static unsigned char   *res_tileset;
 static unsigned char   *res_sprites;
 static level_header    *res_levels;
 
+static unsigned char passable_tile[256]; /* fast passable lookup */
 static player_state     player;
 static unsigned int     camera_x, prev_cam_x;
 static unsigned char    coin_collected[MAX_OBJECTS];
@@ -431,13 +432,7 @@ static unsigned char is_solid_px(long fpx, long fpy) {
     if (t & 0x80) return 0;
     /* One-way tiles are NOT solid from sides or below */
     if (res_header->one_way_vram_idx && t == res_header->one_way_vram_idx) return 0;
-    /* Deko tiles are always passable (decorative only) */
-    {
-        unsigned char di;
-        for (di = 0; di < 18; di++) {
-            if (res_header->deko_vram_idx[di] && t == res_header->deko_vram_idx[di]) return 0;
-        }
-    }
+    /* Fast lookup (deko/fg/spike) */
     /* Violet/pink blocks: passable when that type is inactive */
     if (vp_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -475,13 +470,8 @@ static unsigned char is_solid_falling_px(long fpx, long fpy) {
     if (t == 0) return 0;
     /* Foreground (priority) tiles are always passable */
     if (t & 0x80) return 0;
-    /* Deko tiles are always passable */
-    {
-        unsigned char di;
-        for (di = 0; di < 18; di++) {
-            if (res_header->deko_vram_idx[di] && t == res_header->deko_vram_idx[di]) return 0;
-        }
-    }
+    /* Fast lookup */
+    if (passable_tile[t]) return 0;
     /* Violet/pink blocks passable when inactive */
     if (vp_block_count) {
         unsigned char dtx = (unsigned char)((fpx>>8)/TILE_SIZE);
@@ -524,6 +514,15 @@ static void load_graphics(void) {
     SMS_loadTiles(res_sprites, 256u, 23u * 32u);
     SMS_load1bppTiles(font_1bpp, VRAM_TILE_FONT, font_1bpp_size, 0, 1);
     SMS_configureTextRenderer(VRAM_TILE_FONT - 32);
+
+    { unsigned char di;
+      for (di = 0; di < 255; di++) passable_tile[di] = 0;
+      passable_tile[0] = 1;
+      for (di = 128; di < 255; di++) passable_tile[di] = 1;
+      if (res_header->spike_vram_idx) passable_tile[res_header->spike_vram_idx] = 1;
+      for (di = 0; di < 18; di++)
+          if (res_header->deko_vram_idx[di]) passable_tile[res_header->deko_vram_idx[di]] = 1;
+    }
 }
 
 static void draw_tilemap_full(void) {
